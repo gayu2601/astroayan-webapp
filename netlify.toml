@@ -1,0 +1,33 @@
+[build]
+  functions = "netlify/functions"
+
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization, x-api-secret"
+[[redirects]]
+  from = "/panchang"
+  to = "/.netlify/functions/panchang"
+  status = 200
+
+[[redirects]]
+  from = "/jadhagam"
+  to = "/.netlify/functions/jadhagam"
+  status = 200
+  
+[[redirects]]
+  from = "/panchang1"
+  to = "/.netlify/functions/panchang1"
+  status = 200
+
+[[redirects]]
+  from = "/jadhagam1"
+  to = "/.netlify/functions/jadhagam1"
+  status = 200
+  
+[[redirects]]
+  from = "/api/prokerala/*"
+  to = "/.netlify/functions/prokerala-proxy/:splat"
+  status = 200
