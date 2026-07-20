@@ -1,5 +1,5 @@
-const { generatePanchangHTML } = require('../shared/panchangLogic');
-const { Redis } = require("@upstash/redis");
+import { generatePanchangHTML } from '../shared/panchangLogic.js';
+import { Redis } from "@upstash/redis";
 
 const ASTRO_BASE = 'https://api.vedicastroapi.com/v3-json';
 const redis      = Redis.fromEnv();

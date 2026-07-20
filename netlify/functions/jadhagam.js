@@ -1,6 +1,6 @@
 //jadhagam.js
-const { generateReportHTML } = require('../shared/reportLogic');
-const { Redis } = require("@upstash/redis");
+import { generateReportHTML } from '../shared/reportLogic.js';
+import { Redis } from "@upstash/redis";
 
 const ASTRO_BASE = 'https://api.vedicastroapi.com/v3-json';
 const redis = Redis.fromEnv();
