@@ -184,7 +184,7 @@ function SingleKattam({ planets = {}, accentClass, label }: SingleKattamProps) {
   );
 }
 
-export default function Porutham() {
+export default function Porutham({ isLight = true }: { isLight?: boolean }) {
   const { t, language, isTamil } = useTranslation();
   const [tab, setTab] = useState<'star' | 'time'>('star');
   

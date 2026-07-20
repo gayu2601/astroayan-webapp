@@ -830,9 +830,6 @@ const filterCounts = useMemo(() => {
           <button onClick={handleExportExcel} className="flex items-center gap-1.5 rounded-2xl px-3.5 py-1.5 border text-xs font-bold" style={{ background: 'rgba(46,204,113,0.15)', borderColor: 'rgba(46,204,113,0.4)', color: 'white' }}>
             <Download className="h-4 w-4" style={{ color: T.active }} /> Export
           </button>
-          <button onClick={handleLogout} className="rounded-2xl px-3.5 py-1.5 text-xs font-bold text-white flex items-center gap-1.5" style={{ background: '#FF4D4F' }}>
-            <LogOut className="h-3.5 w-3.5" /> Logout
-          </button>
         </div>
       </div>
 

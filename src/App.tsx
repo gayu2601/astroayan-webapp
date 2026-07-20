@@ -1393,19 +1393,49 @@ export default function App() {
           </nav>
 
           {/* Quick controls */}
-			<div className="flex flex-wrap items-center justify-center gap-3">
+		<div className="flex flex-col items-center gap-2">
+		  {/* Row 1: plan badge + profile/password/help/logout */}
+		  <div className="flex items-center justify-center gap-3">
 			{user?.id !== ADMIN_USER_ID && (
 			<>
-				<div className="bg-gradient-to-r from-amber-500 to-[#B45309] text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-500/10">
-				  <Crown className="h-3.5 w-3.5" /><span>{user?.customer_plans?.plan_name}</span>
-				</div>
+			  <div className="bg-gradient-to-r from-amber-500 to-[#B45309] text-white px-1 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-500/10">
+				<Crown className="h-3.5 w-3.5" /><span>{user?.customer_plans?.plan_name}</span>
+			  </div>
 			</>
 			)}
-            <div className={`flex rounded-xl p-0.5 border text-xs font-bold transition-all ${isLight ? "bg-amber-50/50 border-amber-500/15" : "bg-black/35 border-white/5"}`}>
-              <button onClick={() => toggleLanguage('en')} className={`px-2.5 py-1 rounded-lg transition-all ${language === 'en' ? 'bg-amber-500 text-white shadow' : isLight ? 'text-[#5C4F43] hover:text-[#2C241E]' : 'text-gray-400 hover:text-white'}`}>EN</button>
-              <button onClick={() => toggleLanguage('ta')} className={`px-2.5 py-1 rounded-lg transition-all ${language === 'ta' ? 'bg-amber-500 text-white shadow' : isLight ? 'text-[#5C4F43] hover:text-[#2C241E]' : 'text-gray-400 hover:text-white'}`}>தமிழ்</button>
-            </div>
-            <button
+			{user?.id !== ADMIN_USER_ID && (
+			<>
+			  <button
+				onClick={() => setShowProfileModal(true)}
+				title={language === 'ta' ? "சுயவிவரம்" : "Profile Settings"}
+				className={`p-2 rounded-xl border transition-all shadow-md ${isLight ? "bg-amber-50/50 border-amber-500/15 text-[#5C4F43] hover:bg-amber-100/50 hover:border-amber-500/40" : "bg-black/35 border-white/5 text-gray-300 hover:bg-black/55 hover:border-amber-500/30 hover:text-amber-400"}`}
+			  >
+				<User className="h-4 w-4" />
+			  </button>
+			  <button
+				onClick={() => setShowPasswordModal(true)}
+				title={language === 'ta' ? "கடவுச்சொல் மாற்று" : "Change Password"}
+				className={`p-2 rounded-xl border transition-all shadow-md ${isLight ? "bg-amber-50/50 border-amber-500/15 text-[#5C4F43] hover:bg-amber-100/50 hover:border-amber-500/40" : "bg-black/35 border-white/5 text-gray-300 hover:bg-black/55 hover:border-amber-500/30 hover:text-amber-400"}`}
+			  >
+				<Sliders className="h-4 w-4" />
+			  </button>
+			  <button
+				onClick={() => setShowHelpModal(true)}
+				title={language === 'ta' ? "உதவி" : "Help & Support"}
+				className={`p-2 rounded-xl border transition-all shadow-md ${isLight ? "bg-amber-50/50 border-amber-500/15 text-[#5C4F43] hover:bg-amber-100/50 hover:border-amber-500/40" : "bg-black/35 border-white/5 text-gray-300 hover:bg-black/55 hover:border-amber-500/30 hover:text-amber-400"}`}
+			  >
+				<HelpCircle className="h-4 w-4" />
+			  </button>
+			</>
+			)}
+		  </div>
+		  {/* Row 2: language toggle + theme toggle */}
+		  <div className="flex items-center justify-center gap-3">
+			<div className={`flex rounded-xl p-0.5 border text-xs font-bold transition-all ${isLight ? "bg-amber-50/50 border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+			  <button onClick={() => toggleLanguage('en')} className={`px-2.5 py-1 rounded-lg transition-all ${language === 'en' ? 'bg-amber-500 text-white shadow' : isLight ? 'text-[#5C4F43] hover:text-[#2C241E]' : 'text-gray-400 hover:text-white'}`}>EN</button>
+			  <button onClick={() => toggleLanguage('ta')} className={`px-2.5 py-1 rounded-lg transition-all ${language === 'ta' ? 'bg-amber-500 text-white shadow' : isLight ? 'text-[#5C4F43] hover:text-[#2C241E]' : 'text-gray-400 hover:text-white'}`}>தமிழ்</button>
+			</div>
+			<button
 			  onClick={toggleTheme}
 			  className={`relative flex items-center w-[72px] h-8 rounded-full border transition-all shadow-md ${
 				isLight ? "bg-amber-50/50 border-amber-500/15" : "bg-black/35 border-white/5"
@@ -1426,39 +1456,15 @@ export default function App() {
 				{isLight ? "Dark" : "Light"}
 			  </span>
 			</button>
-			{user?.id !== ADMIN_USER_ID && (
-			<>
-				<button
-				  onClick={() => setShowProfileModal(true)}
-				  title={language === 'ta' ? "சுயவிவரம்" : "Profile Settings"}
-				  className={`p-2 rounded-xl border transition-all shadow-md ${isLight ? "bg-amber-50/50 border-amber-500/15 text-[#5C4F43] hover:bg-amber-100/50 hover:border-amber-500/40" : "bg-black/35 border-white/5 text-gray-300 hover:bg-black/55 hover:border-amber-500/30 hover:text-amber-400"}`}
-				>
-				  <User className="h-4 w-4" />
-				</button>
-				<button
-				  onClick={() => setShowPasswordModal(true)}
-				  title={language === 'ta' ? "கடவுச்சொல் மாற்று" : "Change Password"}
-				  className={`p-2 rounded-xl border transition-all shadow-md ${isLight ? "bg-amber-50/50 border-amber-500/15 text-[#5C4F43] hover:bg-amber-100/50 hover:border-amber-500/40" : "bg-black/35 border-white/5 text-gray-300 hover:bg-black/55 hover:border-amber-500/30 hover:text-amber-400"}`}
-				>
-				  <Sliders className="h-4 w-4" />
-				</button>
-				<button
-				  onClick={() => setShowHelpModal(true)}
-				  title={language === 'ta' ? "உதவி" : "Help & Support"}
-				  className={`p-2 rounded-xl border transition-all shadow-md ${isLight ? "bg-amber-50/50 border-amber-500/15 text-[#5C4F43] hover:bg-amber-100/50 hover:border-amber-500/40" : "bg-black/35 border-white/5 text-gray-300 hover:bg-black/55 hover:border-amber-500/30 hover:text-amber-400"}`}
-				>
-				  <HelpCircle className="h-4 w-4" />
-				</button>
-			</>
-			)}
-            <button 
-              onClick={handleLogout} 
-              title={language === 'ta' ? "வெளியேறு (Logout)" : "Logout"}
-              className={`p-2 rounded-xl border text-rose-500 transition-all shadow-md ${isLight ? "bg-amber-50/50 border-amber-500/15 hover:bg-rose-50 hover:border-rose-300" : "bg-black/35 border-white/5 hover:bg-black/55 hover:border-rose-500/30"}`}
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </div>
+			<button 
+			  onClick={handleLogout} 
+			  title={language === 'ta' ? "வெளியேறு (Logout)" : "Logout"}
+			  className={`p-2 rounded-xl border text-rose-500 transition-all shadow-md ${isLight ? "bg-amber-50/50 border-amber-500/15 hover:bg-rose-50 hover:border-rose-300" : "bg-black/35 border-white/5 hover:bg-black/55 hover:border-rose-500/30"}`}
+			>
+			  <LogOut className="h-4 w-4" />
+			</button>
+		  </div>
+		</div>
         </header>
 
         {/* ─── Main Content Routes ─────────────────────────────────────────────── */}

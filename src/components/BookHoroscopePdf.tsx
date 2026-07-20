@@ -5,7 +5,11 @@ import HoroscopeInputForm from './HoroscopeInputForm';
 import { BookOpen, Printer, Loader2, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
 import ScreenGuard from './ScreenGuard';
 
-export default function BookHoroscopePdf() {
+interface BookHoroscopePdfProps {
+  isLight?: boolean;
+}
+
+export default function BookHoroscopePdf({ isLight = true }: BookHoroscopePdfProps) {
   const { t, language } = useTranslation();
   const { generateAndPrint } = useBookHoroscope();
   const [loading, setLoading] = useState(false);
@@ -63,10 +67,10 @@ export default function BookHoroscopePdf() {
         <div className="inline-flex p-3 bg-amber-500/10 rounded-full border border-amber-500/20 text-amber-500 animate-pulse">
           <BookOpen className="w-8 h-8" />
         </div>
-        <h2 className="text-3xl font-cinzel font-bold text-gray-900 tracking-tight">
+        <h2 className={`text-3xl font-cinzel font-bold tracking-tight transition-all ${isLight ? "text-gray-900" : "text-white"}`}>
           {language === 'ta' ? 'ஜாதக புத்தக PDF' : 'Book Horoscope PDF'}
         </h2>
-        <p className="text-gray-500 max-w-xl mx-auto text-sm sm:text-base">
+        <p className={`max-w-xl mx-auto text-sm sm:text-base transition-all ${isLight ? "text-gray-500" : "text-gray-300"}`}>
           {language === 'ta' 
             ? 'அஷ்டவர்க்கம், 16 நவாம்ச சக்கரங்கள் மற்றும் தசா புக்திகளுடன் கூடிய முழுமையான ஜாதக புத்தகம்.' 
             : 'Detailed multiple-page Horoscope book with Ashtakavarga, 16 Divisional charts, and prediction logs.'}
@@ -75,10 +79,10 @@ export default function BookHoroscopePdf() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
         {/* Form Container */}
-        <div className="md:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
-          <div className="p-6 bg-gradient-to-r from-amber-500/5 to-orange-500/5 border-b border-gray-100 flex items-center gap-3">
+        <div className={`rounded-2xl border shadow-xl overflow-hidden transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+          <div className={`p-6 border-b flex items-center gap-3 transition-all ${isLight ? "bg-gradient-to-r from-amber-500/5 to-orange-500/5 border-amber-500/15" : "bg-white/5 border-white/5"}`}>
             <Sparkles className="w-5 h-5 text-amber-500" />
-            <h3 className="font-semibold text-gray-800">
+            <h3 className={`font-semibold ${isLight ? "text-gray-800" : "text-amber-400"}`}>
               {language === 'ta' ? 'பிறப்பு விபரங்களை உள்ளிடவும்' : 'Enter Birth Details'}
             </h3>
           </div>
@@ -88,8 +92,8 @@ export default function BookHoroscopePdf() {
         </div>
 
         {/* Action Panel / Status Panel */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-xl p-6 space-y-6">
-          <h4 className="font-semibold text-gray-800 border-b border-gray-100 pb-3">
+        <div className={`rounded-2xl border shadow-xl p-6 space-y-6 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+          <h4 className={`font-semibold border-b pb-3 transition-all ${isLight ? "text-gray-800 border-amber-500/15" : "text-amber-400 border-white/5"}`}>
             {language === 'ta' ? 'அறிக்கை நிலை' : 'Report Status'}
           </h4>
 
@@ -97,10 +101,10 @@ export default function BookHoroscopePdf() {
             <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
               <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
               <div>
-                <p className="font-semibold text-gray-800">
+                <p className={`font-semibold ${isLight ? "text-gray-800" : "text-white"}`}>
                   {language === 'ta' ? 'புத்தகம் கணிக்கப்படுகிறது...' : 'Generating Book Report...'}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className={`text-xs mt-1 ${isLight ? "text-gray-500" : "text-gray-400"}`}>
                   {language === 'ta' 
                     ? '16 வர்க்கச் சக்கரங்கள், தசா பலன்கள் மற்றும் அஷ்டவர்க்க பரல்கள் கணிக்கப்படுகின்றன. இதற்கு சில வினாடிகள் ஆகலாம்.' 
                     : 'Computing 16 divisional tables, dasha Predictions, and Ashtakavarga matrices. Please wait some seconds.'}
@@ -109,13 +113,13 @@ export default function BookHoroscopePdf() {
             </div>
           ) : success ? (
             <div className="space-y-6">
-              <div className="flex items-start gap-3 bg-green-50 text-green-800 p-4 rounded-xl border border-green-100">
+              <div className={`flex items-start gap-3 p-4 rounded-xl border text-xs transition-all ${isLight ? "bg-green-50 text-green-800 border-green-100" : "bg-green-500/10 text-green-300 border-green-500/20"}`}>
                 <CheckCircle className="w-5 h-5 shrink-0 text-green-500 mt-0.5" />
                 <div>
                   <h5 className="font-semibold text-sm">
                     {language === 'ta' ? 'புத்தகம் தயார்!' : 'Book Report Ready!'}
                   </h5>
-                  <p className="text-xs text-green-700/80 mt-1">
+                  <p className="text-xs mt-1 leading-relaxed">
                     {language === 'ta' 
                       ? 'உங்கள் விரிவான ஜாதக புத்தகம் புதிய சாளரத்தில் திறக்கப்பட்டுள்ளது.' 
                       : 'Your complete book horoscope is generated and opened in a new tab.'}
@@ -124,18 +128,18 @@ export default function BookHoroscopePdf() {
               </div>
 
               {reportData && (
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2 text-xs text-gray-600">
+                <div className={`rounded-xl p-4 border space-y-2 text-xs transition-all ${isLight ? "bg-amber-50/20 border-amber-500/10 text-gray-700" : "bg-white/5 border-white/5 text-gray-300"}`}>
                   <div className="flex justify-between">
-                    <span className="font-medium">{language === 'ta' ? 'பெயர்:' : 'Name:'}</span>
-                    <span className="font-semibold text-gray-800">{reportData.name || '—'}</span>
+                    <span className={`font-medium ${isLight ? "text-gray-500" : "text-gray-400"}`}>{language === 'ta' ? 'பெயர்:' : 'Name:'}</span>
+                    <span className={`font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>{reportData.name || '—'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-medium">{language === 'ta' ? 'பிறப்பு திசை:' : 'Birth Dasha:'}</span>
-                    <span className="font-semibold text-gray-800">{reportData.dashaPlanet || '—'}</span>
+                    <span className={`font-medium ${isLight ? "text-gray-500" : "text-gray-400"}`}>{language === 'ta' ? 'பிறப்பு திசை:' : 'Birth Dasha:'}</span>
+                    <span className={`font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>{reportData.dashaPlanet || '—'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-medium">{language === 'ta' ? 'நடப்பு தசா:' : 'Current Dasha:'}</span>
-                    <span className="font-semibold text-gray-800">{reportData.nadappuDasa?.text || '—'}</span>
+                    <span className={`font-medium ${isLight ? "text-gray-500" : "text-gray-400"}`}>{language === 'ta' ? 'நடப்பு தசா:' : 'Current Dasha:'}</span>
+                    <span className={`font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>{reportData.nadappuDasa?.text || '—'}</span>
                   </div>
                 </div>
               )}
@@ -150,7 +154,7 @@ export default function BookHoroscopePdf() {
             </div>
           ) : error ? (
             <div className="space-y-4">
-              <div className="flex items-start gap-3 bg-red-50 text-red-800 p-4 rounded-xl border border-red-100 text-xs">
+              <div className={`flex items-start gap-3 p-4 rounded-xl border text-xs transition-all ${isLight ? "bg-red-50 text-red-850 border-red-100" : "bg-red-500/10 text-red-300 border-red-500/20"}`}>
                 <AlertCircle className="w-5 h-5 shrink-0 text-red-500 mt-0.5" />
                 <div>
                   <h5 className="font-semibold text-sm">
@@ -161,7 +165,7 @@ export default function BookHoroscopePdf() {
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-400 space-y-2">
+            <div className={`text-center py-8 space-y-2 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>
               <Sparkles className="w-8 h-8 mx-auto text-amber-500/40" />
               <p className="text-xs">
                 {language === 'ta' 

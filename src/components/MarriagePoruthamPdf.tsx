@@ -44,7 +44,11 @@ const MATCH_KEY_LABELS: Record<string, { ta: string; en: string }> = {
   varna: { ta: 'வர்ணம் (Varna)', en: 'Varna (Vocation/Nature)' }
 };
 
-export default function MarriagePoruthamPdf() {
+interface MarriagePoruthamPdfProps {
+  isLight?: boolean;
+}
+
+export default function MarriagePoruthamPdf({ isLight = true }: MarriagePoruthamPdfProps) {
   const { t, language, isTamil } = useTranslation();
   const [matchType, setMatchType] = useState<'star' | 'tob'>('star');
   
@@ -79,7 +83,7 @@ export default function MarriagePoruthamPdf() {
     e.preventDefault();
     setErrorLocal(null);
     setApiInput({
-	  api_key: '6a0b4e5a-b8d5-5e1a-bd97-6128ad38d349',
+	  api_key: '6a0b4e5a-b8d5-5e1a-bd97-6128ad38d349',	
       boy_star: boyStar + 1,
       girl_star: girlStar + 1,
       lang: language
@@ -115,7 +119,7 @@ export default function MarriagePoruthamPdf() {
       };
 
       setApiInput({
-		api_key: '6a0b4e5a-b8d5-5e1a-bd97-6128ad38d349',  
+		api_key: '6a0b4e5a-b8d5-5e1a-bd97-6128ad38d349',
         boy_dob: formatApiDate(boyDob),
         boy_tob: boyTob,
         girl_dob: formatApiDate(girlDob),
@@ -220,14 +224,32 @@ export default function MarriagePoruthamPdf() {
   return (
   <ScreenGuard featureId="porutham_pdf">
     <div className="w-full max-w-4xl mx-auto space-y-8 animate-fade-in pb-12">
+      {/* Decorative Title */}
+      <div className="text-center space-y-3 relative py-6">
+        <div className="absolute inset-0 bg-radial-gradient from-amber-500/5 to-transparent blur-2xl -z-10" />
+        <div className="inline-flex p-3 bg-amber-500/10 rounded-full border border-amber-500/20 text-amber-500 animate-pulse">
+          <Heart className="w-8 h-8" />
+        </div>
+        <h2 className={`text-3xl font-cinzel font-bold tracking-tight transition-all ${isLight ? "text-gray-900" : "text-white"}`}>
+          {language === 'ta' ? 'திருமணம் பொருத்தம் PDF' : 'Marriage Porutham PDF'}
+        </h2>
+        <p className={`max-w-xl mx-auto text-sm sm:text-base transition-all ${isLight ? "text-gray-500" : "text-gray-300"}`}>
+          {language === 'ta' 
+            ? 'நட்சத்திரம் அல்லது பிறந்த நேரத்தைக் கொண்டு 10/36 திருமணப் பொருத்தங்களை ஆராயும் தளம்.' 
+            : 'Detailed matching report based on Vedic 10-Poruthams or 36-Ashtakoot parameters.'}
+        </p>
+      </div>
+
       {/* Tab Switcher */}
-      <div className="flex border border-gray-150 p-1.5 rounded-xl bg-gray-50 max-w-md mx-auto">
+      <div className={`flex p-1.5 rounded-xl max-w-md mx-auto border transition-all ${isLight ? "bg-gray-50 border-amber-500/10" : "bg-white/5 border-white/5"}`}>
         <button
           onClick={() => { setMatchType('star'); setApiInput(null); }}
           className={`flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
             matchType === 'star'
               ? 'bg-amber-500 text-white shadow-md'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              : isLight
+              ? 'text-gray-600 hover:text-gray-900 hover:bg-amber-500/5'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'
           }`}
         >
           <Star className="w-4 h-4" />
@@ -238,7 +260,9 @@ export default function MarriagePoruthamPdf() {
           className={`flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
             matchType === 'tob'
               ? 'bg-amber-500 text-white shadow-md'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              : isLight
+              ? 'text-gray-600 hover:text-gray-900 hover:bg-amber-500/5'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'
           }`}
         >
           <Clock className="w-4 h-4" />
@@ -248,10 +272,10 @@ export default function MarriagePoruthamPdf() {
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
         {/* Form Inputs Container */}
-        <div className="md:col-span-7 bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
-          <div className="p-5 bg-gradient-to-r from-amber-500/5 to-orange-500/5 border-b border-gray-100 flex items-center gap-3">
+        <div className={`md:col-span-7 rounded-2xl border shadow-xl overflow-hidden transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+          <div className={`p-5 border-b flex items-center gap-3 transition-all ${isLight ? "bg-gradient-to-r from-amber-500/5 to-orange-500/5 border-amber-500/15" : "bg-white/5 border-white/5"}`}>
             <Sparkles className="w-5 h-5 text-amber-500" />
-            <h3 className="font-semibold text-gray-800">
+            <h3 className={`font-semibold ${isLight ? "text-gray-800" : "text-amber-400"}`}>
               {isTamil ? 'விபரங்களை உள்ளிடவும்' : 'Enter Match Profiles'}
             </h3>
           </div>
@@ -262,16 +286,16 @@ export default function MarriagePoruthamPdf() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {/* Girl Star Selection */}
                   <div className="space-y-2">
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    <label className={`block text-xs font-bold uppercase tracking-wider ${isLight ? "text-[#5C4F43]" : "text-amber-400"}`}>
                       {isTamil ? 'பெண் நட்சத்திரம்' : "Girl's Star"}
                     </label>
                     <select
                       value={girlStar}
                       onChange={(e) => setGirlStar(Number(e.target.value))}
-                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-semibold text-gray-800"
+                      className={`w-full p-3 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-semibold ${isLight ? "bg-gray-50 border-gray-250 text-gray-800" : "bg-white/5 border-white/5 text-gray-150"}`}
                     >
                       {NAKSH_TAMIL.map((star, idx) => (
-                        <option key={idx} value={idx}>
+                        <option key={idx} value={idx} className="bg-black text-white">
                           {isTamil ? star : NAKSH_ENGLISH[idx]}
                         </option>
                       ))}
@@ -280,16 +304,16 @@ export default function MarriagePoruthamPdf() {
 
                   {/* Boy Star Selection */}
                   <div className="space-y-2">
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    <label className={`block text-xs font-bold uppercase tracking-wider ${isLight ? "text-[#5C4F43]" : "text-amber-400"}`}>
                       {isTamil ? 'ஆண் நட்சத்திரம்' : "Boy's Star"}
                     </label>
                     <select
                       value={boyStar}
                       onChange={(e) => setBoyStar(Number(e.target.value))}
-                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-semibold text-gray-800"
+                      className={`w-full p-3 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-semibold ${isLight ? "bg-gray-50 border-gray-250 text-gray-800" : "bg-white/5 border-white/5 text-gray-150"}`}
                     >
                       {NAKSH_TAMIL.map((star, idx) => (
-                        <option key={idx} value={idx}>
+                        <option key={idx} value={idx} className="bg-black text-white">
                           {isTamil ? star : NAKSH_ENGLISH[idx]}
                         </option>
                       ))}
@@ -319,7 +343,7 @@ export default function MarriagePoruthamPdf() {
               <form onSubmit={handleTobSubmit} className="space-y-6">
                 {/* Girl Section */}
                 <div className="space-y-4">
-                  <h4 className="font-bold text-xs text-amber-700 uppercase tracking-wider border-b border-gray-100 pb-1">
+                  <h4 className={`font-bold text-xs uppercase tracking-wider border-b pb-1 transition-all ${isLight ? "text-amber-700 border-gray-100" : "text-amber-400 border-white/5"}`}>
                     {isTamil ? 'பெண் விபரங்கள்' : "Girl's Birth Details"}
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -328,33 +352,33 @@ export default function MarriagePoruthamPdf() {
                       placeholder={isTamil ? 'பெயர்' : 'Name'}
                       value={girlName}
                       onChange={(e) => setGirlName(e.target.value)}
-                      className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                      className={`p-3 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800 placeholder:text-gray-500" : "bg-white/5 border-white/5 text-white placeholder:text-gray-400"}`}
                     />
                     <input
                       type="date"
                       value={girlDob}
                       onChange={(e) => setGirlDob(e.target.value)}
-                      className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-gray-700"
+                      className={`p-3 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800" : "bg-white/5 border-white/5 text-gray-150"}`}
                     />
                     <input
                       type="time"
                       value={girlTob}
                       onChange={(e) => setGirlTob(e.target.value)}
-                      className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-gray-700"
+                      className={`p-3 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800" : "bg-white/5 border-white/5 text-gray-150"}`}
                     />
                     <input
                       type="text"
                       placeholder={isTamil ? 'பிறந்த இடம்' : 'Birth Place'}
                       value={girlPlace}
                       onChange={(e) => setGirlPlace(e.target.value)}
-                      className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
+                      className={`p-3 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800 placeholder:text-gray-500" : "bg-white/5 border-white/5 text-white placeholder:text-gray-400"}`}
                     />
                   </div>
                 </div>
 
                 {/* Boy Section */}
                 <div className="space-y-4">
-                  <h4 className="font-bold text-xs text-indigo-700 uppercase tracking-wider border-b border-gray-100 pb-1">
+                  <h4 className={`font-bold text-xs uppercase tracking-wider border-b pb-1 transition-all ${isLight ? "text-indigo-700 border-gray-100" : "text-indigo-400 border-white/5"}`}>
                     {isTamil ? 'ஆண் விபரங்கள்' : "Boy's Birth Details"}
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -363,26 +387,26 @@ export default function MarriagePoruthamPdf() {
                       placeholder={isTamil ? 'பெயர்' : 'Name'}
                       value={boyName}
                       onChange={(e) => setBoyName(e.target.value)}
-                      className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      className={`p-3 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800 placeholder:text-gray-500" : "bg-white/5 border-white/5 text-white placeholder:text-gray-400"}`}
                     />
                     <input
                       type="date"
                       value={boyDob}
                       onChange={(e) => setBoyDob(e.target.value)}
-                      className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-gray-700"
+                      className={`p-3 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800" : "bg-white/5 border-white/5 text-gray-150"}`}
                     />
                     <input
                       type="time"
                       value={boyTob}
                       onChange={(e) => setBoyTob(e.target.value)}
-                      className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-gray-700"
+                      className={`p-3 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800" : "bg-white/5 border-white/5 text-gray-150"}`}
                     />
                     <input
                       type="text"
                       placeholder={isTamil ? 'பிறந்த இடம்' : 'Birth Place'}
                       value={boyPlace}
                       onChange={(e) => setBoyPlace(e.target.value)}
-                      className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      className={`p-3 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800 placeholder:text-gray-500" : "bg-white/5 border-white/5 text-white placeholder:text-gray-400"}`}
                     />
                   </div>
                 </div>
@@ -411,8 +435,8 @@ export default function MarriagePoruthamPdf() {
 
         {/* Results Sidebar Display Column */}
         <div className="md:col-span-5 space-y-6">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-xl p-5 space-y-6">
-            <h4 className="font-bold text-gray-800 border-b border-gray-100 pb-3 text-sm flex items-center gap-2">
+          <div className={`rounded-2xl border shadow-xl p-5 space-y-6 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+            <h4 className={`font-bold border-b pb-3 text-sm flex items-center gap-2 transition-all ${isLight ? "text-gray-800 border-amber-500/15" : "text-amber-400 border-white/5"}`}>
               <BarChart3 className="w-4.5 h-4.5 text-amber-500" />
               {isTamil ? 'பொருத்த முடிவுகள்' : 'Match Analysis'}
             </h4>
@@ -426,20 +450,20 @@ export default function MarriagePoruthamPdf() {
               </div>
             ) : activeResult ? (
               <div className="space-y-6">
-                <div className="bg-amber-500/5 border border-amber-500/10 p-4 rounded-xl text-center space-y-2">
-                  <div className="text-[10px] font-bold text-amber-800 uppercase tracking-widest">
+                <div className={`border p-4 rounded-xl text-center space-y-2 transition-all ${isLight ? "bg-amber-500/5 border-amber-500/10" : "bg-amber-500/10 border-white/5"}`}>
+                  <div className={`text-[10px] font-bold uppercase tracking-widest ${isLight ? "text-amber-800" : "text-amber-400"}`}>
                     {isTamil ? 'பொருத்த மதிப்பெண்' : 'Total Compatibility Score'}
                   </div>
                   <div className="text-3xl font-black text-amber-600">
                     {activeResult.score} / {matchType === 'tob' ? 36 : 10}
                   </div>
-                  <p className="text-xs text-gray-500 leading-relaxed">
+                  <p className={`text-xs leading-relaxed ${isLight ? "text-gray-600" : "text-gray-300"}`}>
                     {activeResult.bot_response}
                   </p>
                 </div>
 
                 {/* Score list breakdown */}
-                <div className="space-y-2 divide-y divide-gray-50 max-h-[300px] overflow-y-auto pr-1">
+                <div className={`space-y-2 divide-y max-h-[300px] overflow-y-auto pr-1 transition-all ${isLight ? "divide-amber-500/10" : "divide-white/5"}`}>
                   {Object.entries(activeResult).map(([key, value]: any) => {
                     const excluded = ['score', 'bot_response', 'boy_planetary_details', 'girl_planetary_details', 'boy_astro_details', 'girl_astro_details'];
                     if (excluded.includes(key)) return null;
@@ -451,11 +475,13 @@ export default function MarriagePoruthamPdf() {
                     return (
                       <div key={key} className="flex justify-between items-center py-2.5 text-xs">
                         <div className="space-y-0.5">
-                          <span className="font-bold text-gray-800">{label}</span>
-                          <p className="text-[10px] text-gray-400 max-w-[180px] truncate">{value.description}</p>
+                          <span className={`font-bold ${isLight ? "text-gray-800" : "text-white"}`}>{label}</span>
+                          <p className={`text-[10px] max-w-[180px] truncate ${isLight ? "text-gray-500" : "text-gray-400"}`}>{value.description}</p>
                         </div>
                         <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
-                          pts > 0 ? 'bg-green-100 text-green-800' : 'bg-red-50 text-red-500'
+                          pts > 0 
+                            ? isLight ? 'bg-green-100 text-green-800' : 'bg-green-500/20 text-green-300'
+                            : isLight ? 'bg-red-50 text-red-500' : 'bg-red-500/20 text-red-300'
                         }`}>
                           {pts} / {full}
                         </span>
@@ -481,7 +507,7 @@ export default function MarriagePoruthamPdf() {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-12 text-gray-400 space-y-2">
+              <div className={`text-center py-12 space-y-2 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>
                 <Heart className="w-8 h-8 mx-auto text-amber-500/20" />
                 <p className="text-xs">
                   {isTamil 

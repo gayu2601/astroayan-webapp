@@ -58,7 +58,7 @@ const DIVISIONAL_LABELS_TA: Record<string, string> = {
   d60: 'D60 - ஷஷ்டியாம்சம்',
 };
 
-export default function ViewBookHoroscope() {
+export default function ViewBookHoroscope({ isLight = false }: { isLight?: boolean }) {
   const { t, language, isTamil } = useTranslation();
   const { generateReportData } = useBookHoroscope1();
   const [loading, setLoading] = useState(false);
@@ -116,10 +116,10 @@ export default function ViewBookHoroscope() {
       <div className="flex flex-col items-center justify-center min-h-[500px] text-center space-y-6">
         <Loader2 className="w-12 h-12 text-amber-500 animate-spin" />
         <div className="space-y-2">
-          <h3 className="text-xl font-semibold text-gray-800">
+          <h3 className={`text-xl font-semibold ${isLight ? "text-gray-800" : "text-amber-400"}`}>
             {language === 'ta' ? 'ஜாதக விபரங்கள் கணிக்கப்படுகின்றன...' : 'Calculating Birth Coordinates...'}
           </h3>
-          <p className="text-gray-500 text-sm max-w-md mx-auto">
+          <p className={`text-sm max-w-md mx-auto ${isLight ? "text-gray-500" : "text-gray-300"}`}>
             {language === 'ta' 
               ? '16 வர்க்கச் சக்கரங்கள், தசா காலங்கள் மற்றும் விரிவான ஜாதக பலன்கள் அண்ட வெளியின் கிரக நிலைகளுடன் இணைக்கப்படுகின்றன.' 
               : 'Orchestrating planetary algorithms, divisional layouts, dasha timelines and astro predictions.'}
@@ -178,17 +178,17 @@ export default function ViewBookHoroscope() {
     return (
       <div className="space-y-6 pb-12">
         {/* Top bar with Back Button & Title */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-md">
+        <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-xl border transition-all ${isLight ? "bg-white border-amber-500/15 shadow-md" : "bg-black/35 border-white/5 shadow-xl"}`}>
           <div className="flex items-center gap-3">
             <button
               onClick={handleBack}
-              className="p-2 hover:bg-gray-150 rounded-lg text-gray-500 hover:text-gray-700 transition-colors border border-gray-100"
+              className={`p-2 rounded-lg transition-colors border ${isLight ? "hover:bg-amber-50 text-gray-500 hover:text-gray-700 border-amber-500/15" : "hover:bg-white/10 text-gray-400 hover:text-white border-white/5"}`}
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <div>
-              <h2 className="text-xl font-cinzel font-black text-amber-600">{reportData.name}</h2>
-              <p className="text-xs text-gray-400 font-mono">{reportData.place}</p>
+              <h2 className={`text-xl font-cinzel font-black ${isLight ? "text-amber-700" : "text-amber-400"}`}>{reportData.name}</h2>
+              <p className={`text-xs font-mono ${isLight ? "text-gray-500" : "text-gray-400"}`}>{reportData.place}</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -207,7 +207,9 @@ export default function ViewBookHoroscope() {
                   className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
                     activeTab === tab.id
                       ? 'bg-amber-500 text-white shadow-md shadow-amber-500/10'
-                      : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-150'
+                      : isLight
+                      ? 'bg-amber-500/5 text-gray-700 hover:bg-amber-500/10 border border-amber-500/15'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/5'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -223,50 +225,50 @@ export default function ViewBookHoroscope() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Quick Stats Column */}
             <div className="lg:col-span-4 space-y-6">
-              <div className="bg-white rounded-xl border border-gray-100 shadow-xl overflow-hidden">
-                <div className="p-4 bg-gradient-to-r from-amber-500/5 to-orange-500/5 border-b border-gray-100 font-bold text-gray-800 text-sm">
+              <div className={`rounded-xl border shadow-xl overflow-hidden transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+                <div className={`p-4 border-b font-bold text-sm transition-all ${isLight ? "bg-gradient-to-r from-amber-500/5 to-orange-500/5 border-amber-500/15 text-gray-800" : "bg-white/5 border-white/5 text-amber-400"}`}>
                   {isTamil ? 'ஜனன கால விபரங்கள்' : 'Birth Astro Details'}
                 </div>
-                <div className="p-4 space-y-3 divide-y divide-gray-50 text-xs text-gray-600">
+                <div className={`p-4 space-y-3 divide-y text-xs transition-all ${isLight ? "divide-amber-500/10 text-[#5C4F43]" : "divide-white/5 text-gray-300"}`}>
                   <div className="flex justify-between py-1.5">
-                    <span className="font-semibold text-gray-500">{isTamil ? 'பெயர்' : "Name"}</span>
-                    <span className="font-bold text-gray-800">{reportData.name}</span>
+                    <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'பெயர்' : "Name"}</span>
+                    <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>{reportData.name}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
-                    <span className="font-semibold text-gray-500">{isTamil ? 'தந்தை பெயர்' : "Father's Name"}</span>
-                    <span className="font-bold text-gray-800">{reportData.fatherName || '—'}</span>
+                    <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'தந்தை பெயர்' : "Father's Name"}</span>
+                    <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>{reportData.fatherName || '—'}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
-                    <span className="font-semibold text-gray-500">{isTamil ? 'லக்னம்' : 'Lagna'}</span>
-                    <span className="font-bold text-indigo-600">{reportData.astro?.ascendant_sign}</span>
+                    <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'லக்னம்' : 'Lagna'}</span>
+                    <span className={`font-bold ${isLight ? "text-indigo-700" : "text-indigo-400"}`}>{reportData.astro?.ascendant_sign}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
-                    <span className="font-semibold text-gray-500">{isTamil ? 'ராசி' : 'Rashi'}</span>
-                    <span className="font-bold text-purple-600">{reportData.astro?.rasi}</span>
+                    <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'ராசி' : 'Rashi'}</span>
+                    <span className={`font-bold ${isLight ? "text-purple-700" : "text-purple-300"}`}>{reportData.astro?.rasi}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
-                    <span className="font-semibold text-gray-500">{isTamil ? 'நட்சத்திரம்' : 'Nakshatra'}</span>
-                    <span className="font-bold text-amber-600">{reportData.astro?.nakshatra}</span>
+                    <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'நட்சத்திரம்' : 'Nakshatra'}</span>
+                    <span className={`font-bold ${isLight ? "text-amber-700" : "text-amber-400"}`}>{reportData.astro?.nakshatra}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
-                    <span className="font-semibold text-gray-500">{isTamil ? 'திதி' : 'Tithi'}</span>
-                    <span className="font-bold text-gray-800">{reportData.astro?.tithi || reportData.planets?.panchang?.tithi || '—'}</span>
+                    <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'திதி' : 'Tithi'}</span>
+                    <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>{reportData.astro?.tithi || reportData.planets?.panchang?.tithi || '—'}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
-                    <span className="font-semibold text-gray-500">{isTamil ? 'யோகம்' : 'Yogam'}</span>
-                    <span className="font-bold text-gray-800">{reportData.astro?.yoga || reportData.planets?.panchang?.yoga || '—'}</span>
+                    <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'யோகம்' : 'Yogam'}</span>
+                    <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>{reportData.astro?.yoga || reportData.planets?.panchang?.yoga || '—'}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
-                    <span className="font-semibold text-gray-500">{isTamil ? 'கரணம்' : 'Karanam'}</span>
-                    <span className="font-bold text-gray-800">{reportData.astro?.karana || reportData.planets?.panchang?.karana || '—'}</span>
+                    <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'கரணம்' : 'Karanam'}</span>
+                    <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>{reportData.astro?.karana || reportData.planets?.panchang?.karana || '—'}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
-                    <span className="font-semibold text-gray-500">{isTamil ? 'ஜனன கால திசா இருப்பு' : 'Dasha Balance at Birth'}</span>
-                    <span className="font-bold text-gray-800 text-right">{reportData.dashaBalance || '—'}</span>
+                    <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'ஜனன கால திசா இருப்பு' : 'Dasha Balance at Birth'}</span>
+                    <span className={`font-bold text-right ${isLight ? "text-gray-900" : "text-white"}`}>{reportData.dashaBalance || '—'}</span>
                   </div>
-                  <div className="flex justify-between py-1.5 bg-amber-500/5 p-2 rounded-lg">
-                    <span className="font-bold text-amber-800">{isTamil ? 'நடப்பு தசா' : 'Current Dasha'}</span>
-                    <span className="font-black text-amber-800">{reportData.nadappuDasa?.text || '—'}</span>
+                  <div className={`flex justify-between py-1.5 p-2 rounded-lg transition-all ${isLight ? "bg-amber-500/5" : "bg-amber-500/10"}`}>
+                    <span className={`font-bold ${isLight ? "text-amber-800" : "text-amber-400"}`}>{isTamil ? 'நடப்பு தசா' : 'Current Dasha'}</span>
+                    <span className={`font-black ${isLight ? "text-amber-800" : "text-amber-300"}`}>{reportData.nadappuDasa?.text || '—'}</span>
                   </div>
                 </div>
               </div>
@@ -275,8 +277,8 @@ export default function ViewBookHoroscope() {
             {/* Charts Column */}
             <div className="lg:col-span-8 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xl space-y-3">
-                  <h4 className="font-bold text-center text-sm text-amber-700">
+                <div className={`p-4 rounded-xl border shadow-xl space-y-3 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+                  <h4 className={`font-bold text-center text-sm ${isLight ? "text-amber-700" : "text-amber-400"}`}>
                     {isTamil ? 'இராசிச் சக்கரம் (D1)' : 'Rasi Chart (D1)'}
                   </h4>
                   <CustomKattamGrid 
@@ -284,31 +286,31 @@ export default function ViewBookHoroscope() {
                     planets={makeKattamPlanets(reportData.d1Chart)} 
                     lagnaSignNo={ascendantSignNo} 
                     isTamil={isTamil} 
-                    theme="light" 
+                    theme={isLight ? "light" : "dark"} 
                   />
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xl space-y-3">
-                  <h4 className="font-bold text-center text-sm text-indigo-700">
+                <div className={`p-4 rounded-xl border shadow-xl space-y-3 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+                  <h4 className={`font-bold text-center text-sm ${isLight ? "text-indigo-700" : "text-indigo-400"}`}>
                     {isTamil ? 'நவாம்சம் (D9)' : 'Navamsa Chart (D9)'}
                   </h4>
                   <CustomKattamGrid 
                     title={isTamil ? "நவாம்சம்" : "Navamsa"} 
                     planets={makeKattamPlanets(reportData.d9Chart)} 
-                    lagnaSignNo={ascendantSignNo} // use the same lagna approximation or dynamic lookup if needed
+                    lagnaSignNo={ascendantSignNo} 
                     isTamil={isTamil} 
-                    theme="light" 
+                    theme={isLight ? "light" : "dark"} 
                   />
                 </div>
               </div>
 
               {/* Planet Details Table */}
-              <div className="bg-white rounded-xl border border-gray-100 shadow-xl overflow-hidden">
-                <div className="p-4 border-b border-gray-150 bg-gray-50 font-bold text-gray-700 text-xs sm:text-sm">
+              <div className={`rounded-xl border shadow-xl overflow-hidden transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+                <div className={`p-4 border-b font-bold text-xs sm:text-sm transition-all ${isLight ? "bg-amber-500/5 border-amber-500/15 text-gray-800" : "bg-white/5 border-white/5 text-amber-400"}`}>
                   {isTamil ? 'கிரக ஸ்புடங்கள் மற்றும் நிலைகள்' : 'Planetary Longitudes & Positions'}
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs font-mono">
-                    <thead className="bg-gray-100 text-gray-600 font-semibold uppercase text-[10px]">
+                    <thead className={`font-semibold uppercase text-[10px] transition-all ${isLight ? "bg-gray-50 text-gray-600" : "bg-white/5 text-gray-300"}`}>
                       <tr>
                         <th className="p-3">{isTamil ? 'கிரகம்' : 'Planet'}</th>
                         <th className="p-3">{isTamil ? 'ராசி' : 'Sign'}</th>
@@ -318,19 +320,19 @@ export default function ViewBookHoroscope() {
                         <th className="p-3">{isTamil ? 'அதிபதி' : 'Lord'}</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 text-gray-700">
+                    <tbody className={`divide-y transition-all ${isLight ? "divide-amber-500/10 text-[#5C4F43]" : "divide-white/5 text-gray-300"}`}>
                       {filteredPlanetRows.map((p: any, idx: number) => {
                         return (
-                          <tr key={idx} className="hover:bg-amber-50/10">
-                            <td className="p-3 font-semibold text-gray-900">
+                          <tr key={idx} className={`transition-all ${isLight ? "hover:bg-amber-500/5" : "hover:bg-white/5"}`}>
+                            <td className={`p-3 font-semibold ${isLight ? "text-gray-900" : "text-white"}`}>
                               {isTamil ? (PLANET_NAMES_TA[p.full_name || p.name] || p.full_name || p.name) : (p.full_name || p.name)}
                               {p.retro && <span className="ml-1 text-red-500 font-bold text-[9px]">(R)</span>}
                             </td>
-                            <td className="p-3 text-gray-600">{p.zodiac}</td>
+                            <td className="p-3">{p.zodiac}</td>
                             <td className="p-3 font-semibold">{typeof p.local_degree === 'number' ? p.local_degree.toFixed(2) : p.local_degree}°</td>
-                            <td className="p-3 text-amber-700">{p.nakshatra}</td>
+                            <td className={`p-3 font-semibold ${isLight ? "text-amber-700" : "text-amber-400"}`}>{p.nakshatra}</td>
                             <td className="p-3 font-bold">{p.nakshatra_pada}</td>
-                            <td className="p-3 text-gray-500">{p.nakshatra_lord || '—'}</td>
+                            <td className={`p-3 ${isLight ? "text-gray-500" : "text-gray-400"}`}>{p.nakshatra_lord || '—'}</td>
                           </tr>
                         );
                       })}
@@ -345,8 +347,8 @@ export default function ViewBookHoroscope() {
         {activeTab === 'divs' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Divisional Chart Selector Sidebar */}
-            <div className="lg:col-span-4 bg-white p-4 rounded-xl border border-gray-100 shadow-xl space-y-2 max-h-[500px] overflow-y-auto">
-              <h4 className="font-bold text-gray-700 border-b border-gray-150 pb-2 text-xs uppercase tracking-wider mb-2">
+            <div className={`lg:col-span-4 p-4 rounded-xl border shadow-xl space-y-2 max-h-[500px] overflow-y-auto transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+              <h4 className={`font-bold border-b pb-2 text-xs uppercase tracking-wider mb-2 transition-all ${isLight ? "text-gray-700 border-amber-500/15" : "text-amber-400 border-white/5"}`}>
                 {isTamil ? 'சக்கரத்தைத் தேர்ந்தெடுக்கவும்' : 'Select Divisional'}
               </h4>
               <div className="space-y-1">
@@ -356,8 +358,12 @@ export default function ViewBookHoroscope() {
                     onClick={() => setSelectedDivKey(chart.key)}
                     className={`w-full text-left p-2.5 rounded-lg text-xs font-semibold transition-all ${
                       selectedDivKey === chart.key
-                        ? 'bg-amber-500/10 border-l-4 border-amber-500 text-amber-800'
-                        : 'hover:bg-gray-50 border-l-4 border-transparent text-gray-600'
+                        ? isLight
+                          ? 'bg-amber-500/10 border-l-4 border-amber-500 text-amber-800'
+                          : 'bg-amber-500/20 border-l-4 border-amber-500 text-amber-300'
+                        : isLight
+                        ? 'hover:bg-amber-500/5 border-l-4 border-transparent text-[#5C4F43]'
+                        : 'hover:bg-white/5 border-l-4 border-transparent text-gray-300'
                     }`}
                   >
                     {chart.label}
@@ -367,10 +373,10 @@ export default function ViewBookHoroscope() {
             </div>
 
             {/* Divisional Chart Rendering Column */}
-            <div className="lg:col-span-8 bg-white p-6 rounded-xl border border-gray-100 shadow-xl flex flex-col items-center justify-center space-y-6">
+            <div className={`lg:col-span-8 p-6 rounded-xl border shadow-xl flex flex-col items-center justify-center space-y-6 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
               <div className="text-center space-y-1">
-                <h3 className="text-lg font-cinzel font-bold text-amber-700">{activeDivChart?.label}</h3>
-                <p className="text-xs text-gray-400">
+                <h3 className={`text-lg font-cinzel font-bold transition-all ${isLight ? "text-amber-700" : "text-amber-400"}`}>{activeDivChart?.label}</h3>
+                <p className={`text-xs ${isLight ? "text-gray-500" : "text-gray-400"}`}>
                   {isTamil ? 'வர்க்கப் பகுப்பாய்வு விளக்கப்படம்' : 'Sub-divisional cosmic chart grid'}
                 </p>
               </div>
@@ -381,7 +387,7 @@ export default function ViewBookHoroscope() {
                   planets={makeKattamPlanets(activeDivChart.data)} 
                   lagnaSignNo={ascendantSignNo} 
                   isTamil={isTamil} 
-                  theme="light" 
+                  theme={isLight ? "light" : "dark"} 
                 />
               ) : (
                 <div className="text-gray-400 py-12 text-center text-xs">
@@ -393,12 +399,6 @@ export default function ViewBookHoroscope() {
         )}
 
         {activeTab === 'ashtak' && (() => {
-          // API shape stored in reportData.ashtakvargaChart:
-          //   { ashtakvarga_order: string[8], ashtakvarga_points: number[8][12], ashtakvarga_total: number[12] }
-          // ashtakvarga_order  — planet names, index 0–7
-          // ashtakvarga_points — row i = planet i, col j = sign (j+1), value = bindus
-          // ashtakvarga_total  — index j = sign (j+1), value = sarvashtaka total
-
           const PLANET_LABEL_MAP: Record<string, string> = {
             Sun: isTamil ? 'சூரியன்' : 'Sun',
             Moon: isTamil ? 'சந்திரன்' : 'Moon',
@@ -419,7 +419,6 @@ export default function ViewBookHoroscope() {
             ashtakvarga_total: number[];
           } | null | undefined;
 
-          // Convert a 12-length bindus array (sign index 0–11) → CustomKattamGrid planets prop
           const bindusToPlanets = (arr: number[]) =>
             arr.map((val, j) => ({ rasi_no: j + 1, name: String(val) }));
 
@@ -427,7 +426,6 @@ export default function ViewBookHoroscope() {
           const points = ashtak?.ashtakvarga_points ?? [];
           const total = ashtak?.ashtakvarga_total ?? [];
 
-          // All planet rows + the Sarvashtaka total row
           const planetRows = order.map((planetName, i) => ({
             key: planetName,
             label: PLANET_LABEL_MAP[planetName] ?? planetName,
@@ -444,12 +442,12 @@ export default function ViewBookHoroscope() {
 
           return (
             <div className="space-y-8">
-              <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-xl space-y-6">
+              <div className={`p-6 rounded-xl border shadow-xl space-y-6 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
                 <div className="text-center space-y-2">
-                  <h3 className="text-xl font-cinzel font-bold text-amber-700">
+                  <h3 className={`text-xl font-cinzel font-bold transition-all ${isLight ? "text-amber-700" : "text-amber-400"}`}>
                     {isTamil ? 'அஷ்டகவர்க்க பரல்கள்' : 'Ashtakavarga Matrix'}
                   </h3>
-                  <p className="text-xs text-gray-500 max-w-md mx-auto">
+                  <p className={`text-xs max-w-md mx-auto ${isLight ? "text-gray-500" : "text-gray-300"}`}>
                     {isTamil
                       ? 'ஒவ்வொரு கிரகத்தின் பரல்களும் இராசி வாரியாக காட்டப்படுகின்றன.'
                       : 'Bindus (points) contributed by each planet across the 12 signs.'}
@@ -458,19 +456,25 @@ export default function ViewBookHoroscope() {
 
                 {ashtak && order.length > 0 ? (
                   <>
-                    {/* ── Per-planet kattam grids: 2 cols on sm, 3 on lg, total gets its own highlighted card ── */}
+                    {/* Per-planet kattam grids */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                       {allRows.map(({ key, label, bindus, isTotal }) => (
                         <div
                           key={key}
-                          className={`border rounded-xl p-4 shadow-sm space-y-3 ${
+                          className={`border rounded-xl p-4 shadow-sm space-y-3 transition-all ${
                             isTotal
-                              ? 'border-amber-300 bg-amber-50/30 sm:col-span-2 lg:col-span-1'
-                              : 'border-gray-100 bg-white'
+                              ? isLight
+                                ? 'border-amber-300 bg-amber-50/30 sm:col-span-2 lg:col-span-1'
+                                : 'border-amber-500/30 bg-amber-500/10 sm:col-span-2 lg:col-span-1'
+                              : isLight
+                              ? 'border-gray-100 bg-white'
+                              : 'border-white/5 bg-black/25'
                           }`}
                         >
-                          <h4 className={`font-bold text-center text-xs border-b pb-2 ${
-                            isTotal ? 'text-amber-800 border-amber-200' : 'text-indigo-700 border-gray-200'
+                          <h4 className={`font-bold text-center text-xs border-b pb-2 transition-all ${
+                            isTotal
+                              ? isLight ? 'text-amber-800 border-amber-200' : 'text-amber-300 border-amber-500/20'
+                              : isLight ? 'text-indigo-700 border-gray-200' : 'text-indigo-300 border-white/5'
                           }`}>
                             {label}
                           </h4>
@@ -480,7 +484,7 @@ export default function ViewBookHoroscope() {
                               planets={bindusToPlanets(bindus)}
                               lagnaSignNo={ascendantSignNo}
                               isTamil={isTamil}
-                              theme="light"
+                              theme={isLight ? "light" : "dark"}
                             />
                           ) : (
                             <p className="text-center text-gray-400 text-[10px] py-4">
@@ -491,15 +495,15 @@ export default function ViewBookHoroscope() {
                       ))}
                     </div>
 
-                    {/* ── Full matrix table: signs as cols, planets as rows ── */}
-                    <div className="overflow-x-auto bg-white rounded-xl border border-gray-100 shadow overflow-hidden mt-4">
-                      <div className="p-4 bg-gray-50 border-b border-gray-100 font-bold text-gray-700 text-xs sm:text-sm">
+                    {/* Full matrix table */}
+                    <div className={`overflow-x-auto rounded-xl border shadow overflow-hidden mt-4 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+                      <div className={`p-4 border-b font-bold text-xs sm:text-sm transition-all ${isLight ? "bg-amber-500/5 border-amber-500/15 text-gray-800" : "bg-white/5 border-white/5 text-amber-400"}`}>
                         {isTamil ? 'அஷ்டகவர்க்க முழு அட்டவணை' : 'Full Ashtakavarga Table'}
                       </div>
                       <table className="w-full text-center text-[10px] font-mono">
-                        <thead className="bg-gray-100 text-gray-600 font-semibold uppercase">
+                        <thead className={`font-semibold uppercase transition-all ${isLight ? "bg-gray-100 text-gray-600" : "bg-white/5 text-gray-300"}`}>
                           <tr>
-                            <th className="p-2 text-left sticky left-0 bg-gray-100 min-w-[72px]">
+                            <th className={`p-2 text-left sticky left-0 min-w-[72px] transition-all ${isLight ? "bg-gray-100" : "bg-[#0d0a1a]"}`}>
                               {isTamil ? 'கிரகம்' : 'Planet'}
                             </th>
                             {SIGN_NAMES_EN.map((s, j) => (
@@ -507,48 +511,48 @@ export default function ViewBookHoroscope() {
                                 {isTamil ? SIGN_NAMES_TA[j].slice(0, 3) : s.slice(0, 3)}
                               </th>
                             ))}
-                            <th className="p-2 bg-amber-50 text-amber-800 min-w-[38px]">
+                            <th className={`p-2 min-w-[38px] transition-all ${isLight ? "bg-amber-50 text-amber-800" : "bg-amber-500/10 text-amber-300"}`}>
                               {isTamil ? 'மொத்' : 'Sum'}
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 text-gray-700">
+                        <tbody className={`divide-y transition-all ${isLight ? "divide-gray-100 text-gray-700" : "divide-white/5 text-gray-300"}`}>
                           {planetRows.map(({ key, label, bindus }) => {
                             const rowSum = bindus.reduce((a, b) => a + b, 0);
                             return (
-                              <tr key={key} className="hover:bg-amber-50/10">
-                                <td className="p-2 text-left font-semibold text-gray-800 sticky left-0 bg-white">
+                              <tr key={key} className={`transition-all ${isLight ? "hover:bg-amber-50/10" : "hover:bg-white/5"}`}>
+                                <td className={`p-2 text-left font-semibold sticky left-0 transition-all ${isLight ? "text-gray-800 bg-white" : "text-white bg-[#0d0a1a]"}`}>
                                   {label}
                                 </td>
                                 {bindus.map((val, j) => (
                                   <td
                                     key={j}
                                     className={`p-2 font-bold ${
-                                      val >= 5 ? 'text-green-700' : val <= 2 ? 'text-red-500' : 'text-gray-700'
+                                      val >= 5 ? 'text-green-500' : val <= 2 ? 'text-red-500' : isLight ? 'text-gray-700' : 'text-gray-300'
                                     }`}
                                   >
                                     {val}
                                   </td>
                                 ))}
-                                <td className="p-2 font-black text-indigo-700 bg-indigo-50/30">{rowSum}</td>
+                                <td className={`p-2 font-black transition-all ${isLight ? "text-indigo-700 bg-indigo-50/30" : "text-indigo-300 bg-indigo-500/10"}`}>{rowSum}</td>
                               </tr>
                             );
                           })}
                           {/* Sarvashtaka total row */}
                           {total.length === 12 && (
-                            <tr className="bg-amber-50/40 font-black">
-                              <td className="p-2 text-left text-amber-800 sticky left-0 bg-amber-50/40">
+                            <tr className={`font-black transition-all ${isLight ? "bg-amber-50/40" : "bg-amber-500/10"}`}>
+                              <td className={`p-2 text-left sticky left-0 transition-all ${isLight ? "text-amber-800 bg-amber-50/40" : "text-amber-300 bg-amber-500/10"}`}>
                                 {isTamil ? 'மொத்தம்' : 'Total'}
                               </td>
                               {total.map((val, j) => {
-                                let cls = 'text-gray-800';
-                                if (val >= 30) cls = 'text-green-700';
-                                else if (val <= 24) cls = 'text-red-600';
+                                let cls = isLight ? 'text-gray-800' : 'text-gray-200';
+                                if (val >= 30) cls = 'text-green-500';
+                                else if (val <= 24) cls = 'text-red-500';
                                 return (
                                   <td key={j} className={`p-2 font-black text-sm ${cls}`}>{val}</td>
                                 );
                               })}
-                              <td className="p-2 font-black text-amber-800 bg-amber-100/60">
+                              <td className={`p-2 font-black transition-all ${isLight ? "text-amber-800 bg-amber-100/60" : "text-amber-300 bg-amber-500/20"}`}>
                                 {total.reduce((a, b) => a + b, 0)}
                               </td>
                             </tr>
@@ -557,14 +561,14 @@ export default function ViewBookHoroscope() {
                       </table>
                     </div>
 
-                    {/* ── Sign-wise total summary with strength label ── */}
+                    {/* Sign-wise total summary */}
                     {total.length === 12 && (
-                      <div className="overflow-x-auto bg-white rounded-xl border border-gray-100 shadow overflow-hidden">
-                        <div className="p-4 bg-gray-50 border-b border-gray-100 font-bold text-gray-700 text-xs sm:text-sm">
+                      <div className={`overflow-x-auto rounded-xl border shadow overflow-hidden transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+                        <div className={`p-4 border-b font-bold text-xs sm:text-sm transition-all ${isLight ? "bg-amber-500/5 border-amber-500/15 text-gray-800" : "bg-white/5 border-white/5 text-amber-400"}`}>
                           {isTamil ? 'இராசி வாரியாக மொத்த பரல்கள் (சர்வாஷ்டகம்)' : 'Sarvashtaka — Total Bindus by Sign'}
                         </div>
                         <table className="w-full text-left text-xs font-mono">
-                          <thead className="bg-gray-100 text-gray-600 font-semibold uppercase text-[10px]">
+                          <thead className={`font-semibold uppercase text-[10px] transition-all ${isLight ? "bg-gray-100 text-gray-600" : "bg-white/5 text-gray-300"}`}>
                             <tr>
                               <th className="p-3">{isTamil ? 'ராசி எண்' : 'Sign'}</th>
                               <th className="p-3">{isTamil ? 'ராசி பெயர்' : 'Sign Name'}</th>
@@ -572,19 +576,19 @@ export default function ViewBookHoroscope() {
                               <th className="p-3">{isTamil ? 'பலம்' : 'Strength'}</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-100 text-gray-700">
+                          <tbody className={`divide-y transition-all ${isLight ? "divide-gray-100 text-gray-700" : "divide-white/5 text-gray-300"}`}>
                             {total.map((val, j) => {
                               let strLabel = isTamil ? 'நடுத்தரம்' : 'Average';
-                              let strColor = 'text-gray-600';
-                              if (val >= 30) { strLabel = isTamil ? 'மிக்க பலம்' : 'Strong'; strColor = 'text-green-600 font-bold'; }
-                              else if (val <= 24) { strLabel = isTamil ? 'குறைந்த பலம்' : 'Weak'; strColor = 'text-red-600 font-bold'; }
+                              let strColor = isLight ? 'text-gray-600' : 'text-gray-400';
+                              if (val >= 30) { strLabel = isTamil ? 'மிக்க பலம்' : 'Strong'; strColor = 'text-green-500 font-bold'; }
+                              else if (val <= 24) { strLabel = isTamil ? 'குறைந்த பலம்' : 'Weak'; strColor = 'text-red-500 font-bold'; }
                               return (
-                                <tr key={j} className="hover:bg-amber-50/5">
-                                  <td className="p-3 font-semibold text-gray-800">{j + 1}</td>
+                                <tr key={j} className={`transition-all ${isLight ? "hover:bg-amber-50/5" : "hover:bg-white/5"}`}>
+                                  <td className="p-3 font-semibold">{j + 1}</td>
                                   <td className="p-3 font-bold">
                                     {isTamil ? SIGN_NAMES_TA[j] : SIGN_NAMES_EN[j]}
                                   </td>
-                                  <td className="p-3 text-center text-indigo-600 font-black text-sm">{val}</td>
+                                  <td className="p-3 text-center text-indigo-500 font-black text-sm">{val}</td>
                                   <td className="p-3"><span className={strColor}>{strLabel}</span></td>
                                 </tr>
                               );
@@ -605,12 +609,12 @@ export default function ViewBookHoroscope() {
         })()}
 
         {activeTab === 'dashas' && (
-          <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-xl space-y-6">
+          <div className={`p-6 rounded-xl border shadow-xl space-y-6 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
             <div className="text-center space-y-2">
-              <h3 className="text-xl font-cinzel font-bold text-amber-700">
+              <h3 className={`text-xl font-cinzel font-bold transition-all ${isLight ? "text-amber-700" : "text-amber-400"}`}>
                 {isTamil ? 'தசா புக்தி கால அட்டவணை' : 'Detailed Dasha & Bhukthi Timeline'}
               </h3>
-              <p className="text-xs text-gray-500 max-w-md mx-auto">
+              <p className={`text-xs max-w-md mx-auto ${isLight ? "text-gray-500" : "text-gray-300"}`}>
                 {isTamil 
                   ? 'உங்கள் வாழ்நாளின் முக்கியமான கிரக தசா மற்றும் உட்புக்திகளின் கால அளவுகள்.' 
                   : 'Planetary periods and sub-periods running throughout your life cycle.'}
@@ -621,20 +625,20 @@ export default function ViewBookHoroscope() {
               <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2">
                 {reportData.mergedDashas.map((dasha: any, idx: number) => {
                   return (
-                    <div key={idx} className="border border-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow transition-all bg-gradient-to-r from-gray-50/50 to-white">
-                      <div className="p-4 bg-gray-50/80 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div key={idx} className={`border rounded-xl overflow-hidden shadow-sm hover:shadow transition-all ${isLight ? "border-amber-500/10 bg-gradient-to-r from-amber-50/10 to-white" : "border-white/5 bg-gradient-to-r from-white/5 to-black/25"}`}>
+                      <div className={`p-4 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 transition-all ${isLight ? "bg-amber-500/5 border-amber-500/10" : "bg-white/5 border-white/5"}`}>
                         <div>
-                          <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-800 text-[10px] font-black uppercase tracking-wider mr-2">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider mr-2 ${isLight ? "bg-amber-500/10 text-amber-800" : "bg-amber-500/20 text-amber-300"}`}>
                             {isTamil ? 'தசா' : 'Major Dasha'}
                           </span>
-                          <span className="font-bold text-gray-900 text-sm">
+                          <span className={`font-bold text-sm ${isLight ? "text-gray-900" : "text-white"}`}>
                             {isTamil ? (PLANET_NAMES_TA[dasha.name] || dasha.name) : dasha.name}
                           </span>
                         </div>
-                        <div className="text-xs text-gray-500 font-mono">
-                          <span className="font-semibold text-gray-700">{dasha.start}</span>
+                        <div className={`text-xs font-mono ${isLight ? "text-[#5C4F43]" : "text-gray-300"}`}>
+                          <span className="font-semibold">{dasha.start}</span>
                           <span className="mx-1.5 font-bold">→</span>
-                          <span className="font-semibold text-amber-600">{dasha.end}</span>
+                          <span className={`font-semibold ${isLight ? "text-amber-700" : "text-amber-400"}`}>{dasha.end}</span>
                         </div>
                       </div>
 
@@ -642,16 +646,16 @@ export default function ViewBookHoroscope() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                           {dasha.bhukthis?.map((bhukthi: any, bIdx: number) => {
                             return (
-                              <div key={bIdx} className="bg-white p-3 rounded-lg border border-gray-100 space-y-1 text-[11px]">
+                              <div key={bIdx} className={`p-3 rounded-lg border space-y-1 text-[11px] transition-all ${isLight ? "bg-white border-amber-500/10" : "bg-black/25 border-white/5"}`}>
                                 <div className="flex justify-between items-center">
-                                  <span className="font-semibold text-gray-700">
+                                  <span className={`font-semibold ${isLight ? "text-gray-700" : "text-gray-300"}`}>
                                     {isTamil ? (PLANET_NAMES_TA[bhukthi.name] || bhukthi.name) : bhukthi.name}
                                   </span>
-                                  <span className="text-[9px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded">
+                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${isLight ? "bg-indigo-50 text-indigo-700" : "bg-indigo-500/10 text-indigo-300"}`}>
                                     {isTamil ? 'புக்தி' : 'Bhukthi'}
                                   </span>
                                 </div>
-                                <div className="text-[10px] text-gray-400 font-mono mt-1">
+                                <div className={`text-[10px] font-mono mt-1 ${isLight ? "text-gray-500" : "text-gray-400"}`}>
                                   <div>{bhukthi.start}</div>
                                   <div>{bhukthi.end}</div>
                                 </div>
@@ -661,8 +665,8 @@ export default function ViewBookHoroscope() {
                         </div>
 
                         {dasha.prediction?.personalized_prediction && (
-                          <div className="mt-4 p-3 bg-amber-50/20 rounded-lg border border-amber-500/10 text-xs text-gray-600 leading-relaxed">
-                            <span className="font-bold text-amber-800 block mb-1">
+                          <div className={`mt-4 p-3 rounded-lg border text-xs leading-relaxed transition-all ${isLight ? "bg-amber-500/5 border-amber-500/10 text-gray-700" : "bg-white/5 border-white/5 text-gray-300"}`}>
+                            <span className={`font-bold block mb-1 ${isLight ? "text-amber-800" : "text-amber-400"}`}>
                               {isTamil ? 'தசா பலன்கள்:' : 'Dasha Predictions:'}
                             </span>
                             {dasha.prediction.personalized_prediction}
@@ -682,7 +686,6 @@ export default function ViewBookHoroscope() {
         )}
 
         {activeTab === 'predictions' && (() => {
-          // ── helpers mirroring BookReportScreen logic ──────────────────────────
           const stripLeadingSince = (text: string) => {
             if (!text) return '';
             return text.trim()
@@ -692,26 +695,20 @@ export default function ViewBookHoroscope() {
               .trim();
           };
 
-          // Graha palan — from d1Chart via getGrahaPalans if available on window/import
-          // We replicate what BookReportScreen does but in web: pull from reportData.grahaPalans if pre-computed,
-          // else fall back to the raw predictions text already in the payload.
           const grahaPalanTexts: string[] = reportData.grahaPalans
             ? (Array.isArray(reportData.grahaPalans)
                 ? reportData.grahaPalans.map((g: any) => g.palan || g).filter(Boolean)
                 : [])
             : [];
 
-          // Nakshatra palan
           const nakshatraPalanText: string = reportData.nakshatraPalan?.palan
             || reportData.nakshatraPalan
             || '';
 
-          // Vaara palan
           const vaaraPalanText: string = reportData.vaaraPalan
             ? `${reportData.vaaraPalan.palan || ''} ${reportData.vaaraPalan.vazhipaadu || ''}`.trim()
             : '';
 
-          // Detailed paragraphs (grahaPalans + bhavaPalans chunked into 3 — same as BookReportScreen)
           const bhavaPalans: string[] = Array.isArray(reportData.predictions)
             ? reportData.predictions
                 .filter((p: any) => p.personalised_prediction)
@@ -725,85 +722,85 @@ export default function ViewBookHoroscope() {
 
           return (
             <div className="space-y-8">
-              <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-xl space-y-2 text-center">
-                <h3 className="text-xl font-cinzel font-bold text-amber-700">
+              <div className={`p-6 rounded-xl border shadow-xl space-y-2 text-center transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+                <h3 className={`text-xl font-cinzel font-bold transition-all ${isLight ? "text-amber-700" : "text-amber-400"}`}>
                   {isTamil ? 'விரிவான ஜாதக பலன்கள்' : 'Detailed Predictions'}
                 </h3>
-                <p className="text-xs text-gray-500 max-w-md mx-auto">
+                <p className={`text-xs max-w-md mx-auto ${isLight ? "text-gray-500" : "text-gray-300"}`}>
                   {isTamil
                     ? 'கிரக பலன்கள், நட்சத்திர பலன்கள், வார பலன்கள் மற்றும் பாவ பலன்கள்.'
                     : 'Graha palans, nakshatra predictions, vaara palans and house predictions.'}
                 </p>
               </div>
 
-              {/* ── 1. Detailed combined paragraphs (grahaPalans + bhavaPalans) ── */}
+              {/* 1. Detailed combined paragraphs */}
               {detailedParagraphs.length > 0 && (
-                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-xl space-y-4">
-                  <h4 className="font-bold text-amber-800 text-sm sm:text-base flex items-center gap-2 border-b border-amber-100 pb-3">
+                <div className={`p-6 rounded-xl border shadow-xl space-y-4 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+                  <h4 className={`font-bold text-sm sm:text-base flex items-center gap-2 border-b pb-3 transition-all ${isLight ? "text-amber-800 border-amber-100" : "text-amber-400 border-white/5"}`}>
                     <BookOpen className="w-4 h-4" />
                     {isTamil ? 'விரிவான பலன்கள்' : 'Detailed Predictions'}
                   </h4>
                   <div className="space-y-4">
                     {detailedParagraphs.map((para, i) => (
-                      <p key={i} className="text-gray-700 text-xs leading-relaxed">{para}</p>
+                      <p key={i} className={`text-xs leading-relaxed ${isLight ? "text-gray-700" : "text-gray-300"}`}>{para}</p>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* ── 2. Nakshatra Palan ── */}
+              {/* 2. Nakshatra Palan */}
               {nakshatraPalanText && (
-                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-xl space-y-4">
-                  <h4 className="font-bold text-purple-800 text-sm sm:text-base flex items-center gap-2 border-b border-purple-100 pb-3">
+                <div className={`p-6 rounded-xl border shadow-xl space-y-4 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+                  <h4 className={`font-bold text-sm sm:text-base flex items-center gap-2 border-b pb-3 transition-all ${isLight ? "text-purple-800 border-purple-100" : "text-purple-300 border-white/5"}`}>
                     <Sparkles className="w-4 h-4" />
                     {isTamil ? 'நட்சத்திர பலன்கள்' : 'Birth Star Predictions'}
                     {reportData.astro?.nakshatra && (
-                      <span className="ml-2 text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-normal">
+                      <span className={`ml-2 text-[10px] px-2 py-0.5 rounded font-normal transition-all ${isLight ? "bg-purple-100 text-purple-700" : "bg-purple-500/20 text-purple-300"}`}>
                         {reportData.astro.nakshatra}
                       </span>
                     )}
                   </h4>
-                  <p className="text-gray-700 text-xs leading-relaxed">{nakshatraPalanText}</p>
+                  <p className={`text-xs leading-relaxed ${isLight ? "text-gray-700" : "text-gray-300"}`}>{nakshatraPalanText}</p>
                 </div>
               )}
 
-              {/* ── 3. Vaara Palan ── */}
+              {/* 3. Vaara Palan */}
               {vaaraPalanText && (
-                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-xl space-y-4">
-                  <h4 className="font-bold text-teal-800 text-sm sm:text-base flex items-center gap-2 border-b border-teal-100 pb-3">
+                <div className={`p-6 rounded-xl border shadow-xl space-y-4 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+                  <h4 className={`font-bold text-sm sm:text-base flex items-center gap-2 border-b pb-3 transition-all ${isLight ? "text-teal-800 border-teal-100" : "text-teal-300 border-white/5"}`}>
                     <Calendar className="w-4 h-4" />
                     {isTamil ? 'வார பலன்கள்' : 'Day of Birth Predictions'}
                   </h4>
-                  <p className="text-gray-700 text-xs leading-relaxed">{vaaraPalanText}</p>
+                  <p className={`text-xs leading-relaxed ${isLight ? "text-gray-700" : "text-gray-300"}`}>{vaaraPalanText}</p>
                 </div>
               )}
 
-              {/* ── 4. House Predictions grid ── */}
-              <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-xl space-y-4">
-                <h4 className="font-bold text-amber-800 text-sm sm:text-base flex items-center gap-2 border-b border-amber-100 pb-3">
+              {/* 4. House Predictions grid */}
+              <div className={`p-6 rounded-xl border shadow-xl space-y-4 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+                <h4 className={`font-bold text-sm sm:text-base flex items-center gap-2 border-b pb-3 transition-all ${isLight ? "text-amber-800 border-amber-100" : "text-amber-400 border-white/5"}`}>
                   <BookOpen className="w-4 h-4" />
                   {isTamil ? 'பாவ பலன்கள் (வீடுகளின் பலன்)' : 'House Predictions'}
                 </h4>
                 {Array.isArray(reportData.predictions) && reportData.predictions.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {reportData.predictions.map((pred: any, idx: number) => (
-                      <div key={idx} className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-2 text-xs">
-                        <div className="flex justify-between items-center border-b border-gray-200 pb-2">
-                          <span className="font-bold text-gray-900">
+                      <div key={idx} className={`p-4 rounded-xl border space-y-2 text-xs transition-all ${isLight ? "bg-gray-50 border-gray-100" : "bg-black/25 border-white/5"}`}>
+                        <div className={`flex justify-between items-center border-b pb-2 transition-all ${isLight ? "border-gray-200" : "border-white/5"}`}>
+                          <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>
                             {isTamil
                               ? `${pred.current_house} வது பாவம் (${pred.current_zodiac})`
                               : `House ${pred.current_house} (${pred.current_zodiac})`}
                           </span>
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                             pred.lord_strength === 'நற்பலன்' || pred.lord_strength === 'உச்சம்' || pred.lord_strength === 'ஆட்சி'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-amber-100 text-amber-800'
+                              ? isLight ? 'bg-green-100 text-green-800' : 'bg-green-500/20 text-green-300'
+                              : isLight ? 'bg-amber-100 text-amber-800' : 'bg-amber-500/20 text-amber-300'
                           }`}>
                             {pred.lord_strength}
                           </span>
                         </div>
-                        <div className="text-gray-400 font-semibold">{pred.verbal_location}</div>
-                        <p className="text-gray-600 leading-relaxed mt-1 text-xs">{pred.personalised_prediction}</p>
+                        <div className={`font-semibold ${isLight ? "text-gray-400" : "text-gray-500"}`}>{pred.verbal_location}</div>
+                        <p className={`leading-relaxed mt-1 text-xs ${isLight ? "text-gray-600" : "text-gray-300"}`}>{pred.personalised_prediction}</p>
                       </div>
                     ))}
                   </div>
@@ -814,10 +811,10 @@ export default function ViewBookHoroscope() {
                 )}
               </div>
 
-              {/* ── 5. Dasha Predictions (prediction text per dasha) ── */}
+              {/* 5. Dasha Predictions */}
               {Array.isArray(reportData.mergedDashas) && reportData.mergedDashas.some((d: any) => d.prediction?.prediction || d.prediction?.personalized_prediction) && (
-                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-xl space-y-4">
-                  <h4 className="font-bold text-indigo-800 text-sm sm:text-base flex items-center gap-2 border-b border-indigo-100 pb-3">
+                <div className={`p-6 rounded-xl border shadow-xl space-y-4 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+                  <h4 className={`font-bold text-sm sm:text-base flex items-center gap-2 border-b pb-3 transition-all ${isLight ? "text-indigo-800 border-indigo-100" : "text-indigo-300 border-white/5"}`}>
                     <Milestone className="w-4 h-4" />
                     {isTamil ? 'தசா பலன்கள்' : 'Dasha Predictions'}
                   </h4>
@@ -827,17 +824,17 @@ export default function ViewBookHoroscope() {
                       .map((dasha: any, idx: number) => {
                         const predText = dasha.prediction?.prediction || dasha.prediction?.personalized_prediction || '';
                         return (
-                          <div key={idx} className="border border-indigo-50 rounded-xl overflow-hidden">
-                            <div className="px-4 py-2.5 bg-indigo-50/60 flex justify-between items-center">
-                              <span className="font-bold text-indigo-800 text-xs">
+                          <div key={idx} className={`border rounded-xl overflow-hidden transition-all ${isLight ? "border-indigo-50" : "border-white/5"}`}>
+                            <div className={`px-4 py-2.5 flex justify-between items-center transition-all ${isLight ? "bg-indigo-50/60" : "bg-indigo-500/10"}`}>
+                              <span className={`font-bold text-xs ${isLight ? "text-indigo-800" : "text-indigo-300"}`}>
                                 {isTamil ? (PLANET_NAMES_TA[dasha.name] || dasha.name) : dasha.name}
                                 {isTamil ? ' மகா தசை' : ' Maha Dasha'}
                               </span>
-                              <span className="text-[10px] text-gray-500 font-mono">
+                              <span className={`text-[10px] font-mono ${isLight ? "text-gray-500" : "text-gray-400"}`}>
                                 {dasha.start} → {dasha.end}
                               </span>
                             </div>
-                            <p className="px-4 py-3 text-gray-700 text-xs leading-relaxed">{predText}</p>
+                            <p className={`px-4 py-3 text-xs leading-relaxed ${isLight ? "text-gray-700" : "text-gray-300"}`}>{predText}</p>
                           </div>
                         );
                       })}
@@ -859,20 +856,20 @@ export default function ViewBookHoroscope() {
         <div className="inline-flex p-3 bg-amber-500/10 rounded-full border border-amber-500/20 text-amber-500 animate-pulse">
           <BookOpen className="w-8 h-8" />
         </div>
-        <h2 className="text-3xl font-cinzel font-bold text-gray-900 tracking-tight">
+        <h2 className={`text-3xl font-cinzel font-bold tracking-tight transition-all ${isLight ? "text-gray-900" : "text-white"}`}>
           {language === 'ta' ? 'ஜாதக புத்தகம் காண்க' : 'View Book Horoscope'}
         </h2>
-        <p className="text-gray-500 max-w-xl mx-auto text-sm sm:text-base">
+        <p className={`max-w-xl mx-auto text-sm sm:text-base transition-all ${isLight ? "text-gray-500" : "text-gray-300"}`}>
           {language === 'ta' 
             ? 'அஷ்டவர்க்கம், தசா புக்தி பலன்கள், வர்க்கச் சக்கரங்களுடன் கூடிய ஊடாடும் ஜாதக கணினி.' 
             : 'Interactive birth chart dashboard with Ashtakavarga, divisionals, dasha Predictions, and planet matrices.'}
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
-        <div className="p-6 bg-gradient-to-r from-amber-500/5 to-orange-500/5 border-b border-gray-100 flex items-center gap-3">
+      <div className={`rounded-2xl border shadow-xl overflow-hidden transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+        <div className={`p-6 border-b flex items-center gap-3 transition-all ${isLight ? "bg-gradient-to-r from-amber-500/5 to-orange-500/5 border-amber-500/15" : "bg-white/5 border-white/5"}`}>
           <Sparkles className="w-5 h-5 text-amber-500" />
-          <h3 className="font-semibold text-gray-800">
+          <h3 className={`font-semibold ${isLight ? "text-gray-800" : "text-amber-400"}`}>
             {language === 'ta' ? 'பிறப்பு விபரங்களை உள்ளிடவும்' : 'Enter Birth Details'}
           </h3>
         </div>

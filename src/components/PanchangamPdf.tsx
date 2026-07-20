@@ -6,7 +6,11 @@ import {
   CheckCircle, AlertCircle, Send, FileText 
 } from 'lucide-react';
 
-export default function PanchangamPdf() {
+interface PanchangamPdfProps {
+  isLight?: boolean;
+}
+
+export default function PanchangamPdf({ isLight = true }: PanchangamPdfProps) {
   const { t, language, isTamil } = useTranslation();
   const { fetchPanchangData, loading, error } = usePanchangPdf();
 
@@ -29,7 +33,7 @@ export default function PanchangamPdf() {
     const minStr = String(now.getMinutes()).padStart(2, '0');
     setTime(`${hh}:${minStr}`);
   }, []);
-
+  
   const getCurrentPosition = (): Promise<GeolocationPosition> => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -69,13 +73,14 @@ export default function PanchangamPdf() {
     }
 
     try {
+      // Nominatim search geocoding
       setLocating(true);
       const position = await getCurrentPosition();
       const lat = position.coords.latitude;
       const lon = position.coords.longitude;
       setLocating(false);
-
-      const resolvedName = await reverseGeocode(lat, lon);
+	  
+	  const resolvedName = await reverseGeocode(lat, lon);
       setPlaceName(resolvedName);
 
       const [year, month, day] = date.split('-').map(Number);
@@ -103,8 +108,8 @@ export default function PanchangamPdf() {
           ? 'இருப்பிட அனுமதி மறுக்கப்பட்டது. அறிக்கை தயாரிக்க இருப்பிட அணுகலை இயக்கவும்.' 
           : 'Location permission denied. Please enable location access to generate the report.');
       } else {
-        setErrorLocal(err.message || String(err));
-      }
+		setErrorLocal(err.message || String(err));
+	  }
     }
   };
 
@@ -112,12 +117,28 @@ export default function PanchangamPdf() {
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 animate-fade-in pb-12">
+      {/* Dynamic Header */}
+      <div className="text-center space-y-3 relative py-6">
+        <div className="absolute inset-0 bg-radial-gradient from-amber-500/5 to-transparent blur-2xl -z-10" />
+        <div className="inline-flex p-3 bg-amber-500/10 rounded-full border border-amber-500/20 text-amber-500 animate-pulse">
+          <Calendar className="w-8 h-8" />
+        </div>
+        <h2 className={`text-3xl font-cinzel font-bold tracking-tight transition-all ${isLight ? "text-gray-900" : "text-white"}`}>
+          {isTamil ? 'பஞ்சாங்கம் PDF / அச்சு' : 'Panchangam PDF & Export'}
+        </h2>
+        <p className={`max-w-xl mx-auto text-sm sm:text-base transition-all ${isLight ? "text-gray-500" : "text-gray-300"}`}>
+          {isTamil 
+            ? 'திதி, நட்சத்திரம், நல்ல நேரம், கௌரி நல்ல நேரம் உள்ளிட்ட விபரங்களை பிடிஎஃப் ஆக அச்சிட்டு பகிரும் தளம்.' 
+            : 'Export daily Panchangam cards, dynamic Gowri timings and tithi sheets into high quality printable documents.'}
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
         {/* Form panel */}
-        <div className="md:col-span-7 bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
-          <div className="p-5 bg-gradient-to-r from-amber-500/5 to-orange-500/5 border-b border-gray-100 flex items-center gap-3">
+        <div className={`md:col-span-7 rounded-2xl border shadow-xl overflow-hidden transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+          <div className={`p-5 border-b flex items-center gap-3 transition-all ${isLight ? "bg-gradient-to-r from-amber-500/5 to-orange-500/5 border-amber-500/15" : "bg-white/5 border-white/5"}`}>
             <Sparkles className="w-5 h-5 text-amber-500" />
-            <h3 className="font-semibold text-gray-800">
+            <h3 className={`font-semibold ${isLight ? "text-gray-800" : "text-amber-400"}`}>
               {isTamil ? 'அறிக்கைக்கான விபரங்கள்' : 'Export Parameters'}
             </h3>
           </div>
@@ -126,38 +147,37 @@ export default function PanchangamPdf() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {/* Date Input */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <label className={`block text-xs font-bold uppercase tracking-wider ${isLight ? "text-[#5C4F43]" : "text-amber-400"}`}>
                   {isTamil ? 'தேதி' : 'Select Date'}
                 </label>
                 <div className="relative">
-                  <Calendar className="absolute left-3.5 top-3.5 w-4.5 h-4.5 text-gray-400" />
+                  <Calendar className="absolute left-3.5 top-3.5 w-4.5 h-4.5 text-amber-500/70" />
                   <input
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-semibold text-gray-700"
+                    className={`w-full pl-11 pr-4 py-3 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-semibold ${isLight ? "bg-gray-50 border-gray-250 text-gray-800" : "bg-white/5 border-white/5 text-gray-150"}`}
                   />
                 </div>
               </div>
 
               {/* Time Input */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <label className={`block text-xs font-bold uppercase tracking-wider ${isLight ? "text-[#5C4F43]" : "text-amber-400"}`}>
                   {isTamil ? 'நேரம்' : 'Select Time'}
                 </label>
                 <div className="relative">
-                  <Clock className="absolute left-3.5 top-3.5 w-4.5 h-4.5 text-gray-400" />
+                  <Clock className="absolute left-3.5 top-3.5 w-4.5 h-4.5 text-amber-500/70" />
                   <input
                     type="time"
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-semibold text-gray-700"
+                    className={`w-full pl-11 pr-4 py-3 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-semibold ${isLight ? "bg-gray-50 border-gray-250 text-gray-800" : "bg-white/5 border-white/5 text-gray-150"}`}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Location notice (replaces the place input) */}
             <div className="flex items-start gap-2.5 bg-amber-50/60 border border-amber-100 rounded-xl p-3.5 text-xs text-amber-800">
               <MapPin className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <span>
@@ -194,8 +214,8 @@ export default function PanchangamPdf() {
         </div>
 
         {/* Info panel */}
-        <div className="md:col-span-5 bg-white rounded-2xl border border-gray-100 shadow-xl p-6 space-y-6">
-          <h4 className="font-bold text-gray-800 border-b border-gray-100 pb-3 text-sm">
+        <div className={`md:col-span-5 rounded-2xl border shadow-xl p-6 space-y-6 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+          <h4 className={`font-bold border-b pb-3 text-sm transition-all ${isLight ? "text-gray-800 border-amber-500/15" : "text-amber-400 border-white/5"}`}>
             {isTamil ? 'அறிக்கையின் சிறப்புகள்' : 'PDF Features'}
           </h4>
 
@@ -210,13 +230,13 @@ export default function PanchangamPdf() {
             </div>
           ) : success ? (
             <div className="space-y-6">
-              <div className="flex items-start gap-3 bg-green-50 text-green-800 p-4 rounded-xl border border-green-100">
+              <div className={`flex items-start gap-3 p-4 rounded-xl border text-xs transition-all ${isLight ? "bg-green-50 text-green-800 border-green-100" : "bg-green-500/10 text-green-300 border-green-500/20"}`}>
                 <CheckCircle className="w-5 h-5 shrink-0 text-green-500 mt-0.5" />
                 <div>
                   <h5 className="font-semibold text-sm">
                     {isTamil ? 'அறிக்கை தயார்!' : 'Report Dispatched!'}
                   </h5>
-                  <p className="text-xs text-green-700/80 mt-1">
+                  <p className="text-xs mt-1 leading-relaxed">
                     {isTamil 
                       ? 'உங்களது விரிவான பஞ்சாங்க அறிக்கை அச்சுப் பக்கத்தில் வெற்றிகரமாக திறக்கப்பட்டுள்ளது.' 
                       : 'Your printable dynamic panchangam sheet has opened in a new window.'}
@@ -224,19 +244,15 @@ export default function PanchangamPdf() {
                 </div>
               </div>
 
-              <div className="bg-gray-50 border border-gray-150 rounded-xl p-4 text-xs text-gray-600 space-y-1">
+              <div className={`border rounded-xl p-4 text-xs space-y-1 transition-all ${isLight ? "bg-amber-50/20 border-amber-500/10 text-gray-700" : "bg-white/5 border-white/5 text-gray-300"}`}>
                 <div className="flex justify-between font-medium">
                   <span>{isTamil ? 'தேதி:' : 'Date:'}</span>
-                  <span className="font-bold text-gray-800">{date}</span>
-                </div>
-                <div className="flex justify-between gap-3 font-medium">
-                  <span className="shrink-0">{isTamil ? 'இடம்:' : 'Place:'}</span>
-                  <span className="font-bold text-gray-800 text-right">{placeName}</span>
+                  <span className={`font-bold ${isLight ? "text-gray-800" : "text-white"}`}>{date}</span>
                 </div>
               </div>
             </div>
           ) : globalError ? (
-            <div className="flex items-start gap-3 bg-red-50 text-red-800 p-4 rounded-xl border border-red-100 text-xs">
+            <div className={`flex items-start gap-3 p-4 rounded-xl border text-xs transition-all ${isLight ? "bg-red-50 text-red-850 border-red-100" : "bg-red-500/10 text-red-300 border-red-500/20"}`}>
               <AlertCircle className="w-4.5 h-4.5 text-red-500 shrink-0 mt-0.5" />
               <div>
                 <h5 className="font-semibold text-sm">{isTamil ? 'பிழை ஏற்பட்டது' : 'Error Occurred'}</h5>
@@ -245,7 +261,7 @@ export default function PanchangamPdf() {
             </div>
           ) : (
             <div className="space-y-4">
-              <ul className="space-y-3 text-xs text-gray-600">
+              <ul className={`space-y-3 text-xs ${isLight ? "text-[#5C4F43]" : "text-gray-300"}`}>
                 <li className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-amber-500 shrink-0" />
                   <span>{isTamil ? 'தினசரி பஞ்சாங்க திதி, யோக, கரண கணிப்புகள்' : 'Complete daily Tithi, Yog, and Karanam times'}</span>
