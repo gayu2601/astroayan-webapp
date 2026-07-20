@@ -12,9 +12,6 @@ import { supabase } from '../lib/supabase'
 import { CustomKattamGrid } from './components/CustomKattamGrid';
 import { CosmicBackground } from './components/CosmicBackground';
 import AgeCalculator from './components/AgeCalculator';
-import { WalletModal } from './components/WalletModal';
-import { RemedyShop } from './components/RemedyShop';
-import { ConsultExpert } from './components/ConsultExpert';
 import ManaiyadiShastram from './components/ManaiyadiShastram';
 import AdminDashboardScreen from './components/AdminDashboardScreen';
 import RetailerDashboardScreen from './components/RetailerDashboardScreen';
@@ -830,9 +827,6 @@ export default function App() {
   // Keep vedic-tools for other tools (palli, manaiyadi, age)
   const vedicToolSub = (activeTab === 'vedic-tools' && pathParts[2]) ? pathParts[2] : null;
 
-  // Wallet and Order State (persisted offline)
-  const [walletBalance, setWalletBalance] = useState<number>(250);
-  const [showWalletModal, setShowWalletModal] = useState<boolean>(false);
   const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
   const [showPasswordModal, setShowPasswordModal] = useState<boolean>(false);
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);  // ← add this
@@ -842,9 +836,6 @@ export default function App() {
   useEffect(() => {
     const savedTheme = localStorage.getItem('astroTheme') as 'light' | 'dark';
     if (savedTheme) setTheme(savedTheme);
-
-    const savedBalance = localStorage.getItem('astroWalletBalance');
-    if (savedBalance) setWalletBalance(Number(savedBalance));
 
     const savedOrders = localStorage.getItem('astroOrders');
     if (savedOrders) setOrderHistory(JSON.parse(savedOrders));
@@ -865,30 +856,6 @@ export default function App() {
     localStorage.removeItem('astroUser');
     localStorage.removeItem('userData');
     navigate('/login');
-  };
-
-  const handleTopUp = (amount: number) => {
-    const next = walletBalance + amount;
-    setWalletBalance(next);
-    localStorage.setItem('astroWalletBalance', String(next));
-  };
-
-  const handlePurchase = (price: number, itemDetails: any) => {
-    const nextBal = walletBalance - price;
-    setWalletBalance(nextBal);
-    localStorage.setItem('astroWalletBalance', String(nextBal));
-    const nextOrders = [itemDetails, ...orderHistory];
-    setOrderHistory(nextOrders);
-    localStorage.setItem('astroOrders', JSON.stringify(nextOrders));
-  };
-
-  const handleBookExpert = (fee: number, bookingDetails: any) => {
-    const nextBal = walletBalance - fee;
-    setWalletBalance(nextBal);
-    localStorage.setItem('astroWalletBalance', String(nextBal));
-    const nextOrders = [bookingDetails, ...orderHistory];
-    setOrderHistory(nextOrders);
-    localStorage.setItem('astroOrders', JSON.stringify(nextOrders));
   };
 
   const t = (key: string) => {
@@ -1405,9 +1372,7 @@ export default function App() {
               { id: 'panchangam',  labelEn: 'Panchangam',   labelTa: 'பஞ்சாங்கம்',       path: '/panchangam' },
               { id: 'horoscope',   labelEn: 'Horoscope',    labelTa: 'ஜாதகம்',           path: '/horoscope' },
               { id: 'marriage',    labelEn: 'Marriage',     labelTa: 'திருமணம்',          path: '/marriage' },
-              { id: 'vedic-tools', labelEn: 'Vedic Tools',  labelTa: 'வைதீகக் கருவிகள்', path: '/vedic-tools' },
-              { id: 'consult',     labelEn: 'Consult Expert', labelTa: 'ஆலோசனை',        path: '/consult' },
-              { id: 'shop',        labelEn: 'Remedy Shop',  labelTa: 'பரிகாரக் கடை',     path: '/shop' }
+              { id: 'vedic-tools', labelEn: 'Vedic Tools',  labelTa: 'வைதீகக் கருவிகள்', path: '/vedic-tools' }
             ].map((tab) => (
               <Link
                 key={tab.id}
@@ -1431,11 +1396,6 @@ export default function App() {
 			<div className="flex flex-wrap items-center justify-center gap-3">
 			{user?.id !== ADMIN_USER_ID && (
 			<>
-				<div className={`flex items-center gap-1.5 border px-3 py-1.5 rounded-xl font-mono text-xs transition-all ${isLight ? "bg-amber-50/70 border-amber-500/20" : "bg-black/45 border-amber-500/15"}`}>
-				  <span className={`text-[10px] font-bold tracking-wider ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>WALLET:</span>
-				  <span className="text-amber-500 font-black">₹{walletBalance}</span>
-				  <button onClick={() => setShowWalletModal(true)} className="ml-1 bg-amber-500 hover:bg-amber-600 text-white text-[9px] px-1.5 py-0.5 rounded-md font-sans font-bold uppercase transition-all">+ Add</button>
-				</div>
 				<div className="bg-gradient-to-r from-amber-500 to-[#B45309] text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-500/10">
 				  <Crown className="h-3.5 w-3.5" /><span>{user?.customer_plans?.plan_name}</span>
 				</div>
@@ -1519,7 +1479,7 @@ export default function App() {
 						{language === 'ta' ? `வணக்கம், ${user?.name || ''}! உங்கள் விண்மீன் வழிகாட்டியைக் கண்டறியுங்கள்` : `Welcome, ${user?.name || 'Explorer'}! Explore Your Cosmic Roadmap`}
 					  </h1>
 					  <p className={`text-xs max-w-xl leading-relaxed transition-all ${isLight ? "text-[#5C4F43]" : "text-gray-300"}`}>
-						{language === 'ta' ? "துல்லியமான ஜாதகக் கணிப்பு, திருமணப் பொருத்தம், தினசரி கோள் பெயர்ச்சி மற்றும் பஞ்சாங்க தகவல்களை ஒரே இடத்தில் அணுபவியுங்கள்." : "Generate detailed natal Kundlis, check live auspicious panchang hours, audit relationship compatibility, or schedule lineage-expert divine consultations."}
+						{language === 'ta' ? "துல்லியமான ஜாதகக் கணிப்பு, திருமணப் பொருத்தம், தினசரி கோள் பெயர்ச்சி மற்றும் பஞ்சாங்க தகவல்களை ஒரே இடத்தில் அணுபவியுங்கள்." : "Generate detailed natal Kundlis, check live auspicious panchang hours and audit relationship compatibility"}
 					  </p>
 					</div>
 					<div className={`p-5 rounded-2xl space-y-3 lg:ml-auto w-full max-w-xs transition-all border ${isLight ? "bg-white/95 border-amber-500/15 shadow-md" : "bg-black/45 border-amber-500/10"}`}>
@@ -1658,41 +1618,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* GROUP 5: CONSULTATION */}
-                <div className="gradient-group-consult p-6 rounded-3xl space-y-5 animate-fade-in border">
-                  <div className="border-b border-gray-700/10 pb-4">
-                    <h2 className="text-xl font-serif font-black tracking-tight text-amber-500 flex items-center gap-2"><User className="h-5 w-5" />{language === 'ta' ? "பரம்பரை ஜோதிடர்களுடன் நேரடி ஆலோசனை" : "Divine Consultation & Lineage Experts"}</h2>
-                    <p className={`text-xs mt-1 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{language === 'ta' ? "சான்றளிக்கப்பட்ட பரம்பரை குருக்கள் மற்றும் வல்லுநர்களுடன் உடனடி முன்பதிவு." : "Schedule confidential high-priority live video or chat consultations directly with lineage-certified masters."}</p>
-                  </div>
-                  <div onClick={() => navigate('/consult')} className={`p-6 rounded-2xl border transition-all duration-300 hover:scale-[1.01] hover:shadow-xl cursor-pointer flex flex-col sm:flex-row items-center justify-between gap-4 ${isLight ? "bg-white border-amber-500/15 hover:bg-amber-50/75 hover:border-amber-500/40 shadow-sm" : "bg-black/35 border-white/5 hover:bg-black/55 hover:border-amber-500/30"}`}>
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0"><Video className="h-6 w-6" /></div>
-                      <div>
-                        <h3 className={`text-base font-bold font-serif ${isLight ? "text-[#1E120A]" : "text-white"}`}>{language === 'ta' ? "ஒருவரை ஒருவர் நேரடி வீடியோ/அரட்டை ஆலோசனை" : "Schedule Live 1-on-1 Consultations"}</h3>
-                        <p className={`text-xs leading-relaxed mt-1 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{language === 'ta' ? "பிரபல ஜோதிட வல்லுநர்கள், பரம்பரை வேத அறிஞர்களுடன் உங்கள் ஜாதகம் மற்றும் சந்தேகங்களுக்கு தீர்வு காணுங்கள்." : "Book private consultations with lineage masters from sacred temples."}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs font-bold bg-amber-500 text-white px-4 py-2 rounded-xl shrink-0"><span>{language === 'ta' ? "உடனடி முன்பதிவு" : "Schedule Expert Now"}</span><ArrowRight className="h-4 w-4" /></div>
-                  </div>
-                </div>
-
-                {/* GROUP 6: REMEDY SHOP */}
-                <div className="gradient-group-shop p-6 rounded-3xl space-y-5 animate-fade-in border">
-                  <div className="border-b border-gray-700/10 pb-4">
-                    <h2 className="text-xl font-serif font-black tracking-tight text-amber-500 flex items-center gap-2"><ShoppingBag className="h-5 w-5" />{language === 'ta' ? "பரிகார நவரத்தினங்கள் & ஆன்மீகப் பொருட்கள்" : "Sacred Remedy & Gemstone Sanctum"}</h2>
-                    <p className={`text-xs mt-1 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{language === 'ta' ? "கிரக தோஷ நிவர்த்திக்கான சான்றளிக்கப்பட்ட நவரத்தினங்கள், செம்பு ஸ்ரீ யந்திரம், மற்றும் ருத்ராட்ச மாலைகள்." : "Acquire Vedic-certified energized gemstones, heavy-gauge copper yantras, or natural Nepal rudraksha beads."}</p>
-                  </div>
-                  <div onClick={() => navigate('/shop')} className={`p-6 rounded-2xl border transition-all duration-300 hover:scale-[1.01] hover:shadow-xl cursor-pointer flex flex-col sm:flex-row items-center justify-between gap-4 ${isLight ? "bg-white border-amber-500/15 hover:bg-amber-50/75 hover:border-amber-500/40 shadow-sm" : "bg-black/35 border-white/5 hover:bg-black/55 hover:border-amber-500/30"}`}>
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0"><ShoppingBag className="h-6 w-6" /></div>
-                      <div>
-                        <h3 className={`text-base font-bold font-serif ${isLight ? "text-[#1E120A]" : "text-white"}`}>{language === 'ta' ? "சக்தியூட்டப்பட்ட பரிகார ஆன்மீகக் கடையை பார்வையிடுக" : "Browse Energized Spiritual Remedies Store"}</h3>
-                        <p className={`text-xs leading-relaxed mt-1 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{language === 'ta' ? "கிரக தோஷங்களைக் களைந்து, நேர்மறை ஆற்றலை ஈர்க்க வேத முறைப்படி சக்தியூட்டப்பட்ட ஆன்மீகப் பொருட்கள்." : "Purchase authenticated remedy stones, copper Sri Yantras, and natural certified rudrakshas."}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs font-bold bg-amber-500 text-white px-4 py-2 rounded-xl shrink-0"><span>{language === 'ta' ? "ஆன்மீக கடை" : "Browse Remedy Shop"}</span><ArrowRight className="h-4 w-4" /></div>
-                  </div>
-                </div>
               </div>
             } />
 
@@ -1837,22 +1762,6 @@ export default function App() {
               </div>
             } />
 
-            {/* ── CONSULT EXPERT ────────────────────────────────────────────────── */}
-            <Route path="/consult" element={
-              <div className="space-y-6 animate-fade-in">
-                <BackButton />
-                <ConsultExpert walletBalance={walletBalance} onBook={handleBookExpert} onOpenWallet={() => setShowWalletModal(true)} language={language} theme={theme} />
-              </div>
-            } />
-
-            {/* ── REMEDY SHOP ───────────────────────────────────────────────────── */}
-            <Route path="/shop" element={
-              <div className="space-y-6 animate-fade-in">
-                <BackButton />
-                <RemedyShop walletBalance={walletBalance} onPurchase={handlePurchase} onOpenWallet={() => setShowWalletModal(true)} language={language} theme={theme} />
-              </div>
-            } />
-
             {/* ── LOGIN / SIGNUP — redirect authenticated users back to home ── */}
             <Route path="/login"  element={<Navigate to="/" replace />} />
             <Route path="/signup" element={<Navigate to="/" replace />} />
@@ -1876,7 +1785,6 @@ export default function App() {
         </main>
       </div>
 
-      <WalletModal isOpen={showWalletModal} onClose={() => setShowWalletModal(false)} onTopUp={handleTopUp} language={language} theme={theme} />
       <ProfileSettingsModal
         user={user}
         visible={showProfileModal}
