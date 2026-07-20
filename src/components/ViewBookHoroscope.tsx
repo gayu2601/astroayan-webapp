@@ -779,7 +779,7 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
               <div className={`p-6 rounded-xl border shadow-xl space-y-4 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
                 <h4 className={`font-bold text-sm sm:text-base flex items-center gap-2 border-b pb-3 transition-all ${isLight ? "text-amber-800 border-amber-100" : "text-amber-400 border-white/5"}`}>
                   <BookOpen className="w-4 h-4" />
-                  {isTamil ? 'பாவ பலன்கள் (வீடுகளின் பலன்)' : 'House Predictions'}
+                  {isTamil ? 'பாவ பலன்கள் (அதிபதி பலன்கள்)' : 'House Predictions'}
                 </h4>
                 {Array.isArray(reportData.predictions) && reportData.predictions.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

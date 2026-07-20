@@ -77,9 +77,9 @@ export default function PageHoroscopePdf({ isLight = true }: PageHoroscopePdfPro
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-8 items-start">
         {/* Form Container */}
-        <div className={`rounded-2xl border shadow-xl overflow-hidden transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+        <div className={`md:col-span-3 rounded-2xl border shadow-xl overflow-hidden transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
           <div className={`p-6 border-b flex items-center gap-3 transition-all ${isLight ? "bg-gradient-to-r from-amber-500/5 to-orange-500/5 border-amber-500/15" : "bg-white/5 border-white/5"}`}>
             <Sparkles className="w-5 h-5 text-amber-500" />
             <h3 className={`font-semibold ${isLight ? "text-gray-800" : "text-amber-400"}`}>
@@ -92,7 +92,7 @@ export default function PageHoroscopePdf({ isLight = true }: PageHoroscopePdfPro
         </div>
 
         {/* Action Panel / Status Panel */}
-        <div className={`rounded-2xl border shadow-xl p-6 space-y-6 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
+        <div className={`md:col-span-2 rounded-2xl border shadow-xl p-6 space-y-6 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
           <h4 className={`font-semibold border-b pb-3 transition-all ${isLight ? "text-gray-800 border-amber-500/15" : "text-amber-400 border-white/5"}`}>
             {language === 'ta' ? 'அறிக்கை நிலை' : 'Report Status'}
           </h4>
