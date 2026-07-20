@@ -234,8 +234,7 @@ function PackageModal({
   user,
   retailerId,
   onClose,
-  onSuccess,
-  toast,
+  onSuccess
 }: {
   user: Customer | null;
   retailerId: string;
@@ -363,8 +362,7 @@ function PackageModal({
 function EditUserModal({
   user,
   onClose,
-  onSuccess,
-  toast,
+  onSuccess
 }: {
   user: Customer | null;
   onClose: () => void;
@@ -435,8 +433,7 @@ function EditUserModal({
 
 function ResetPasswordModal({
   user,
-  onClose,
-  toast,
+  onClose
 }: {
   user: Customer | null;
   onClose: () => void;
@@ -497,8 +494,7 @@ function ResetPasswordModal({
 function DeleteModal({
   user,
   onClose,
-  onConfirm,
-  toast,
+  onConfirm
 }: {
   user: Customer | null;
   onClose: () => void;
@@ -1285,30 +1281,6 @@ useEffect(() => {
           margin-bottom: 6px;
         }
         .delete-copy { color: var(--muted); line-height: 1.6; }
-
-        .toast-stack {
-          position: fixed;
-          right: 20px;
-          bottom: 20px;
-          z-index: 2000;
-          display: grid;
-          gap: 8px;
-          width: min(380px, calc(100vw - 40px));
-        }
-        .toast {
-          display: flex;
-          justify-content: space-between;
-          gap: 14px;
-          padding: 14px;
-          border: 1px solid var(--border);
-          border-radius: 12px;
-          background: var(--card);
-          box-shadow: 0 12px 35px rgba(0,0,0,.35);
-        }
-        .toast strong, .toast span { display: block; }
-        .toast span { color: var(--muted); font-size: 12px; margin-top: 3px; }
-        .toast-success strong { color: var(--active); }
-        .toast-error strong { color: var(--expired); }
 
         @media (max-width: 1000px) {
           .stats-grid { grid-template-columns: repeat(2, 1fr); }
