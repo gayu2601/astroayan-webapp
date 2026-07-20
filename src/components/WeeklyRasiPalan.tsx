@@ -61,19 +61,13 @@ export default function WeeklyRasiPalan({ isLight = false }: WeeklyRasiPalanProp
 
   const hookInput = useMemo(() => {
     if (!selectedZodiac) return null;
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, '0');
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const yyyy = now.getFullYear();
-    const date = `${dd}/${mm}/${yyyy}`;
 
     const zodiacObj = ZODIACS.find(z => z.index === selectedZodiac);
     return {
       zodiac: zodiacObj ? zodiacObj.index : 0,
       api_key: '6a0b4e5a-b8d5-5e1a-bd97-6128ad38d349',
-      date,
-      lang: language,
-      split: true
+	  week: 'thisweek',
+      lang: language
     };
   }, [selectedZodiac]);
 
