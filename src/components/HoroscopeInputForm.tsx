@@ -299,7 +299,7 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
     <div className="max-w-xl mx-auto space-y-6">
       {/* ── Header Decor ── */}
       <div className="text-center space-y-3">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-violet-950/40 border border-violet-500/30 text-amber-400 text-2xl shadow-lg shadow-violet-500/10">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-violet-100 dark:bg-violet-950/40 border border-violet-300 dark:border-violet-500/30 text-amber-500 dark:text-amber-400 text-2xl shadow-lg shadow-violet-500/10">
           ☽
         </div>
         <div className="flex justify-center gap-2 text-amber-500/60 text-xs">
@@ -309,13 +309,13 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
           <span>✦</span>
           <span>✧</span>
         </div>
-        <h2 className="text-xl font-semibold tracking-tight text-white font-serif">
+        <h2 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-white font-serif">
           {isTamil ? 'ஜாதக கணிப்பு' : 'Horoscope Casting'}
         </h2>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           {t('form.headerSub') || (isTamil ? 'உங்கள் பிறந்த விவரங்களை உள்ளிட்டு விரிவான ஜாதகத்தைப் பெறுங்கள்.' : 'Enter birth details to compute your complete Vedic horoscope chart & placements.')}
         </p>
-        <div className="flex h-1 max-w-xs mx-auto rounded-full overflow-hidden bg-gray-800">
+        <div className="flex h-1 max-w-xs mx-auto rounded-full overflow-hidden bg-gray-200 dark:bg-gray-800">
           <div className="flex-1 bg-violet-600" />
           <div className="flex-1 bg-fuchsia-500" />
           <div className="flex-1 bg-amber-500" />
@@ -326,55 +326,55 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
       {/* ── Saved Profiles Dropdown ── */}
       {user && savedProfiles.length > 0 && (
         <div className="relative z-20">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-amber-400 mb-2 font-sans">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-2 font-sans">
             {t('form.savedProfiles') || (isTamil ? 'சேமிக்கப்பட்ட சுயவிவரங்கள்' : 'Saved Profiles')}
           </label>
           <button
             type="button"
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="w-full flex items-center justify-between bg-slate-900/60 border border-violet-500/20 hover:border-violet-500/40 rounded-lg px-4 py-3 text-left transition-all text-sm"
+            className="w-full flex items-center justify-between bg-gray-50 dark:bg-slate-900/60 border border-violet-200 dark:border-violet-500/20 hover:border-violet-300 dark:hover:border-violet-500/40 rounded-lg px-4 py-3 text-left transition-all text-sm"
           >
             <div className="flex items-center gap-3 truncate">
               {selectedProfile ? (
                 <>
-                  <div className="w-7 h-7 rounded-full bg-violet-500/20 border border-violet-500/40 flex items-center justify-center font-bold text-amber-300">
+                  <div className="w-7 h-7 rounded-full bg-violet-100 dark:bg-violet-500/20 border border-violet-300 dark:border-violet-500/40 flex items-center justify-center font-bold text-amber-600 dark:text-amber-300">
                     {selectedProfile.name[0].toUpperCase()}
                   </div>
                   <div className="truncate">
-                    <p className="font-semibold text-white truncate text-xs">{selectedProfile.name}</p>
-                    <p className="text-[10px] text-gray-400 truncate">{selectedProfile.place}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white truncate text-xs">{selectedProfile.name}</p>
+                    <p className="text-[10px] text-gray-600 dark:text-gray-400 truncate">{selectedProfile.place}</p>
                   </div>
                 </>
               ) : (
-                <span className="text-gray-400">{t('form.selectProfile') || (isTamil ? 'ஒரு சுயவிவரத்தைத் தேர்ந்தெடுக்கவும்' : 'Select a Saved Profile')}</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('form.selectProfile') || (isTamil ? 'ஒரு சுயவிவரத்தைத் தேர்ந்தெடுக்கவும்' : 'Select a Saved Profile')}</span>
               )}
             </div>
-            <ChevronDown className={`w-4 h-4 text-violet-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 text-violet-500 dark:text-violet-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {dropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-slate-950 border border-violet-500/30 rounded-lg shadow-2xl max-h-60 overflow-y-auto divide-y divide-violet-500/10">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-950 border border-violet-200 dark:border-violet-500/30 rounded-lg shadow-2xl max-h-60 overflow-y-auto divide-y divide-violet-100 dark:divide-violet-500/10">
               {savedProfiles.map((p) => (
                 <div
                   key={p.id}
                   onClick={() => handleLoadProfile(p)}
-                  className={`flex items-center justify-between p-3 cursor-pointer hover:bg-violet-950/30 transition-colors ${selectedProfile?.id === p.id ? 'bg-violet-950/20' : ''}`}
+                  className={`flex items-center justify-between p-3 cursor-pointer hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors ${selectedProfile?.id === p.id ? 'bg-violet-50 dark:bg-violet-950/20' : ''}`}
                 >
                   <div className="flex items-center gap-3 truncate">
-                    <div className="w-7 h-7 rounded-full bg-violet-500/10 border border-violet-500/20 flex items-center justify-center font-serif text-sm text-violet-300">
+                    <div className="w-7 h-7 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 flex items-center justify-center font-serif text-sm text-violet-600 dark:text-violet-300">
                       {p.name[0].toUpperCase()}
                     </div>
                     <div className="truncate">
-                      <p className="font-semibold text-white text-xs truncate">{p.name}</p>
-                      <p className="text-[10px] text-gray-400 truncate">{p.place}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white text-xs truncate">{p.name}</p>
+                      <p className="text-[10px] text-gray-600 dark:text-gray-400 truncate">{p.place}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {selectedProfile?.id === p.id && <Check className="w-4 h-4 text-amber-400" />}
+                    {selectedProfile?.id === p.id && <Check className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
                     <button
                       type="button"
                       onClick={(e) => handleDeleteProfile(e, p.id)}
-                      className="text-gray-500 hover:text-red-400 p-1 transition-colors"
+                      className="text-gray-600 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 p-1 transition-colors"
                       title={isTamil ? 'அழி' : 'Delete'}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -388,16 +388,16 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
       )}
 
       {/* ── Input Form Card ── */}
-      <form onSubmit={handleSubmit} className="bg-slate-900/40 border border-gray-800 rounded-xl p-5 space-y-4 shadow-xl relative overflow-hidden backdrop-blur-md">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900/40 border border-gray-200 dark:border-gray-800 rounded-xl p-5 space-y-4 shadow-xl relative overflow-hidden backdrop-blur-md">
         {/* Name Field */}
         <div className="relative group">
           <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l bg-violet-500" />
           <div className="pl-3 space-y-1.5">
-            <label className="text-xs font-semibold text-violet-400 tracking-wider uppercase block">
+            <label className="text-xs font-semibold text-violet-600 dark:text-violet-400 tracking-wider uppercase block">
               {t('form.fullName') || (isTamil ? 'முழு பெயர்' : 'Full Name')} *
             </label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-3 flex items-center text-violet-400">
+              <span className="absolute inset-y-0 left-3 flex items-center text-violet-500 dark:text-violet-400">
                 <User className="w-4 h-4" />
               </span>
               <input
@@ -406,7 +406,7 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
                 placeholder={t('form.namePlaceholder') || (isTamil ? 'பெயரை உள்ளிடவும்' : 'Enter full name')}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-slate-950/60 border border-gray-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 rounded-lg pl-9 pr-4 py-2.5 text-white text-sm outline-none transition-all"
+                className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 rounded-lg pl-9 pr-4 py-2.5 text-gray-900 dark:text-white text-sm outline-none transition-all"
               />
             </div>
           </div>
@@ -417,14 +417,14 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
           <div className="relative group">
             <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l bg-violet-600" />
             <div className="pl-3 space-y-1.5">
-              <label className="text-xs font-semibold text-violet-400 tracking-wider uppercase block">
+              <label className="text-xs font-semibold text-violet-600 dark:text-violet-400 tracking-wider uppercase block">
                 {t('form.fatherName') || (isTamil ? 'தந்தை பெயர்' : 'Father’s Name')}
               </label>
               <input
                 type="text"
                 value={fatherName}
                 onChange={(e) => setFatherName(e.target.value)}
-                className="w-full bg-slate-950/60 border border-gray-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 rounded-lg px-4 py-2.5 text-white text-sm outline-none transition-all"
+                className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white text-sm outline-none transition-all"
               />
             </div>
           </div>
@@ -432,14 +432,14 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
           <div className="relative group">
             <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l bg-violet-600" />
             <div className="pl-3 space-y-1.5">
-              <label className="text-xs font-semibold text-violet-400 tracking-wider uppercase block">
+              <label className="text-xs font-semibold text-violet-600 dark:text-violet-400 tracking-wider uppercase block">
                 {t('form.motherName') || (isTamil ? 'தாய் பெயர்' : 'Mother’s Name')}
               </label>
               <input
                 type="text"
                 value={motherName}
                 onChange={(e) => setMotherName(e.target.value)}
-                className="w-full bg-slate-950/60 border border-gray-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 rounded-lg px-4 py-2.5 text-white text-sm outline-none transition-all"
+                className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white text-sm outline-none transition-all"
               />
             </div>
           </div>
@@ -450,11 +450,11 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
           <div className="relative group">
             <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l bg-amber-500" />
             <div className="pl-3 space-y-1.5">
-              <label className="text-xs font-semibold text-amber-400 tracking-wider uppercase block">
+              <label className="text-xs font-semibold text-amber-600 dark:text-amber-400 tracking-wider uppercase block">
                 {t('form.birthDate') || (isTamil ? 'பிறந்த தேதி' : 'Birth Date')} *
               </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-3 flex items-center text-amber-500">
+                <span className="absolute inset-y-0 left-3 flex items-center text-amber-600 dark:text-amber-500">
                   <Calendar className="w-4 h-4" />
                 </span>
                 <input
@@ -462,7 +462,7 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
                   required
                   value={birthDate}
                   onChange={(e) => setBirthDate(e.target.value)}
-                  className="w-full bg-slate-950/60 border border-gray-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-lg pl-9 pr-4 py-2.5 text-white text-sm outline-none transition-all"
+                  className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-lg pl-9 pr-4 py-2.5 text-gray-900 dark:text-white text-sm outline-none transition-all"
                 />
               </div>
             </div>
@@ -471,11 +471,11 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
           <div className="relative group">
             <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l bg-amber-500" />
             <div className="pl-3 space-y-1.5">
-              <label className="text-xs font-semibold text-amber-400 tracking-wider uppercase block">
+              <label className="text-xs font-semibold text-amber-600 dark:text-amber-400 tracking-wider uppercase block">
                 {t('form.birthTime') || (isTamil ? 'பிறந்த நேரம்' : 'Birth Time')} *
               </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-3 flex items-center text-amber-500">
+                <span className="absolute inset-y-0 left-3 flex items-center text-amber-600 dark:text-amber-500">
                   <Clock className="w-4 h-4" />
                 </span>
                 <input
@@ -483,7 +483,7 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
                   required
                   value={birthTime}
                   onChange={(e) => setBirthTime(e.target.value)}
-                  className="w-full bg-slate-950/60 border border-gray-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-lg pl-9 pr-4 py-2.5 text-white text-sm outline-none transition-all"
+                  className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-lg pl-9 pr-4 py-2.5 text-gray-900 dark:text-white text-sm outline-none transition-all"
                 />
               </div>
             </div>
@@ -494,11 +494,11 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
         <div className="relative group">
           <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l bg-emerald-500" />
           <div className="pl-3 space-y-1.5">
-            <label className="text-xs font-semibold text-emerald-400 tracking-wider uppercase block">
+            <label className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase block">
               {t('form.birthPlace') || (isTamil ? 'பிறந்த இடம்' : 'Birth Place')} *
             </label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-3 flex items-center text-emerald-400">
+              <span className="absolute inset-y-0 left-3 flex items-center text-emerald-600 dark:text-emerald-400">
                 <MapPin className="w-4 h-4" />
               </span>
               <input
@@ -507,7 +507,7 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
                 value={place}
                 onChange={handleLocationChange}
                 placeholder={t('form.birthPlacePlaceholder') || (isTamil ? 'உதாரணம்: சென்னை, தமிழ்நாடு' : 'e.g. Chennai, Tamil Nadu')}
-                className="w-full bg-slate-950/60 border border-gray-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 rounded-lg pl-9 pr-4 py-2.5 text-white text-sm outline-none transition-all"
+                className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 rounded-lg pl-9 pr-4 py-2.5 text-gray-900 dark:text-white text-sm outline-none transition-all"
               />
               {loadingLocation && (
                 <div className="absolute inset-y-0 right-3 flex items-center">
@@ -518,15 +518,15 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
 
             {/* Suggestions Panel */}
             {openLocation && suggestions.length > 0 && (
-              <div className="absolute left-0 right-0 mt-1 bg-slate-950 border border-emerald-500/30 rounded-lg shadow-2xl z-50 divide-y divide-gray-800/50 max-h-48 overflow-y-auto">
+              <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-slate-950 border border-emerald-200 dark:border-emerald-500/30 rounded-lg shadow-2xl z-50 divide-y divide-gray-100 dark:divide-gray-800/50 max-h-48 overflow-y-auto">
                 {suggestions.map((item) => (
                   <button
                     key={item.place_id}
                     type="button"
                     onClick={() => handleSelectLocation(item)}
-                    className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-emerald-950/20 transition-colors flex items-center gap-2 truncate"
+                    className="w-full text-left px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors flex items-center gap-2 truncate"
                   >
-                    <span className="text-emerald-500 text-sm">📍</span>
+                    <span className="text-emerald-600 dark:text-emerald-500 text-sm">📍</span>
                     <span className="truncate">{item.description}</span>
                   </button>
                 ))}
@@ -536,7 +536,7 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
         </div>
 
         {/* Coloured info strip */}
-        <div className="flex gap-2.5 items-start bg-violet-950/15 border border-violet-500/10 rounded-lg p-3 text-xs text-violet-200">
+        <div className="flex gap-2.5 items-start bg-violet-50 dark:bg-violet-950/15 border border-violet-200 dark:border-violet-500/10 rounded-lg p-3 text-xs text-violet-800 dark:text-violet-200">
           <span className="text-base leading-none">🔮</span>
           <p className="leading-relaxed">
             {t('form.infoStrip') || (isTamil 
@@ -554,10 +554,10 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
               onClick={handleSaveProfile}
               className={`flex-1 border py-2.5 rounded-lg text-xs font-semibold tracking-wider transition-all uppercase flex items-center justify-center gap-1.5 ${
                 !isFormValid 
-                  ? 'border-gray-800 bg-transparent text-gray-600 cursor-not-allowed' 
+                  ? 'border-gray-300 dark:border-gray-800 bg-transparent text-gray-500 dark:text-gray-600 cursor-not-allowed' 
                   : saveStatus === 'saved'
-                    ? 'border-emerald-500/30 bg-emerald-950/25 text-emerald-400'
-                    : 'border-violet-500/30 bg-violet-950/20 text-violet-300 hover:bg-violet-950/40 hover:border-violet-500/50'
+                    ? 'border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/25 text-emerald-700 dark:text-emerald-400'
+                    : 'border-violet-300 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-950/20 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-950/40 hover:border-violet-400 dark:hover:border-violet-500/50'
               }`}
             >
               {saveStatus === 'saving' ? (
@@ -579,13 +579,13 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
             className={`flex-[1.4] relative py-2.5 rounded-lg text-xs font-serif font-bold tracking-wider uppercase overflow-hidden transition-all shadow-lg ${
               isFormValid 
                 ? 'bg-violet-600 text-white hover:bg-violet-500 shadow-violet-500/15' 
-                : 'bg-gray-800/40 text-gray-500 border border-gray-800 cursor-not-allowed'
+                : 'bg-gray-100 dark:bg-gray-800/40 text-gray-500 border border-gray-300 dark:border-gray-800 cursor-not-allowed'
             }`}
           >
             <span className="flex items-center justify-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-300" />
               <span>{t('form.generate') || (isTamil ? 'ஜாதகத்தை உருவாக்கு' : 'Generate Horoscope')}</span>
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-300" />
             </span>
             {isFormValid && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-amber-400/60" />}
           </button>
