@@ -122,9 +122,9 @@ function buildBiodataHtml(d: any, isTamil: boolean) {
   const kundliSection = d.kundliData ? `
     ${section(isTamil ? 'ஜோதிட விவரங்கள்' : 'ASTROLOGICAL DETAILS')}
     <div class="grid-2">
-      ${cell('Moon Rasi', d.kundliData.rasi)}
-      ${cell('Star / Nakshatra', d.kundliData.nakshatra)}
-      ${cell('Lagna (Ascendant)', d.kundliData.ascendantSign)}
+      ${cell('Moon Rasi', `${d.kundliData.rasi}${d.kundliData.rasiLord ? ' (Lord: ' + d.kundliData.rasiLord + ')' : ''}`)}
+      ${cell('Nakshatra', `${d.kundliData.nakshatra}${d.kundliData.nakshatraPada ? ' Pada ' + d.kundliData.nakshatraPada : ''}`)}
+      ${cell('Ascendant', `${d.kundliData.ascendantSign}${d.kundliData.ascendantNakshatra ? ' / ' + d.kundliData.ascendantNakshatra : ''}`)}
     </div>
   ` : '';
 
@@ -137,52 +137,40 @@ function buildBiodataHtml(d: any, isTamil: boolean) {
   ` : '';
 
   const dashaSection = d.dasha ? `
-    ${section(isTamil ? 'தசா புக்தி விவரங்கள்' : 'DASHA PERIODS')}
+    ${section(isTamil ? 'தசா புக்தி விவரங்கள்' : 'DASHA INFO')}
     <div class="dasha-row">
       ${d.dasha.birth ? `
         <div class="dasha-box">
           <div class="dasha-title" style="color:#c8980f">Birth Dasha</div>
+          <div class="dasha-label">MAHADASHA</div>
           <div class="dasha-value" style="color:#c8980f">${d.dasha.birth.mahadasha ?? ''}</div>
-          <div class="dasha-sub">End Date: ${d.dasha.birth.date ?? ''}</div>
+          <div class="dasha-sub">Dasha Bhukthi End Date</div>
+          <div class="dasha-date">${d.dasha.birth.date ?? ''}</div>
         </div>` : ''}
       ${d.dasha.current ? `
         <div class="dasha-box">
           <div class="dasha-title" style="color:#7c3aed">Current Dasha</div>
+          <div class="dasha-label">MAHADASHA</div>
           <div class="dasha-value" style="color:#7c3aed">${d.dasha.current.mahadasha ?? ''}</div>
-          <div class="dasha-sub">End Date: ${d.dasha.current.date ?? ''}</div>
+          <div class="dasha-sub">Dasha Bhukthi End Date</div>
+          <div class="dasha-date">${d.dasha.current.date ?? ''}</div>
         </div>` : ''}
     </div>
   ` : '';
 
-  const expectationSection = (d.expectation || d.notes) ? `
-    <div class="expect-row">
-      ${d.expectation ? `
-        <div>
-          <h4 class="expect-title">${isTamil ? 'எதிர்பார்ப்புகள்' : 'Expectations'}</h4>
-          <p class="expect-text">${d.expectation}</p>
-        </div>` : ''}
-      ${d.notes ? `
-        <div>
-          <h4 class="expect-title">${isTamil ? 'குறிப்புகள்' : 'Additional Notes'}</h4>
-          <p class="expect-text">${d.notes}</p>
-        </div>` : ''}
-    </div>
-  ` : '';
+  const expectationSection = `
+    ${section(isTamil ? 'எதிர்பார்ப்புகள்' : 'EXPECTATION')}
+    ${d.expectation
+      ? `<p class="expect-text">${d.expectation}</p>`
+      : `<div class="blank-line"></div><div class="blank-line"></div>`}
+    ${d.notes ? `
+      ${section(isTamil ? 'குறிப்புகள்' : 'NOTES')}
+      <p class="expect-text">${d.notes}</p>` : ''}
+  `;
 
-  const footerSection = (d.phone || d.address) ? `
-    <div class="footer-row">
-      ${d.phone ? `
-        <div>
-          <span class="footer-label">${isTamil ? 'தொடர்பு எண்' : 'Contact Phone'}</span>
-          <span class="footer-value">${d.phone}</span>
-        </div>` : ''}
-      ${d.address ? `
-        <div>
-          <span class="footer-label">${isTamil ? 'முகவரி' : 'Postal Address'}</span>
-          <span class="footer-value">${d.address}</span>
-        </div>` : ''}
-    </div>
-  ` : '';
+  const propertyDetails = d.propertyType
+    ? `${d.propertyType}${d.propertyLocation ? ', ' + d.propertyLocation : ''}`
+    : '';
 
   return `
     <!DOCTYPE html>
@@ -199,32 +187,53 @@ function buildBiodataHtml(d: any, isTamil: boolean) {
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
-        body { font-family: Georgia, serif; background: #fffdf5; font-size: 13px; color: #1a1000; }
+        body {
+          font-family: Georgia, serif;
+          background: #fffdf5;
+          font-size: 13px;
+          color: #1a1000;
+        }
         @media print { html { margin: 0 !important; } }
 
+        /* Card */
         .card { border: 5px solid #c8980f; padding: 14px; background: #fffdf5; }
         .top-line, .bottom-line { height: 2px; background: #e8c06a; margin: 0 20px 10px; }
-        .bottom-line { margin-top: 14px; margin-bottom: 0; }
+        .bottom-line { margin-top: 10px; margin-bottom: 0; }
 
-        h1.title { text-align: center; font-size: 20px; font-weight: 800; color: #c8980f; letter-spacing: 3px; margin: 6px 0 4px; }
-        .reg-no { display: block; text-align: center; font-size: 10px; color: #8b5c00; letter-spacing: 1px; margin-bottom: 6px; }
+        /* Title */
+        h1.title {
+          text-align: center; font-size: 20px; font-weight: 800;
+          color: #c8980f; letter-spacing: 3px; margin: 6px 0 4px;
+        }
+        .reg-no {
+          display: block; text-align: center; font-size: 10px;
+          color: #8b5c00; letter-spacing: 1px; margin-bottom: 6px;
+        }
 
-        .section-wrap { display: flex; align-items: center; gap: 8px; margin: 12px 0 6px; }
-        .section-wrap span { font-size: 13px; font-weight: 800; color: #8b5c00; letter-spacing: 1.5px; white-space: nowrap; }
+        /* Section title */
+        .section-wrap {
+          display: flex; align-items: center; gap: 8px; margin: 10px 0 6px;
+        }
+        .section-wrap span {
+          font-size: 13px; font-weight: 800; color: #8b5c00;
+          letter-spacing: 1.5px; white-space: nowrap;
+        }
         .section-line { flex: 1; height: 1px; background: #c8980f; }
 
+        /* Personal block: photo left, 2-col grid right */
         .personal-block { display: flex; gap: 12px; align-items: flex-start; }
         .photo-box {
-          width: 100px; height: 120px; flex-shrink: 0;
+          width: 100px; flex-shrink: 0;
           border: 2px solid #c8980f; border-radius: 4px; overflow: hidden;
         }
-        .photo-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .photo-box img { width: 100px; height: 120px; object-fit: cover; display: block; }
         .photo-placeholder {
-          width: 100%; height: 100%; background: #f5e8c8;
-          display: flex; flex-direction: column; align-items: center; justify-content: center;
-          font-size: 11px; color: #c8980f; text-align: center; gap: 4px;
+          width: 100px; height: 120px; background: #f5e8c8;
+          display: flex; flex-direction: column; align-items: center;
+          justify-content: center; font-size: 11px; color: #c8980f; text-align: center;
         }
 
+        /* 2-col cell grid */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0; flex: 1; }
         .cell {
           display: flex; align-items: baseline; gap: 4px;
@@ -234,40 +243,74 @@ function buildBiodataHtml(d: any, isTamil: boolean) {
         .cell-colon { color: #8b5c00; flex-shrink: 0; }
         .cell-value { color: #1a1000; flex: 1; }
 
+        /* Family 2-col grid */
         .family-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
 
-        .charts-row { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin: 8px 0; }
+        /* Charts */
+        .charts-row {
+          display: flex; gap: 16px; justify-content: center;
+          flex-wrap: wrap; margin: 8px 0;
+        }
         .kattam-wrap { width: 260px; }
-        .kattam-label { font-size: 11px; font-weight: 800; text-align: center; color: #8b5c00; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
-        .kattam-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); border: 1px solid #c8980f55; }
-        .kt-cell { border: 0.5px solid #e8d5aa; min-height: 52px; padding: 3px; display: flex; flex-direction: column; justify-content: space-between; font-size: 8px; }
-        .kt-center { grid-column: span 2; grid-row: span 2; align-items: center; justify-content: center; text-align: center; font-size: 9px; font-weight: 800; color: #7c3aed; text-transform: uppercase; letter-spacing: 1px; }
+        .kattam-label {
+          font-size: 11px; font-weight: 800; text-align: center;
+          color: #8b5c00; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase;
+        }
+        .kattam-grid {
+          display: grid; grid-template-columns: repeat(4, 1fr);
+          grid-template-rows: repeat(4, 1fr); border: 1px solid #c8980f55;
+        }
+        .kt-cell {
+          border: 0.5px solid #e8d5aa; min-height: 52px; padding: 3px;
+          display: flex; flex-direction: column; justify-content: space-between; font-size: 8px;
+        }
+        .kt-center {
+          grid-column: span 2; grid-row: span 2; align-items: center;
+          justify-content: center; text-align: center; font-size: 9px;
+          font-weight: 800; color: #7c3aed; text-transform: uppercase; letter-spacing: 1px;
+        }
         .kt-top { display: flex; justify-content: space-between; align-items: center; }
         .kt-rasi-no { color: #999; font-weight: 700; font-family: monospace; }
-        .kt-lagna { color: #c0392b; font-weight: 800; border: 0.5px solid #c0392b55; border-radius: 2px; padding: 0 2px; }
+        .kt-lagna {
+          color: #c0392b; font-weight: 800; border: 0.5px solid #c0392b55;
+          border-radius: 2px; padding: 0 2px;
+        }
         .kt-planets { display: flex; flex-wrap: wrap; gap: 1px; justify-content: center; margin: auto 0; }
-        .kt-planet { background: #7c3aed15; color: #6d28d9; font-weight: 700; padding: 0 2px; border-radius: 2px; }
+        .kt-planet {
+          background: #7c3aed15; color: #6d28d9; font-weight: 700;
+          padding: 0 2px; border-radius: 2px;
+        }
         .kt-tamil { text-align: center; color: #8b5c00; font-size: 7.5px; }
 
+        /* Dasha */
         .dasha-row { display: flex; gap: 10px; margin: 6px 0; }
-        .dasha-box { flex: 1; border: 1.5px solid #c8980f55; border-radius: 8px; padding: 10px; text-align: center; background: rgba(200,152,15,0.04); }
-        .dasha-title { font-size: 12px; font-weight: 800; margin-bottom: 6px; }
-        .dasha-value { font-size: 16px; font-weight: 800; margin-bottom: 4px; font-family: Georgia, serif; }
-        .dasha-sub { font-size: 10px; color: #5a3e00; font-weight: 600; }
+        .dasha-box {
+          flex: 1; border: 1.5px solid #c8980f55; border-radius: 8px;
+          padding: 10px; text-align: center; background: rgba(200,152,15,0.04);
+        }
+        .dasha-title { font-size: 12px; font-weight: 800; text-align: left; margin-bottom: 6px; }
+        .dasha-label {
+          font-size: 10px; color: #5a3e00; font-weight: 700;
+          text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;
+        }
+        .dasha-value { font-size: 16px; font-weight: 800; margin-bottom: 6px; }
+        .dasha-sub { font-size: 10px; color: #5a3e00; font-weight: 600; margin-bottom: 3px; }
+        .dasha-date { font-size: 11px; color: #c0392b; font-style: italic; font-weight: 700; }
 
-        .expect-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e8d5aa; }
-        .expect-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #8b5c00; margin-bottom: 4px; }
-        .expect-text { font-size: 12px; color: #4a4a4a; line-height: 1.5; font-style: italic; }
-
-        .footer-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; padding-top: 10px; border-top: 2px solid #c8980f55; }
-        .footer-label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #8b5c00; }
-        .footer-value { display: block; font-size: 13px; color: #1a1000; font-weight: 600; margin-top: 2px; }
+        /* Expectation */
+        .expect-text {
+          font-size: 13px; color: #1a1000; line-height: 1.6; margin: 4px 0 8px;
+        }
+        .blank-line {
+          width: 100%; height: 1px; background: #c8980f;
+          opacity: 0.4; margin: 16px 0;
+        }
       </style>
     </head>
     <body>
       <div class="card">
         <div class="top-line"></div>
-        <h1 class="title">${isTamil ? 'விவர பத்திரிகை' : 'MATRIMONIAL BIODATA'}</h1>
+        <h1 class="title">${isTamil ? 'விவர பத்திரிகை' : 'BIODATA'}</h1>
         ${d.registrationNo ? `<span class="reg-no">Reg No: ${d.registrationNo}</span>` : ''}
 
         ${section(isTamil ? 'தனிப்பட்ட விவரங்கள்' : 'PERSONAL DETAILS')}
@@ -277,8 +320,8 @@ function buildBiodataHtml(d: any, isTamil: boolean) {
               ? `<img src="${d.photo}" />`
               : `<div class="photo-placeholder">👤<br/>Photo Not Provided</div>`}
           </div>
-          <div class="grid-2">
-            ${cell('Full Name', d.name)}
+          <div class="grid-2" style="flex:1">
+            ${cell('Name', d.name)}
             ${cell('Gender', d.gender)}
             ${cell('Date of Birth', d.dob)}
             ${cell('Time of Birth', d.tob)}
@@ -302,24 +345,21 @@ function buildBiodataHtml(d: any, isTamil: boolean) {
 
         ${section(isTamil ? 'குடும்ப விவரங்கள்' : 'FAMILY DETAILS')}
         <div class="family-grid">
-          ${cell("Father's Name", d.fatherName)}
-          ${cell("Mother's Name", d.motherName)}
-          ${cell("Father's Job", d.fatherOccupation)}
-          ${cell("Mother's Job", d.motherOccupation)}
-          ${cell('Siblings', d.siblings)}
-        </div>
-
-        ${section(isTamil ? 'சொத்துக்கள்' : 'PROPERTY & ASSETS')}
-        <div class="grid-2">
-          ${cell('Property Type', d.propertyType)}
-          ${cell('Location', d.propertyLocation)}
+          ${cell("Father's Name",       d.fatherName)}
+          ${cell("Mother's Name",       d.motherName)}
+          ${cell("Father's Job",        d.fatherOccupation)}
+          ${cell("Mother's Job",        d.motherOccupation)}
+          ${cell('Siblings',            d.siblings)}
+          ${cell('Native Place',        d.nativePlace)}
+          ${cell('Property Details',    propertyDetails)}
+          ${cell('Contact No.',         d.phone)}
+          ${cell('Address',             d.address)}
         </div>
 
         ${kundliSection}
         ${chartsSection}
-        ${dashaSection}
         ${expectationSection}
-        ${footerSection}
+        ${dashaSection}
 
         <div class="bottom-line"></div>
       </div>
@@ -327,6 +367,7 @@ function buildBiodataHtml(d: any, isTamil: boolean) {
     </html>
   `;
 }
+          
 
 interface LocalKattamProps {
   planets: any;
