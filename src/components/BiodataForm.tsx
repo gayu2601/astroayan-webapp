@@ -89,34 +89,35 @@ export default function BiodataForm({ onSubmit, loading }: BiodataFormProps) {
   };
 
   const handleLoadEntry = async (id: number) => {
-    try {
-      const { data, error } = await supabase
+  try {
+    const { data, error } = await supabase
+      .from('biodata')
+      .select('id, entry_name, data')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+
+    const loadedData: any = data.data || {};
+
+    // Resolve stored filename → public URL only if not already a full URL
+    if (loadedData.photo && !loadedData.photo.startsWith('http')) {
+      const { data: urlData } = supabase.storage
         .from('biodata')
-        .select('id, entry_name, data')
-        .eq('id', id)
-        .single();
-      if (error) throw error;
-
-      const loadedData: any = data.data || {};
-
-      // Resolve stored photo filename → public URL (same as mobile screen)
-      if (loadedData.photo && !loadedData.photo.startsWith('http')) {
-        const { data: urlData } = supabase.storage
-          .from('biodata')
-          .getPublicUrl(loadedData.photo);
-        loadedData.photo = urlData?.publicUrl || loadedData.photo;
-      }
-	  if (loadedData.dob && loadedData.dob.length > 10) {
-		  loadedData.dob = loadedData.dob.slice(0, 10);
-	  }
-
-      setValues({ ...values, ...loadedData });
-      setCurrentEntryId(data.id);
-      setCurrentEntryName(data.entry_name || '');
-    } catch (err) {
-      console.error('Error loading entry:', err);
+        .getPublicUrl(loadedData.photo);
+      loadedData.photo = urlData?.publicUrl || loadedData.photo;
     }
-  };
+
+    if (loadedData.dob && loadedData.dob.length > 10) {
+      loadedData.dob = loadedData.dob.slice(0, 10);
+    }
+
+    setValues({ ...values, ...loadedData });
+    setCurrentEntryId(data.id);
+    setCurrentEntryName(data.entry_name || '');
+  } catch (err) {
+    console.error('Error loading entry:', err);
+  }
+};
 
   const handleDeleteEntry = async (id: number) => {
     if (!confirm(isTamil ? 'இந்த விவரத்தை நீக்க விரும்புகிறீர்களா?' : 'Are you sure you want to delete this entry?')) return;
@@ -221,68 +222,67 @@ export default function BiodataForm({ onSubmit, loading }: BiodataFormProps) {
     return fv;
   };
 
-  // ─── Update an existing DB entry ────────────────────────────────────────────
-  const saveExistingEntry = async () => {
-    if (!user?.id) {
-      alert(isTamil ? 'விவரங்களைச் சேமிக்க உள்நுழையவும்.' : 'Please sign in to save your profiles.');
-      return;
-    }
-    try {
-      setSaving(true);
-      const formValues = await uploadPhotoIfNeeded(values);
+  // ─── Update an existing DB entry ───────────────────────────────────────────
+	const saveExistingEntry = async () => {
+  if (!user?.id) {
+    alert(isTamil ? 'விவரங்களைச் சேமிக்க உள்நுழையவும்.' : 'Please sign in to save your profiles.');
+    return;
+  }
+  try {
+    setSaving(true);
+    const formValues = await uploadPhotoIfNeeded(values);
 
-      const { error } = await supabase
-        .from('biodata')
-        .update({ data: formValues, updated_at: new Date().toISOString() })
-        .eq('id', currentEntryId);
-      if (error) throw error;
+    const { error } = await supabase
+      .from('biodata')
+      .update({ data: formValues, updated_at: new Date().toISOString() })
+      .eq('id', currentEntryId);
+    if (error) throw error;
 
-      setValues(formValues); // reflect stored filename back into local state
-      fetchEntries();
-    } catch (err) {
-      console.error('Error updating entry:', err);
-      alert(isTamil ? 'சேமிப்பு தோல்வியடைந்தது. மீண்டும் முயற்சி செய்யவும்.' : 'Save failed. Please try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
+    setValues(formValues); // reflect stored filename back into local state
+    fetchEntries();
+  } catch (err) {
+    console.error('Error updating entry:', err);
+    alert(isTamil ? 'சேமிப்பு தோல்வியடைந்தது. மீண்டும் முயற்சி செய்யவும்.' : 'Save failed. Please try again.');
+  } finally {
+    setSaving(false);
+  }
+};
   // ─── Insert a new DB entry ───────────────────────────────────────────────────
-  const saveToSupabase = async (entryName: string) => {
-    if (!user?.id) {
-      alert(isTamil ? 'விவரங்களைச் சேமிக்க உள்நுழையவும்.' : 'Please sign in to save your profiles.');
-      return;
-    }
-    try {
-      setSaving(true);
-      const formValues = await uploadPhotoIfNeeded(values);
+const saveToSupabase = async (entryName: string) => {
+  if (!user?.id) {
+    alert(isTamil ? 'விவரங்களைச் சேமிக்க உள்நுழையவும்.' : 'Please sign in to save your profiles.');
+    return;
+  }
+  try {
+    setSaving(true);
+    const formValues = await uploadPhotoIfNeeded(values);
 
-      const { data: inserted, error: insertError } = await supabase
-        .from('biodata')
-        .insert({
-          user_id: user.id,
-          entry_name: entryName,
-          data: formValues,
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-      if (insertError) throw insertError;
+    const { data: inserted, error: insertError } = await supabase
+      .from('biodata')
+      .insert({
+        user_id: user.id,
+        entry_name: entryName,
+        data: formValues,           // ← use formValues (with resolved filename), not a null photo
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+    if (insertError) throw insertError;
 
-      setValues(formValues);
-      setCurrentEntryId(inserted.id);
-      setCurrentEntryName(entryName);
-      setShowSaveModal(false);
-      setNewEntryName('');
-      fetchEntries();
-    } catch (err) {
-      console.error('Error saving entry:', err);
-      alert(isTamil ? 'சேமிப்பு தோல்வியடைந்தது. மீண்டும் முயற்சி செய்யவும்.' : 'Save failed. Please try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
+    setValues(formValues);
+    setCurrentEntryId(inserted.id);
+    setCurrentEntryName(entryName);
+    setShowSaveModal(false);
+    setNewEntryName('');
+    fetchEntries();
+  } catch (err) {
+    console.error('Error saving entry:', err);
+    alert(isTamil ? 'சேமிப்பு தோல்வியடைந்தது. மீண்டும் முயற்சி செய்யவும்.' : 'Save failed. Please try again.');
+  } finally {
+    setSaving(false);
+  }
+};
+	
   const handleLocationSearch = (query: string, fieldKey: string) => {
     setValues((prev: any) => ({ ...prev, [fieldKey]: query }));
     setActiveLocationField(fieldKey);
@@ -567,19 +567,60 @@ export default function BiodataForm({ onSubmit, loading }: BiodataFormProps) {
           </div>
 
           {/* Optional Direct Photo URL/Input */}
-          <div className="space-y-1.5">
-            <span className="text-[10px] font-extrabold text-gray-600 dark:text-gray-500 uppercase tracking-widest flex items-center gap-1">
-              <ImageIcon className="w-3 h-3" />
-              {isTamil ? 'புகைப்படம் (URL / முகவரி)' : 'Photo (URL / Link)'}
-            </span>
-            <input
-              type="text"
-              value={values.photo}
-              onChange={(e) => setValues({ ...values, photo: e.target.value })}
-              placeholder="e.g. https://domain.com/photo.jpg"
-              className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-xs outline-none focus:border-violet-500"
-            />
-          </div>
+<div className="space-y-1.5">
+  <span className="text-[10px] font-extrabold text-gray-600 dark:text-gray-500 uppercase tracking-widest flex items-center gap-1">
+    <ImageIcon className="w-3 h-3" />
+    {isTamil ? 'புகைப்படம்' : 'Photo'}
+  </span>
+
+  {/* Preview */}
+  {values.photo ? (
+    <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
+      <img
+        src={values.photo}
+        alt="preview"
+        className="w-full h-full object-cover"
+      />
+      <button
+        onClick={() => setValues({ ...values, photo: '' })}
+        className="absolute top-0.5 right-0.5 bg-black/60 hover:bg-black/80 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px]"
+        title="Remove"
+      >
+        ✕
+      </button>
+    </div>
+  ) : (
+    <label className="flex flex-col items-center justify-center w-20 h-20 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg cursor-pointer hover:border-violet-500 transition-colors">
+      <ImageIcon className="w-5 h-5 text-gray-400 mb-1" />
+      <span className="text-[9px] text-gray-400 text-center leading-tight">
+        {isTamil ? 'படம் தேர்ந்தெடு' : 'Upload'}
+      </span>
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            setValues((prev: any) => ({ ...prev, photo: ev.target?.result as string }));
+          };
+          reader.readAsDataURL(file);
+        }}
+      />
+    </label>
+  )}
+
+  {/* URL fallback input */}
+  <input
+    type="text"
+    value={values.photo.startsWith('data:') ? '' : values.photo}
+    onChange={(e) => setValues({ ...values, photo: e.target.value })}
+    placeholder="…or paste a URL"
+    className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-xs outline-none focus:border-violet-500"
+  />
+</div>
         </div>
 
         {/* SECTION 2: Professional Details */}
