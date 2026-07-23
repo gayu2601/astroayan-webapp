@@ -221,17 +221,17 @@ function buildBiodataHtml(d: any, isTamil: boolean) {
         .section-line { flex: 1; height: 1px; background: #c8980f; }
 
         /* Personal block: photo left, 2-col grid right */
-        .personal-block { display: flex; gap: 12px; align-items: flex-start; }
-        .photo-box {
-          width: 100px; flex-shrink: 0;
-          border: 2px solid #c8980f; border-radius: 4px; overflow: hidden;
-        }
-        .photo-box img { width: 100px; height: 120px; object-fit: cover; display: block; }
-        .photo-placeholder {
-          width: 100px; height: 120px; background: #f5e8c8;
-          display: flex; flex-direction: column; align-items: center;
-          justify-content: center; font-size: 11px; color: #c8980f; text-align: center;
-        }
+        .personal-block { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.photo-box {
+  width: 110px; flex-shrink: 0;
+  border: 2px solid #c8980f; border-radius: 4px; overflow: hidden;
+}
+.photo-box img { width: 110px; height: 130px; object-fit: cover; display: block; }
+.photo-placeholder {
+  width: 110px; height: 130px; background: #f5e8c8;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; font-size: 11px; color: #c8980f; text-align: center;
+}
 
         /* 2-col cell grid */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0; flex: 1; }
@@ -314,27 +314,28 @@ function buildBiodataHtml(d: any, isTamil: boolean) {
         ${d.registrationNo ? `<span class="reg-no">Reg No: ${d.registrationNo}</span>` : ''}
 
         ${section(isTamil ? 'தனிப்பட்ட விவரங்கள்' : 'PERSONAL DETAILS')}
-        <div class="personal-block">
-          <div class="photo-box">
-            ${d.photo
-              ? `<img src="${d.photo}" />`
-              : `<div class="photo-placeholder">👤<br/>Photo Not Provided</div>`}
-          </div>
-          <div class="grid-2" style="flex:1">
-            ${cell('Name', d.name)}
-            ${cell('Gender', d.gender)}
-            ${cell('Date of Birth', d.dob)}
-            ${cell('Time of Birth', d.tob)}
-            ${cell('Birth Place', d.birthPlace)}
-            ${cell('Religion', d.religion)}
-            ${cell('Caste', d.caste)}
-            ${cell('Height', d.height)}
-            ${cell('Weight', d.weight)}
-            ${cell('Complexion', d.complexion)}
-            ${cell('Marital Status', d.maritalStatus)}
-            ${cell('Native Place', d.nativePlace)}
-          </div>
-        </div>
+
+<div class="personal-block">
+  <div class="photo-box">
+    ${d.photo
+      ? `<img src="${d.photo}" />`
+      : `<div class="photo-placeholder">👤<br/>Photo Not Provided</div>`}
+  </div>
+  <div class="grid-2" style="width:100%">
+    ${cell('Name', d.name)}
+    ${cell('Gender', d.gender)}
+    ${cell('Date of Birth', d.dob)}
+    ${cell('Time of Birth', d.tob)}
+    ${cell('Birth Place', d.birthPlace)}
+    ${cell('Religion', d.religion)}
+    ${cell('Caste', d.caste)}
+    ${cell('Height', d.height)}
+    ${cell('Weight', d.weight)}
+    ${cell('Complexion', d.complexion)}
+    ${cell('Marital Status', d.maritalStatus)}
+    ${cell('Native Place', d.nativePlace)}
+  </div>
+</div>
 
         ${section(isTamil ? 'கல்வி மற்றும் வேலை' : 'PROFESSIONAL & EDUCATION')}
         <div class="grid-2">
