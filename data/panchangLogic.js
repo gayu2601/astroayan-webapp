@@ -5,6 +5,10 @@
  *   panchang.response  → pan
  *   pan.advanced_details → adv
  *   adv.masa → masa
+ *
+ * Translation logic: always receives English API response (lang: 'en')
+ * All Tamil translation handled internally via maps.
+ * Times parsed from English strings → always correct AM/PM.
  */
 
 const LABELS = {
@@ -40,7 +44,10 @@ const LABELS = {
     shool: 'சூலம்',
     nallaNeram: 'நல்ல நேரம்',
     gowriNallaNeram: 'கௌரி நல்ல நேரம்',
-    chandrashtama: 'சந்திராஷ்டமம்'
+    chandrashtama: 'சந்திராஷ்டமம்',
+    morning: 'காலை',
+    evening: 'மாலை',
+    none:    'இல்லை',
   },
 
   en: {
@@ -75,252 +82,352 @@ const LABELS = {
     shool: 'Soolam',
     nallaNeram: 'Nalla Neram',
     gowriNallaNeram: 'Gowri Nalla Neram',
-    chandrashtama: 'Chandrashtamam'
+    chandrashtama: 'Chandrashtamam',
+    morning: 'Morning',
+    evening: 'Evening',
+    none:    'None',
   },
 };
 
-const NAKSHATRA_TRANSLATIONS = {
-  'Ashwini': 'அசுவினி', 'Bharani': 'பரணி', 'Krittika': 'கார்த்திகை',
-  'Rohini': 'ரோகிணி', 'Mrigashirsha': 'மிருகசீரிடம்', 'Ardra': 'திருவாதிரை',
-  'Punarvasu': 'புனர்பூசம்', 'Pushya': 'பூசம்', 'Ashlesha': 'ஆயில்யம்',
-  'Magha': 'மகம்', 'Purva Phalguni': 'பூரம்', 'Uttara Phalguni': 'உத்திரம்',
-  'Hasta': 'அஸ்தம்', 'Chitra': 'சித்திரை', 'Swati': 'சுவாதி',
-  'Visakha': 'விசாகம்', 'Anuradha': 'அனுஷம்', 'Jyeshtha': 'கேட்டை',
-  'Moola': 'மூலம்', 'Purva Ashadha': 'பூராடம்', 'Uttara Ashadha': 'உத்திராடம்',
-  'Shravana': 'திருவோணம்', 'Dhanishta': 'அவிட்டம்', 'Shatabhisha': 'சதயம்',
-  'Purva Bhadrapada': 'பூரட்டாதி', 'Uttara Bhadrapada': 'உத்திரட்டாதி', 'Revati': 'ரேவதி'
+// ── Translation Maps (English → Tamil) ───────────────────────────────────────
+const TITHI_NAMES = {
+  'Pratipada':  'பிரதமை',    'Dwitiya':    'துவிதியை',
+  'Tritiya':    'திருதியை',  'Chaturthi':  'சதுர்த்தி',
+  'Panchami':   'பஞ்சமி',   'Shashthi':   'சஷ்டி',
+  'Saptami':    'சப்தமி',   'Ashtami':    'அஷ்டமி',
+  'Navami':     'நவமி',      'Dashami':    'தசமி',
+  'Ekadashi':   'ஏகாதசி',   'Dwadashi':   'துவாதசி',
+  'Trayodasi':  'திரயோதசி', 'Chaturdasi': 'சதுர்த்தசி',
+  'Purnima':    'பௌர்ணமி',  'Amavasya':   'அமாவாசை',
 };
 
-const translateNakshatra = (name, lang) => {
-  if (!name) return '-';
-  if (lang !== 'ta') return name;
-  const cleanName = name.trim();
-  return NAKSHATRA_TRANSLATIONS[cleanName] || cleanName;
+const TITHI_TYPES = {
+  'Shukla': 'வளர்பிறை',
+  'Krishna': 'தேய்பிறை',
 };
 
-const toDate = (t) => {
-  if (!t) return null;
-  if (typeof t === 'string') {
-    if (t.includes('T')) {
-      const timePart = t.split('T')[1].split('+')[0];
-      const [h = 0, m = 0, s = 0] = timePart.split(':').map(Number);
-      return { hour: h, minute: m, second: s };
+const NAKSHATRA_NAMES = {
+  'Ashwini':            'அசுவினி',       'Bharani':           'பரணி',
+  'Krittika':           'கார்த்திகை',    'Rohini':            'ரோகிணி',
+  'Mrigashirsha':       'மிருகசீரிடம்',  'Mrigashira':        'மிருகசீரிடம்',
+  'Ardra':              'திருவாதிரை',    'Punarvasu':         'புனர்பூசம்',
+  'Pushya':             'பூசம்',          'Ashlesha':          'ஆயில்யம்',
+  'Magha':              'மகம்',           'Purva Phalguni':    'பூரம்',
+  'Uttara Phalguni':    'உத்திரம்',       'Hasta':             'அஸ்தம்',
+  'Chitra':             'சித்திரை',      'Swati':             'சுவாதி',
+  'Visakha':            'விசாகம்',        'Vishakha':          'விசாகம்',
+  'Anuradha':           'அனுஷம்',         'Jyeshtha':          'கேட்டை',
+  'Moola':              'மூலம்',           'Mula':              'மூலம்',
+  'Purva Ashadha':      'பூராடம்',        'PurvaShadha':       'பூராடம்',
+  'Uttara Ashadha':     'உத்திராடம்',     'UttaraShadha':      'உத்திராடம்',
+  'Shravana':           'திருவோணம்',     'Shravan':           'திருவோணம்',
+  'Dhanishta':          'அவிட்டம்',       'Dhanistha':         'அவிட்டம்',
+  'Shatabhisha':        'சதயம்',          'Shatbhisha':        'சதயம்',
+  'Purva Bhadrapada':   'பூரட்டாதி',      'Purvabhadra':       'பூரட்டாதி',
+  'Uttara Bhadrapada':  'உத்திரட்டாதி',   'Uttarabhadra':      'உத்திரட்டாதி',
+  'Revati':             'ரேவதி',
+};
+
+const YOGA_NAMES = {
+  'Vishkambha': 'விஷ்கும்பம்', 'Prithi':      'பிரீதி',
+  'Ayushman':   'ஆயுஷ்மான்',  'Saubhagya':  'சௌபாக்கியம்',
+  'Shobhana':   'சோபனம்',      'Atiganda':   'அதிகண்டம்',
+  'Sukarma':    'சுகர்மம்',    'Dhriti':     'திருதி',
+  'Shula':      'சூலம்',        'Ganda':      'கண்டம்',
+  'Vriddhi':    'வ்ருத்தி',    'Vridhi':     'வ்ருத்தி',
+  'Dhruva':     'துருவம்',      'Vyaghata':   'வ்யாகாதம்',
+  'Harshana':   'ஹர்ஷணம்',    'Vajra':      'வஜ்ரம்',
+  'Siddhi':     'சித்தி',       'Vyatipata':  'வ்யதீபாதம்',
+  'Variyana':   'வரியான்',      'Parigha':    'பரிகம்',
+  'Shiva':      'சிவம்',        'Siddha':     'சித்தம்',
+  'Sadhya':     'சாத்யம்',     'Shubha':     'சுபம்',
+  'Shukla':     'சுக்லம்',     'Bramha':     'பிரம்மம்',
+  'Indra':      'இந்திரம்',    'Vaidhruthi': 'வைத்ருதி',
+  'Sukla':      'சுக்லம்',
+};
+
+const KARANA_NAMES = {
+  'Bava':        'பவம்',        'Balava':      'பாலவம்',
+  'Kaulava':     'கௌலவம்',     'Taitula':     'தைதிலம்',
+  'Garaja':      'கரஜம்',       'Vanija':      'வணிஜம்',
+  'Vishti':      'விஷ்டி',      'Shakuni':     'சகுனி',
+  'Chatushpada': 'சதுஷ்பாதம்', 'Naga':        'நாகம்',
+  'Kimstughna':  'கிம்ஸ்துக்னம்',
+};
+
+const DISHA_SHOOL = {
+  'East': 'கிழக்கு', 'West': 'மேற்கு',
+  'North': 'வடக்கு', 'South': 'தெற்கு',
+  'NE': 'வடகிழக்கு', 'NW': 'வடமேற்கு',
+  'SE': 'தென்கிழக்கு', 'SW': 'தென்மேற்கு',
+};
+
+// ── Translate helpers ─────────────────────────────────────────────────────────
+const tr = (map, val, lang) => {
+  if (!val) return '-';
+  return lang === 'ta' ? (map[val] || val) : val;
+};
+
+export const translateNakshatra = (name, lang) => tr(NAKSHATRA_NAMES, name?.trim(), lang);
+export const translateTithi     = (name, lang) => tr(TITHI_NAMES,    name?.trim(), lang);
+export const translateTithiType = (type, lang) => tr(TITHI_TYPES,    type?.trim(), lang);
+export const translateYoga      = (name, lang) => tr(YOGA_NAMES,     name?.trim(), lang);
+export const translateKarana    = (name, lang) => tr(KARANA_NAMES,   name?.trim(), lang);
+export const translateDisha     = (val,  lang) => tr(DISHA_SHOOL,    val?.trim(),  lang);
+
+// ── Time Utilities (English API strings only) ─────────────────────────────────
+
+/**
+ * Parse English API date string → Date object
+ * Handles: "Sun Jul 12 2026 10:05:08 PM"
+ *          "Sun Jul 12 2026 1:39:29 AM"
+ */
+const parseEnglishDateStr = (str, refDateStr) => {
+  if (!str || typeof str !== 'string') return null;
+
+  // Full date string with year: "Sun Jul 12 2026 10:05:08 PM"
+  if (/\d{4}/.test(str)) {
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // Time-only string, with or without seconds/AM-PM:
+  // "11:51:55 AM", "05:15 PM", "6:50:42 PM", "06:15" (24hr)
+  const timeMatch = str.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+  if (timeMatch) {
+    const [, hh, mm, ss, ampm] = timeMatch;
+    let h = parseInt(hh, 10);
+    if (ampm) {
+      if (/pm/i.test(ampm) && h !== 12) h += 12;
+      if (/am/i.test(ampm) && h === 12) h = 0;
     }
-    const [h = 0, m = 0, s = 0] = t.split(':').map(Number);
-    return { hour: h, minute: m, second: s };
+    const base = refDateStr ? new Date(refDateStr) : new Date();
+    if (isNaN(base.getTime())) return null;
+    base.setHours(h, parseInt(mm, 10), ss ? parseInt(ss, 10) : 0, 0);
+    return base;
   }
-  return t;
+
+  return null;
 };
 
-// ── Tamil time-string parser ───────────────────────────────────────────────
-// Handles strings like: "அதிகாலை 5:59 மணி", "மாலை 6:45 மணி", "இரவு 2:10 மணி"
-const TAMIL_PERIOD_MAP = {
-  'அதிகாலை': 'AM',  // pre-dawn
-  'காலை':    'AM',  // morning
-  'மதியம்':  'PM',  // afternoon / noon
-  'பிற்பகல்':'PM',  // post-noon
-  'மாலை':    'PM',  // evening
-  'இரவு':    null,  // night — resolved by hour (< 6 → AM, else PM)
-};
+export const fmtTime = (str) => {
+  if (!str || typeof str !== 'string') return '-';
 
-const parseTamilTimeStr = (str) => {
-  if (!str || typeof str !== 'string') return null;
-
-  for (const [period, ampm] of Object.entries(TAMIL_PERIOD_MAP)) {
-    if (!str.includes(period)) continue;
-
-    const match = str.match(/(\d{1,2}):(\d{2})/);
-    if (!match) return null;
-
-    const hour   = parseInt(match[1], 10);
-    const minute = parseInt(match[2], 10);
-    // இரவு: hours 1–5 are past midnight (AM), 6–11 are evening (PM)
-    const resolvedAmpm = ampm ?? (hour < 6 ? 'AM' : 'PM');
-
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${pad(hour)}:${pad(minute)} ${resolvedAmpm}`;
+  if (/\d{4}/.test(str)) {
+    const d = parseEnglishDateStr(str);
+    if (d) {
+      const h   = d.getHours();
+      const h12 = h % 12 || 12;
+      const mm  = String(d.getMinutes()).padStart(2, '0');
+      return `${String(h12).padStart(2, '0')}:${mm} ${h < 12 ? 'AM' : 'PM'}`;
+    }
   }
-  return null; // not a Tamil time string
-};
 
-const MONTH_MAP = {
-  'ஜனவரி': 0, 'பிப்ரவரி': 1, 'மார்ச்': 2, 'ஏப்ரல்': 3,
-  'மே': 4, 'ஜூன்': 5, 'ஜூலை': 6, 'ஆகஸ்ட்': 7,
-  'செப்டம்பர்': 8, 'அக்டோபர்': 9, 'நவம்பர்': 10, 'டிசம்பர்': 11,
-};
-
-const parseTamilFullDateStr = (str) => {
-  if (!str || typeof str !== 'string') return null;
-  let month = -1;
-  for (const [tamilMonth, mNum] of Object.entries(MONTH_MAP)) {
-    if (str.includes(tamilMonth)) { month = mNum; break; }
+  const timeMatch = str.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+  if (timeMatch) {
+    const [, hh, mm, , ampm] = timeMatch;
+    let h = parseInt(hh, 10);
+    if (ampm) {
+      if (/pm/i.test(ampm) && h !== 12) h += 12;
+      if (/am/i.test(ampm) && h === 12) h = 0;
+    }
+    const h12 = h % 12 || 12;
+    return `${String(h12).padStart(2, '0')}:${mm} ${h < 12 ? 'AM' : 'PM'}`;
   }
-  const dayMatch  = str.match(/(\d{1,2})\s+\d{4}/);
-  const yearMatch = str.match(/\d{4}/);
-  if (!dayMatch || !yearMatch || month === -1) return null;
-  const day  = parseInt(dayMatch[1], 10);
-  const year = parseInt(yearMatch[0], 10);
-  const timeMatch = str.match(/(\d{1,2}):(\d{2})/);
-  if (!timeMatch) return null;
-  let hour   = parseInt(timeMatch[1], 10);
-  const minute = parseInt(timeMatch[2], 10);
-  if ((str.includes('மாலை') || str.includes('இரவு') || str.includes('மதியம்') || str.includes('பிற்பகல்')) && hour < 12) {
-    hour += 12;
-  }
-  return new Date(year, month, day, hour, minute, 0);
+
+  return '-';
 };
 
-const toTamilTimePeriod = (str) => {
-  if (str.includes('அதிகாலை')) return 'அதிகாலை';
-  if (str.includes('காலை'))    return 'காலை';
-  if (str.includes('மதியம்'))  return 'மதியம்';
-  if (str.includes('பிற்பகல்'))return 'பிற்பகல்';
-  if (str.includes('மாலை'))   return 'மாலை';
-  if (str.includes('இரவு'))    return 'இரவு';
-  return '';
+export const fmt12 = (t) => {
+  if (!t) return '-';
+  return fmtTime(String(t));
 };
 
-// ── Resolve 24h hour → Tamil period label ────────────────────────────────
-// Rules:
-//   00:00–00:59  → நேற்று நள்ளிரவு  (yesterday's auspicious night / midnight)
-//   01:00–05:59  → அதிகாலை          (pre-dawn)
-//   06:00–11:59  → காலை             (morning)
-//   12:00–13:59  → மதியம்           (noon/afternoon)
-//   14:00–16:59  → பிற்பகல்         (post-noon)
-//   17:00–19:59  → மாலை            (evening)
-//   20:00–23:59  → இரவு            (night)
-const hourToTamilPeriod = (hour24) => {
-  if (hour24 === 0)              return 'நேற்று நள்ளிரவு';
-  if (hour24 >= 1 && hour24 < 6) return 'அதிகாலை';
-  if (hour24 < 12)               return 'காலை';
-  if (hour24 < 14)               return 'மதியம்';
-  if (hour24 < 17)               return 'பிற்பகல்';
-  if (hour24 < 20)               return 'மாலை';
+/**
+ * Tamil period label from 24-hour value
+ */
+const inferTamilPeriod = (hour) => {
+  if (hour >= 0  && hour < 5)  return 'அதிகாலை';
+  if (hour >= 5  && hour < 12) return 'காலை';
+  if (hour >= 12 && hour < 16) return 'மதியம்';
+  if (hour >= 16 && hour < 18) return 'பிற்பகல்';
+  if (hour >= 18 && hour < 21) return 'மாலை';
   return 'இரவு';
 };
 
-// ── Convert a Tamil full date string → { relLabel, period, hhmm, ampm } ──
-const parseTamilTimeComponents = (str, todayDateStr) => {
-  if (!str || typeof str !== 'string') return null;
-
-  const dt = parseTamilFullDateStr(str);
-  const todayDt = parseTamilFullDateStr((todayDateStr || '') + ' காலை 12:00 மணி');
-
-  let relLabel = 'இன்று';
-  let hour24   = null;
-  let minute   = null;
-
-  if (dt) {
-    hour24 = dt.getHours();
-    minute = dt.getMinutes();
-    if (todayDt) {
-      const diffDays = Math.round((dt - todayDt) / (1000 * 60 * 60 * 24));
-      if (diffDays <= -1)     relLabel = 'நேற்று';
-      else if (diffDays >= 1) relLabel = 'நாளை';
-    }
-  } else {
-    // No full date — try to extract time + period from the raw string
-    const rawParsed = parseTamilTimeStr(str);
-    if (!rawParsed) return null;
-    const [hm, ap] = rawParsed.split(' ');
-    const [h, m] = hm.split(':').map(Number);
-    // convert to rough 24h for period detection
-    if (ap === 'PM' && h < 12) hour24 = h + 12;
-    else if (ap === 'AM' && h === 12) hour24 = 0;
-    else hour24 = h;
-    minute = m;
-    relLabel = null; // no date info
-  }
-
-  const period = hourToTamilPeriod(hour24);
-  const pad    = (n) => String(n).padStart(2, '0');
-  // Display hour: use 12h format but keep original hour digits for readability
-  // For அதிகாலை/இரவு etc., show as-is (e.g., 02:30)
-  const displayHour = hour24 % 12 || 12;
-  const ampm = hour24 < 12 ? 'AM' : 'PM';
-  const hhmm = `${pad(displayHour)}:${pad(minute)}`;
-
-  // special midnight label already embedded in period
-  if (hour24 === 0) {
-    return { relLabel: relLabel || '', period: 'நேற்று நள்ளிரவு', hhmm, ampm };
-  }
-
-  return { relLabel: relLabel || '', period, hhmm, ampm };
+/**
+ * English period label from 24-hour value
+ */
+const inferEnglishPeriod = (hour) => {
+  if (hour >= 0  && hour < 5)  return 'Early Morning';
+  if (hour >= 5  && hour < 12) return 'Morning';
+  if (hour >= 12 && hour < 16) return 'Afternoon';
+  if (hour >= 16 && hour < 18) return 'Late Afternoon';
+  if (hour >= 18 && hour < 21) return 'Evening';
+  return 'Night';
 };
 
-// ── Format a single Tamil time string → "இன்று காலை 07:11 AM" ────────────
+/**
+ * Format English date string → Tamil relative time
+ * e.g. "Sun Jul 12 2026 10:05:08 PM" → "இன்று மாலை 10:05"
+ */
 const toTamilRelativeTime = (str, todayDateStr) => {
-  const parts = parseTamilTimeComponents(str, todayDateStr);
-  if (!parts) return '-';
-  const { relLabel, period, hhmm, ampm } = parts;
-  const prefix = relLabel ? `${relLabel} ` : '';
-  return `${prefix}${period} ${hhmm} ${ampm}`;
+  const dt = parseEnglishDateStr(str, todayDateStr);
+  if (!dt) return '-';
+
+  const today = todayDateStr ? new Date(todayDateStr) : new Date();
+  today.setHours(0, 0, 0, 0);
+  const dtDay = new Date(dt);
+  dtDay.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((dtDay - today) / 86400000);
+
+  let relLabel =
+    diffDays <= -1 ? 'நேற்று' :
+    diffDays >= 1  ? 'நாளை'  : 'இன்று';
+
+  const hour = dt.getHours();
+
+  // Panchang convention: 12 AM–5 AM still counts as "today", not "yesterday night"
+  if (relLabel === 'நேற்று' && hour >= 0 && hour < 5) {
+    relLabel = 'இன்று';
+  }
+
+  const h12    = hour % 12 || 12;
+  const mm     = String(dt.getMinutes()).padStart(2, '0');
+  const period = inferTamilPeriod(hour);
+
+  return `${relLabel} ${period} ${h12}:${mm}`;
 };
 
-// ── Format a start–end range: "இன்று காலை 07:11 AM முதல் காலை 08:48 AM வரை" ──
-const fmtRelativeRange = (startStr, endStr, todayDateStr) => {
+/**
+ * Format English date string → English relative time
+ * e.g. "Sun Jul 12 2026 10:05:08 PM" → "Today Evening 10:05 PM"
+ */
+const toEnglishRelativeTime = (str, todayDateStr) => {
+  const dt = parseEnglishDateStr(str, todayDateStr);
+  if (!dt) return '-';
+
+  const today = todayDateStr ? new Date(todayDateStr) : new Date();
+  today.setHours(0, 0, 0, 0);
+  const dtDay = new Date(dt);
+  dtDay.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((dtDay - today) / 86400000);
+
+  let relLabel =
+    diffDays <= -1 ? 'Yesterday' :
+    diffDays >= 1  ? 'Tomorrow'  : 'Today';
+
+  const hour = dt.getHours();
+
+  if (relLabel === 'Yesterday' && hour >= 0 && hour < 5) {
+    relLabel = 'Today';
+  }
+
+  const h12    = hour % 12 || 12;
+  const mm     = String(dt.getMinutes()).padStart(2, '0');
+  const ampm   = hour < 12 ? 'AM' : 'PM';
+  const period = inferEnglishPeriod(hour);
+
+  return `${relLabel} ${period} ${String(h12).padStart(2, '0')}:${mm} ${ampm}`;
+};
+
+/**
+ * Format a range of two English date strings.
+ * Tamil:   "இன்று மாலை 10:05 முதல்\nநாளை காலை 6:00 வரை"
+ * English: "Today Evening 10:05 PM – Tomorrow Morning 06:00 AM"
+ */
+export const fmtRelativeRange = (startStr, endStr, todayDateStr, lang) => {
   if (!startStr && !endStr) return '-';
-  const s = startStr ? toTamilRelativeTime(startStr, todayDateStr) : null;
-  const e = endStr   ? toTamilRelativeTime(endStr,   todayDateStr) : null;
-  if (s && e) return `${s} முதல் ${e} வரை`;
-  if (e)      return `${e} வரை`;
-  return s || '-';
-};
 
-const fmtTime = (t) => {
-  if (typeof t === 'string') {
-    const tamilResult = parseTamilTimeStr(t);
-    if (tamilResult) return tamilResult;
+  if (lang === 'ta') {
+    const s = startStr ? toTamilRelativeTime(startStr, todayDateStr) : null;
+    const e = endStr   ? toTamilRelativeTime(endStr,   todayDateStr) : null;
+    if (s && e) return `${s} முதல் ${e} வரை`;
+    if (e)      return `${e} வரை`;
+    return s || '-';
+  } else {
+    const s = fmtTime(startStr);
+    const e = fmtTime(endStr);
+    if (s !== '-' && e !== '-') return `${s} – ${e}`;
+    return s !== '-' ? s : (e !== '-' ? e : '-');
   }
-  const d = toDate(t);
-  if (!d) return '-';
-  const pad  = (n) => String(n).padStart(2, '0');
-  const h12  = d.hour % 12 || 12;
-  const ampm = d.hour < 12 ? 'AM' : 'PM';
-  return `${pad(h12)}:${pad(d.minute)} ${ampm}`;
 };
 
-const fmtRange = (obj) => {
+export const fmtRange = (obj, lang) => {
   if (!obj) return '-';
-  const s = fmtTime(obj.start || obj.start_time);
-  const e = fmtTime(obj.end   || obj.end_time);
-  return s === '-' ? '-' : `${s} – ${e}`;
+  const s = obj.start || obj.start_time;
+  const e = obj.end   || obj.end_time;
+  return fmtRelativeRange(s, e, null, lang);
 };
 
-const fmt12 = (t) => {
-  if (!t) return '-';
-  const parts = t.split(':');
-  if (parts.length === 2) parts.push('00');
-  return fmtTime(parts.join(':'));
+// ── Tithi name formatting ─────────────────────────────────────────────────────
+export const formatTithiName = (name, type, lang) => {
+  const tName = translateTithi(name, lang);
+  const tType = translateTithiType(type, lang);
+  return tType ? `${tType} ${tName}` : tName;
 };
 
-// ── Format nalla neram slot string → "07:30 AM - 08:30 AM" ──────────────
-// Input:  "காலை 07:30 மணி முதல் காலை 08:30 மணி வரை"  (or similar)
-const formatNeramSlotWithAMPM = (slotStr) => {
+// ── Nalla Neram slot formatter ────────────────────────────────────────────────
+/**
+ * Parses a slot string that may contain Tamil period labels OR English AM/PM times.
+ * Tamil input:  "காலை 08:00 - காலை 09:30"
+ * English input: "08:00 AM - 09:30 AM"
+ * Returns a normalised "HH:MM AM/PM - HH:MM AM/PM" string.
+ */
+export const formatNeramSlot = (slotStr, lang) => {
   if (!slotStr) return '-';
-  // Match all time tokens with period prefixes
-  const regex = /(அதிகாலை|காலை|மதியம்|பிற்பகல்|மாலை|இரவு)\s*(\d{1,2}):(\d{2})/g;
-  const matches = [...slotStr.matchAll(regex)];
-  if (matches.length < 2) {
-    // fallback — just strip to hh:mm pairs
-    const simple = slotStr.match(/\d{1,2}:\d{2}/g);
-    return simple ? simple.join(' - ') : slotStr;
+
+  // Try Tamil period pattern first: "காலை 08:00 - மாலை 05:30"
+  const tamilRegex = /(காலை|மாலை)\s*(\d{2}:\d{2}).*?(காலை|மாலை)\s*(\d{2}:\d{2})/;
+  const tamilMatch = slotStr.match(tamilRegex);
+  if (tamilMatch) {
+    const startPeriod = tamilMatch[1] === 'காலை' ? 'AM' : 'PM';
+    const endPeriod   = tamilMatch[3] === 'காலை' ? 'AM' : 'PM';
+    return `${tamilMatch[2]} ${startPeriod} - ${tamilMatch[4]} ${endPeriod}`;
   }
-  const fmt = (m) => {
-    const period = m[1];
-    const h = parseInt(m[2], 10);
-    const min = m[3];
-    const isAM = (period === 'காலை' || period === 'அதிகாலை');
-    const ampm = isAM ? 'AM' : 'PM';
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${pad(h)}:${min} ${ampm}`;
-  };
-  return `${fmt(matches[0])} - ${fmt(matches[1])}`;
+
+  // Try English AM/PM pattern: "08:00 AM - 09:30 AM"
+  const englishRegex = /(\d{1,2}:\d{2})\s*(AM|PM)?\s*[-–to]+\s*(\d{1,2}:\d{2})\s*(AM|PM)?/i;
+  const englishMatch = slotStr.match(englishRegex);
+  if (englishMatch) {
+    const [, st, sa, et, ea] = englishMatch;
+    return `${st}${sa ? ' ' + sa : ''} - ${et}${ea ? ' ' + ea : ''}`;
+  }
+
+  return slotStr;
+};
+
+/**
+ * Format an "asubha" (inauspicious) time value — Rahu Kaal, Gulika, Yamakantam.
+ * Accepts either an { start, end } / { start_time, end_time } object, or a
+ * plain "HH:MM AM/PM to HH:MM AM/PM" string, and returns a localized,
+ * relative-day-aware range string.
+ */
+export const fmtAsubha = (val, todayDateStr, lang) => {
+  if (!val) return '-';
+
+  // Object with start/end
+  if (typeof val === 'object' && (val.start || val.start_time)) {
+    const s = val.start || val.start_time;
+    const e = val.end   || val.end_time;
+    return fmtRelativeRange(s, e, todayDateStr, lang);
+  }
+
+  // Plain string: "05:04 PM to 06:40 PM"
+  if (typeof val === 'string') {
+    const match = val.match(/^(.+?)\s+to\s+(.+)$/i);
+    if (match) {
+      return fmtRelativeRange(match[1].trim(), match[2].trim(), todayDateStr, lang);
+    }
+    return val;
+  }
+
+  return '-';
 };
 
 export const generatePanchangHTML = (jsonobj, lang, user) => {
   // ── Align with PanchangScreen.js API shape ─────────────────────────────────
-  console.log('in generatePanchangHTML', jsonobj)
+  console.log('in generatePanchangHTML', jsonobj);
   const pan  = jsonobj?.panchang?.response || jsonobj?.response || jsonobj;
   const todayDateStr = pan?.date || '';
   const astrologerName     = user?.name     || '';
@@ -331,30 +438,7 @@ export const generatePanchangHTML = (jsonobj, lang, user) => {
   const adv  = pan?.advanced_details || {};
   const masa = adv?.masa || {};
 
-  const planetsRaw = jsonobj?.planets?.response
-                  || jsonobj?.planets
-                  || jsonobj?.response
-                  || {};
-
-  const planets = Array.isArray(planetsRaw)
-    ? planetsRaw
-    : Object.entries(planetsRaw)
-        .filter(([key, val]) =>
-          !isNaN(Number(key)) &&
-          val &&
-          typeof val === 'object' &&
-          val.rasi_no != null
-        )
-        .map(([_, val]) => val);
-
   const L = LABELS[lang] || LABELS.ta;
-
-  const planetNameMap = {
-    'வியாழன்': 'குரு',
-    'வெள்ளி':  'சுக்ரன்',
-    'லக்னம்':  'லக்',
-    'Ascendant': 'Asc',
-  };
 
   // ── 1. Sunrise / Sunset values ────────────────────────────────────────────
   const sunriseVal = fmt12(adv?.sun_rise);
@@ -368,122 +452,94 @@ export const generatePanchangHTML = (jsonobj, lang, user) => {
     if (standardNallaNeram.morning?.length) {
       standardNallaNeram.morning.forEach(slot =>
         nallaNeramRows.push({
-          label: lang === 'ta' ? 'காலை' : 'Morning',
-          value: formatNeramSlotWithAMPM(slot),
+          label: L.morning,
+          value: formatNeramSlot(slot, lang),
         })
       );
     }
     if (standardNallaNeram.evening?.length) {
       standardNallaNeram.evening.forEach(slot =>
         nallaNeramRows.push({
-          label: lang === 'ta' ? 'மாலை' : 'Evening',
-          value: formatNeramSlotWithAMPM(slot),
+          label: L.evening,
+          value: formatNeramSlot(slot, lang),
         })
       );
     }
   }
-  if (!nallaNeramRows.length) nallaNeramRows = [{ label: '', value: lang === 'ta' ? 'இல்லை' : 'None' }];
+  if (!nallaNeramRows.length) nallaNeramRows = [{ label: '', value: L.none }];
 
   // ── 3. Gowri Nalla Neram ──────────────────────────────────────────────────
   const gowriData = jsonobj?.gowriNallaNeram || { daySlots: [], nightSlots: [] };
   const daySlots   = gowriData.daySlots   || [];
   const nightSlots = gowriData.nightSlots || [];
 
-  const getAmirdhaSlots = (slots) => {
-    return slots.filter((slot) => {
-      const n = slot.name?.trim()?.toLowerCase();
-      return n === 'அமிர்த' || n === 'amirdha' || n === 'amirtha';
+  const getAmirdhaSlots = (slots) =>
+    slots.filter(s => {
+      const name = s.name?.trim()?.toLowerCase() || '';
+      return name === 'அமிர்த' || name === 'amirdha' || name === 'amirtha' || name === 'amrita';
     });
-  };
-
-  const noneLabel  = lang === 'ta' ? 'இல்லை' : 'None';
 
   const dayAmirdhaList   = getAmirdhaSlots(daySlots);
   const nightAmirdhaList = getAmirdhaSlots(nightSlots);
 
-  // Format each Gowri slot timeRange with AM/PM
   const formatGowriTimeRange = (timeRange) => {
-    if (!timeRange) return noneLabel;
-    return formatNeramSlotWithAMPM(timeRange);
+    if (!timeRange) return L.none;
+    return formatNeramSlot(timeRange, lang);
   };
 
   let gowriRows = []; // { label, value }
   if (dayAmirdhaList.length) {
     dayAmirdhaList.forEach(s => gowriRows.push({
-      label: lang === 'ta' ? 'காலை' : 'Morning',
+      label: L.morning,
       value: formatGowriTimeRange(s.timeRange),
     }));
   } else {
-    gowriRows.push({ label: lang === 'ta' ? 'காலை' : 'Morning', value: noneLabel });
+    gowriRows.push({ label: L.morning, value: L.none });
   }
   if (nightAmirdhaList.length) {
     nightAmirdhaList.forEach(s => gowriRows.push({
-      label: lang === 'ta' ? 'மாலை' : 'Evening',
+      label: L.evening,
       value: formatGowriTimeRange(s.timeRange),
     }));
   } else {
-    gowriRows.push({ label: lang === 'ta' ? 'மாலை' : 'Evening', value: noneLabel });
+    gowriRows.push({ label: L.evening, value: L.none });
   }
 
   // ── 4. Tithi ──────────────────────────────────────────────────────────────
-  const formatTithiName = (name) => {
-    if (!name) return name;
-    return name
-      .replace(/சுக்ல/g,   'வளர்பிறை')
-      .replace(/கிருஷ்ணா/g, 'தேய்பிறை')
-      .replace(/Shukla/gi,  'Valarpirai')
-      .replace(/Krishna/gi, 'Theipirai');
-  };
+  const tithiName = formatTithiName(pan?.tithi?.name, pan?.tithi?.type, lang);
+  const tithiTime = fmtRelativeRange(pan?.tithi?.start, pan?.tithi?.end, todayDateStr, lang);
 
-  const tithiName = formatTithiName(pan?.tithi?.name);
-  const tithiTime = fmtRelativeRange(pan?.tithi?.start, pan?.tithi?.end, todayDateStr);
-  const abhijitTime = fmtRelativeRange(adv?.abhijit_muhurta?.start, adv?.abhijit_muhurta?.end, todayDateStr);
+  // ── 5. Abhijit ────────────────────────────────────────────────────────────
+  const abhijitRaw = adv?.abhijit_muhurta
+                  || adv?.abhijit_muhurat
+                  || adv?.abhijit
+                  || pan?.abhijit_muhurta
+                  || pan?.abhijit_muhurat
+                  || pan?.abhijit
+                  || null;
+  const abhijitTime = abhijitRaw
+    ? fmtRelativeRange(abhijitRaw.start, abhijitRaw.end, todayDateStr, lang)
+    : '-';
 
-  // ── 5. Asubha values ──────────────────────────────────────────────────────
-  const fmtAsubha = (val) => {
-    if (!val) return '-';
-    if (typeof val === 'string') return val;
-    return fmtRange(val);
-  };
+  // ── 6. Asubha values ──────────────────────────────────────────────────────
+  const rahukaalVal = fmtAsubha(pan?.rahukaal, todayDateStr, lang);
+  const gulikaalVal = fmtAsubha(pan?.gulika, todayDateStr, lang);
+  const yamghantVal = fmtAsubha(pan?.yamakanta, todayDateStr, lang);
 
-  const rahukaalVal  = fmtAsubha(pan?.rahukaal);
-  const gulikaalVal  = fmtAsubha(pan?.gulika);
-  const yamghantVal  = fmtAsubha(pan?.yamakanta);
-
-  // ── 6. Chandrashtama ──────────────────────────────────────────────────────
+  // ── 7. Chandrashtama ──────────────────────────────────────────────────────
   const chandrashtama = jsonobj?.chandrashtama || '-';
 
-  // ── 7. Element values: Nakshatra / Yog / Karan / Disha Shool ─────────────
-  const nakshatraName = translateNakshatra(pan?.nakshatra?.name, lang) || pan?.nakshatra?.name;
-  const nakshatraTime = fmtRelativeRange(pan?.nakshatra?.start, pan?.nakshatra?.end, todayDateStr);
+  // ── 8. Element values: Nakshatra / Yog / Karan / Disha Shool ─────────────
+  const nakshatraName = translateNakshatra(pan?.nakshatra?.name, lang);
+  const nakshatraTime = fmtRelativeRange(pan?.nakshatra?.start, pan?.nakshatra?.end, todayDateStr, lang);
 
-  const yogName = pan?.yoga?.name;
-  const yogTime = fmtRelativeRange(pan?.yoga?.start, pan?.yoga?.end, todayDateStr);
+  const yogName = translateYoga(pan?.yoga?.name, lang);
+  const yogTime = fmtRelativeRange(pan?.yoga?.start, pan?.yoga?.end, todayDateStr, lang);
 
-  const karanName = pan?.karana?.name;
-  const karanTime = fmtRelativeRange(pan?.karana?.start, pan?.karana?.end, todayDateStr);
+  const karanName = translateKarana(pan?.karana?.name, lang);
+  const karanTime = fmtRelativeRange(pan?.karana?.start, pan?.karana?.end, todayDateStr, lang);
 
-  const dishaShoolName = adv?.disha_shool || '-';
-
-  // ── Abhijit Muhurtha — build sub-rows (label from start-time period) ─────
-  const buildAbhijitRows = () => {
-    const start = adv?.abhijit_muhurta?.start;
-    const end   = adv?.abhijit_muhurta?.end;
-    if (!start && !end) return [{ label: '', value: '-' }];
-
-    const startParts = start ? parseTamilTimeComponents(start, todayDateStr) : null;
-    const endParts   = end   ? parseTamilTimeComponents(end,   todayDateStr) : null;
-
-    // Derive the label (காலை / மாலை etc.) from the start time period
-    const periodLabel = startParts?.period || endParts?.period || '';
-
-    const startFmt = startParts ? `${startParts.hhmm} ${startParts.ampm}` : '-';
-    const endFmt   = endParts   ? `${endParts.hhmm} ${endParts.ampm}`     : '-';
-    const value    = (startParts && endParts) ? `${startFmt} - ${endFmt}` : (startFmt !== '-' ? startFmt : endFmt);
-
-    return [{ label: periodLabel, value }];
-  };
-  const abhijitRows = buildAbhijitRows();
+  const dishaShoolName = translateDisha(adv?.disha_shool, lang);
 
   const dateStr = pan?.date || '';
 

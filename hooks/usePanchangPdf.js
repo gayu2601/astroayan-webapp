@@ -219,7 +219,7 @@ export const usePanchangPdf = () => {
       const paddedDate = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
       const paddedTime = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
 	  
-	  let inputParams = { date: paddedDate, time: paddedTime, tz: tzone, lat, lon, lang: currentLang, api_key: '6a0b4e5a-b8d5-5e1a-bd97-6128ad38d349'};
+	  let inputParams = { date: paddedDate, time: paddedTime, tz: tzone, lat, lon, lang: 'en', api_key: '6a0b4e5a-b8d5-5e1a-bd97-6128ad38d349'};
 	  const { date, time, ...rest } = inputParams;
 
       const panchangParams = { ...rest, date: paddedDate, time: paddedTime };

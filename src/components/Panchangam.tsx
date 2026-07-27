@@ -4,6 +4,18 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { computeNallaNeram } from '../../data/nallaNeramUtils';
 import { Calendar, Sun, Moon, AlertTriangle, Sparkles, ChevronRight, RefreshCw, Compass } from 'lucide-react';
 import ScreenGuard from './ScreenGuard';
+import {
+  translateNakshatra,
+  translateTithi,
+  translateTithiType,
+  translateYoga,
+  translateKarana,
+  translateDisha,
+  formatTithiName,
+  fmt12,
+  fmtRelativeRange,
+  fmtAsubha,
+} from '../../data/panchangLogic'; // adjust path to wherever panchangLogic.js actually lives
 
 const FALLBACK_COORDS = { lat: 13.0827, lon: 80.2707 }; // Default to Chennai
 
@@ -127,6 +139,44 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
   // Auspicious times helper (based on hook's sunrise details)
   const nn = pan && adv?.sun_rise ? computeNallaNeram(adv.sun_rise, new Date(selectedDate).getDay()) : null;
 
+  // ── Localized / translated panchang values (panchangLogic.js) ──────────────
+  // panchangLogic always expects the raw English API values in, and returns
+  // either the English string back out or the mapped Tamil equivalent,
+  // depending on `lang`.
+  const lang = isTamil ? 'ta' : 'en';
+  const todayDateStr = pan?.date || '';
+
+  const tithiName = pan?.tithi ? formatTithiName(pan.tithi.name, pan.tithi.type, lang) : null;
+  const tithiRange = pan?.tithi ? fmtRelativeRange(pan.tithi.start, pan.tithi.end, todayDateStr, lang) : '—';
+  const tithiNext = pan?.tithi?.next_tithi ? translateTithi(pan.tithi.next_tithi, lang) : null;
+
+  const nakshatraName = pan?.nakshatra ? translateNakshatra(pan.nakshatra.name, lang) : null;
+  const nakshatraRange = pan?.nakshatra ? fmtRelativeRange(pan.nakshatra.start, pan.nakshatra.end, todayDateStr, lang) : '—';
+  const nakshatraNext = pan?.nakshatra?.next_nakshatra ? translateNakshatra(pan.nakshatra.next_nakshatra, lang) : null;
+
+  const yogaName = pan?.yoga ? translateYoga(pan.yoga.name, lang) : null;
+  const yogaRange = pan?.yoga ? fmtRelativeRange(pan.yoga.start, pan.yoga.end, todayDateStr, lang) : '—';
+  const yogaNext = pan?.yoga?.next_yoga ? translateYoga(pan.yoga.next_yoga, lang) : null;
+
+  const karanaName = pan?.karana ? translateKarana(pan.karana.name, lang) : null;
+  const karanaRange = pan?.karana ? fmtRelativeRange(pan.karana.start, pan.karana.end, todayDateStr, lang) : '—';
+  const karanaNext = pan?.karana?.next_karana ? translateKarana(pan.karana.next_karana, lang) : null;
+
+  const pakshaName = masa?.paksha ? translateTithiType(masa.paksha, lang) : null;
+
+  const sunriseDisplay = adv?.sun_rise ? fmt12(adv.sun_rise) : '—';
+  const sunsetDisplay = adv?.sun_set ? fmt12(adv.sun_set) : '—';
+
+  const rahukaalDisplay = pan ? fmtAsubha(pan.rahukaal, todayDateStr, lang) : '—';
+  const yamakantaDisplay = pan ? fmtAsubha(pan.yamakanta, todayDateStr, lang) : '—';
+  const gulikaDisplay = pan ? fmtAsubha(pan.gulika, todayDateStr, lang) : '—';
+
+  const dishaShoolDisplay = adv?.disha_shool ? translateDisha(adv.disha_shool, lang) : null;
+
+  const abhijitDisplay = adv?.abhijit_muhurta?.start
+    ? fmtRelativeRange(adv.abhijit_muhurta.start, adv.abhijit_muhurta.end, todayDateStr, lang)
+    : null;
+
   return (
   <ScreenGuard featureId="panchang">
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
@@ -226,13 +276,13 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
             <span className="text-md font-serif font-black tracking-wide">
               📅 {pan.date}
             </span>
-            {masa?.paksha && (
+            {pakshaName && (
               <span className={`px-3 py-1 text-xs rounded-full font-bold border ${
                 isLight
                   ? "bg-violet-100 border-violet-300/40 text-violet-800"
                   : "bg-violet-500/10 border-violet-500/20 text-violet-300"
               }`}>
-                {masa.paksha}
+                {pakshaName}
               </span>
             )}
           </div>
@@ -249,11 +299,11 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
                 <span className="text-[10px] uppercase tracking-wider text-violet-500 font-black block mb-1">
                   {t('panchang.tithi') || 'Tithi'}
                 </span>
-                <h3 className={`text-lg font-serif font-black leading-tight ${isLight ? "text-[#1E120A]" : "text-white"}`}>{pan.tithi?.name}</h3>
+                <h3 className={`text-lg font-serif font-black leading-tight ${isLight ? "text-[#1E120A]" : "text-white"}`}>{tithiName || '—'}</h3>
               </div>
               <div className={`mt-4 space-y-1 text-xs border-t pt-2 ${isLight ? "border-violet-100" : "border-gray-800/60"}`}>
-                <p className={`font-mono text-[11px] font-medium ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{pan.tithi?.start} – {pan.tithi?.end}</p>
-                {pan.tithi?.next_tithi && <p className="text-[10px] text-violet-500 font-bold truncate">→ {pan.tithi.next_tithi}</p>}
+                <p className={`font-mono text-[11px] font-medium ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{tithiRange}</p>
+                {tithiNext && <p className="text-[10px] text-violet-500 font-bold truncate">→ {tithiNext}</p>}
               </div>
             </div>
 
@@ -268,7 +318,6 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
                   {t('panchang.day') || 'Day'}
                 </span>
                 <h3 className={`text-lg font-serif font-black leading-tight ${isLight ? "text-[#1E120A]" : "text-white"}`}>{pan.day?.name}</h3>
-                {adv?.vaara && <p className="text-xs text-amber-600 font-bold mt-1.5">{adv.vaara}</p>}
               </div>
             </div>
 
@@ -282,11 +331,11 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
                 <span className="text-[10px] uppercase tracking-wider text-emerald-500 font-black block mb-1">
                   {t('panchang.nakshatra') || 'Nakshatra'}
                 </span>
-                <h3 className={`text-lg font-serif font-black leading-tight ${isLight ? "text-[#1E120A]" : "text-white"}`}>{pan.nakshatra?.name}</h3>
+                <h3 className={`text-lg font-serif font-black leading-tight ${isLight ? "text-[#1E120A]" : "text-white"}`}>{nakshatraName || '—'}</h3>
               </div>
               <div className={`mt-4 space-y-1 text-xs border-t pt-2 ${isLight ? "border-emerald-100" : "border-gray-800/60"}`}>
-                <p className={`font-mono text-[11px] font-medium ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{pan.nakshatra?.start} – {pan.nakshatra?.end}</p>
-                {pan.nakshatra?.next_nakshatra && <p className="text-[10px] text-emerald-500 font-bold truncate">→ {pan.nakshatra.next_nakshatra}</p>}
+                <p className={`font-mono text-[11px] font-medium ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{nakshatraRange}</p>
+                {nakshatraNext && <p className="text-[10px] text-emerald-500 font-bold truncate">→ {nakshatraNext}</p>}
               </div>
             </div>
 
@@ -300,12 +349,12 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
                 <span className="text-[10px] uppercase tracking-wider text-indigo-500 font-black block mb-1">
                   {t('panchang.yoga') || 'Yoga'}
                 </span>
-                <h3 className={`text-lg font-serif font-black leading-tight ${isLight ? "text-[#1E120A]" : "text-white"}`}>{pan.yoga?.name}</h3>
+                <h3 className={`text-lg font-serif font-black leading-tight ${isLight ? "text-[#1E120A]" : "text-white"}`}>{yogaName || '—'}</h3>
                 {pan.yoga?.meaning && <p className={`text-[11px] leading-normal mt-1.5 font-medium ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{pan.yoga.meaning} · #{pan.yoga.number}</p>}
               </div>
               <div className={`mt-4 space-y-1 text-xs border-t pt-2 ${isLight ? "border-indigo-100" : "border-gray-800/60"}`}>
-                <p className={`font-mono text-[11px] font-medium ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{pan.yoga?.start} – {pan.yoga?.end}</p>
-                {pan.yoga?.next_yoga && <p className="text-[10px] text-indigo-500 font-bold truncate">→ {pan.yoga.next_yoga}</p>}
+                <p className={`font-mono text-[11px] font-medium ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{yogaRange}</p>
+                {yogaNext && <p className="text-[10px] text-indigo-500 font-bold truncate">→ {yogaNext}</p>}
               </div>
             </div>
 
@@ -319,11 +368,11 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
                 <span className="text-[10px] uppercase tracking-wider text-fuchsia-500 font-black block mb-1">
                   {t('panchang.karana') || 'Karana'}
                 </span>
-                <h3 className={`text-lg font-serif font-black leading-tight ${isLight ? "text-[#1E120A]" : "text-white"}`}>{pan.karana?.name}</h3>
+                <h3 className={`text-lg font-serif font-black leading-tight ${isLight ? "text-[#1E120A]" : "text-white"}`}>{karanaName || '—'}</h3>
               </div>
               <div className={`mt-4 space-y-1 text-xs border-t pt-2 ${isLight ? "border-fuchsia-100" : "border-gray-800/60"}`}>
-                <p className={`font-mono text-[11px] font-medium ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{pan.karana?.start} – {pan.karana?.end}</p>
-                {pan.karana?.next_karana && <p className="text-[10px] text-fuchsia-500 font-bold truncate">→ {pan.karana.next_karana}</p>}
+                <p className={`font-mono text-[11px] font-medium ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{karanaRange}</p>
+                {karanaNext && <p className="text-[10px] text-fuchsia-500 font-bold truncate">→ {karanaNext}</p>}
               </div>
             </div>
 
@@ -353,7 +402,7 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
               <span className="text-2xl">🌅</span>
               <div>
                 <span className="text-[10px] uppercase tracking-wider text-gray-500 font-black block">{t('panchang.sunrise') || 'Sunrise'}</span>
-                <span className="font-mono font-black text-sm text-amber-500">{adv?.sun_rise || '—'}</span>
+                <span className="font-mono font-black text-sm text-amber-500">{sunriseDisplay}</span>
               </div>
             </div>
             
@@ -366,7 +415,7 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
             <div className="flex items-center gap-3 sm:text-right">
               <div className="sm:text-right">
                 <span className="text-[10px] uppercase tracking-wider text-gray-500 font-black block">{t('panchang.sunset') || 'Sunset'}</span>
-                <span className="font-mono font-black text-sm text-amber-500">{adv?.sun_set || '—'}</span>
+                <span className="font-mono font-black text-sm text-amber-500">{sunsetDisplay}</span>
               </div>
               <span className="text-2xl">🌇</span>
             </div>
@@ -402,7 +451,7 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
               </div>
             </div>
 
-            {adv?.abhijit_muhurta?.start && (
+            {abhijitDisplay && (
               <div className="flex items-center gap-2.5 border-t border-gray-700/10 pt-4 text-xs">
                 <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
                   isLight
@@ -412,7 +461,7 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
                   {t('panchang.abhijit') || 'Abhijit Muhurtham'}
                 </span>
                 <span className={`font-mono font-black ${isLight ? "text-[#1E120A]" : "text-white"}`}>
-                  {adv.abhijit_muhurta.start} – {adv.abhijit_muhurta.end}
+                  {abhijitDisplay}
                 </span>
               </div>
             )}
@@ -437,7 +486,7 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
                   : "bg-red-950/20 border-red-500/10 text-red-300"
               }`}>
                 <span className="text-[10px] uppercase tracking-wider font-black">{t('panchang.rahukaal') || 'Rahu Kalam'}</span>
-                <span className="text-xs font-black font-mono">{pan.rahukaal}</span>
+                <span className="text-xs font-black font-mono">{rahukaalDisplay}</span>
               </div>
 
               {/* Yamakantam */}
@@ -447,7 +496,7 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
                   : "bg-orange-950/20 border-orange-500/10 text-orange-300"
               }`}>
                 <span className="text-[10px] uppercase tracking-wider font-black">{t('panchang.yamakantam') || 'Yamakantam'}</span>
-                <span className="text-xs font-black font-mono">{pan.yamakanta}</span>
+                <span className="text-xs font-black font-mono">{yamakantaDisplay}</span>
               </div>
 
               {/* Gulika */}
@@ -457,14 +506,14 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
                   : "bg-yellow-950/20 border-yellow-500/10 text-yellow-300"
               }`}>
                 <span className="text-[10px] uppercase tracking-wider font-black">{t('panchang.gulika') || 'Gulika'}</span>
-                <span className="text-xs font-black font-mono">{pan.gulika}</span>
+                <span className="text-xs font-black font-mono">{gulikaDisplay}</span>
               </div>
             </div>
 
             <div className="flex flex-col gap-1.5 border-t border-gray-700/10 pt-4 text-xs leading-normal">
-              {adv?.disha_shool && (
+              {dishaShoolDisplay && (
                 <p className={`${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>
-                  ⚠️ {t('panchang.soolam') || 'Soolam'}: <span className="text-amber-600 font-black">{adv.disha_shool}</span>
+                  ⚠️ {t('panchang.soolam') || 'Soolam'}: <span className="text-amber-600 font-black">{dishaShoolDisplay}</span>
                 </p>
               )}
               <p className={`${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>

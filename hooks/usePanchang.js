@@ -239,8 +239,8 @@ export const usePanchang = (input) => {
 
 	const [dd, mm, yyyy] = date.split('/');
 	const [hh, min] = time.split(':');
-	const panchangParams = { ...rest, date, time };
-	const planetParams   = { ...rest, dob: date, tob: time };
+	const panchangParams = { ...rest, date, time, lang: 'en' };
+	const planetParams   = { ...rest, dob: date, tob: time, lang: 'en' };
 	console.log('params', panchangParams, planetParams)
 
 	const current = new Date(`${yyyy}-${mm}-${dd}`);
