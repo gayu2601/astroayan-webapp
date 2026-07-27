@@ -117,8 +117,8 @@ const NAKSHATRA_NAMES = {
   'Visakha':            'விசாகம்',        'Vishakha':          'விசாகம்',       // API alias
   'Anuradha':           'அனுஷம்',         'Jyeshtha':          'கேட்டை',
   'Moola':              'மூலம்',           'Mula':              'மூலம்',         // API alias
-  'Purva Ashadha':      'பூராடம்',        'Purvashadha':       'பூராடம்',       // API alias
-  'Uttara Ashadha':     'உத்திராடம்',     'Uttarashadha':      'உத்திராடம்',    // API alias
+  'Purva Ashadha':      'பூராடம்',        'PurvaShadha':       'பூராடம்',       // API alias
+  'Uttara Ashadha':     'உத்திராடம்',     'UttaraShadha':      'உத்திராடம்',    // API alias
   'Shravana':           'திருவோணம்',     'Shravan':           'திருவோணம்',     // API alias
   'Dhanishta':          'அவிட்டம்',       'Dhanistha':         'அவிட்டம்',      // API alias
   'Shatabhisha':        'சதயம்',          'Shatbhisha':        'சதயம்',         // API alias
@@ -141,13 +141,13 @@ const YOGA_NAMES = {
   'Shiva':      'சிவம்',        'Siddha':     'சித்தம்',
   'Sadhya':     'சாத்யம்',     'Shubha':     'சுபம்',
   'Shukla':     'சுக்லம்',     'Bramha':     'பிரம்மம்',
-  'Indra':      'இந்திரம்',    'Vaidhriti':  'வைதிருதி',
+  'Indra':      'இந்திரம்',    'Vaidhruthi':  'வைத்ருதி',
   'Sukla':      'சுக்லம்',     // API alias
 };
 
 const KARANA_NAMES = {
   'Bava':        'பவம்',        'Balava':      'பாலவம்',
-  'Kaulava':     'கௌலவம்',     'Taitila':     'தைதிலம்',
+  'Kaulava':     'கௌலவம்',     'Taitula':     'தைதிலம்',
   'Garaja':      'கரஜம்',       'Vanija':      'வணிஜம்',
   'Vishti':      'விஷ்டி',      'Shakuni':     'சகுனி',
   'Chatushpada': 'சதுஷ்பாதம்', 'Naga':        'நாகம்',
