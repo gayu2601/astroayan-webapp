@@ -303,8 +303,8 @@ exports.handler = async (event) => {
       lat,
       lon,
       tz:      tzone,
-      api_key: '6a0b4e5a-b8d5-5e1a-bd97-6128ad38d349',
-      lang
+      api_key: process.env.EXPO_PUBLIC_VEDIC_API_KEY,
+      lang: 'en'
     };
 
     const panchangParams = { ...baseParams, date: paddedDate, time: paddedTime };
