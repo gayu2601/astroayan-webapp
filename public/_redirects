@@ -1,0 +1,6 @@
+/panchang              /.netlify/functions/panchang        200
+/jadhagam              /.netlify/functions/jadhagam         200
+/panchang1             /.netlify/functions/panchang1        200
+/jadhagam1             /.netlify/functions/jadhagam1        200
+/api/prokerala/*       /.netlify/functions/prokerala-proxy/:splat  200
+/*                     /index.html                          200
