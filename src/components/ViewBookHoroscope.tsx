@@ -174,6 +174,20 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
         name: isTamil ? (PLANET_NAMES_TA[p.full_name || p.name] || p.name) : p.name
       }));
     };
+	
+	const normalizeDegree = (val) => {
+	  if (val == null) return '';
+	  const num = typeof val === 'number' ? val : parseFloat(val);
+	  if (isNaN(num)) return String(val);
+	  const intPart = Math.floor(num);
+	  const decPart = parseFloat((num - intPart).toFixed(10)); // avoid float drift
+	  if (decPart >= 0.60) {
+		const newInt = intPart + 1;
+		const newDec = (decPart - 0.60).toFixed(2).replace('0.', '');
+		return `${newInt}.${newDec}`;
+	  }
+	  return num.toFixed(2);
+	};
 
     return (
       <div className="space-y-6 pb-12">
@@ -329,7 +343,7 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
                               {p.retro && <span className="ml-1 text-red-500 font-bold text-[9px]">(R)</span>}
                             </td>
                             <td className="p-3">{p.zodiac}</td>
-                            <td className="p-3 font-semibold">{typeof p.local_degree === 'number' ? p.local_degree.toFixed(2) : p.local_degree}°</td>
+                            <td className="p-3 font-semibold">{normalizeDegree(p.local_degree)}°</td>
                             <td className={`p-3 font-semibold ${isLight ? "text-amber-700" : "text-amber-400"}`}>{p.nakshatra}</td>
                             <td className="p-3 font-bold">{p.nakshatra_pada}</td>
                             <td className={`p-3 ${isLight ? "text-gray-500" : "text-gray-400"}`}>{p.nakshatra_lord || '—'}</td>
