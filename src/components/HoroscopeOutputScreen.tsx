@@ -196,6 +196,22 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
       </div>
     );
   };
+  
+  // Converts a decimal degree where the fractional part represents minutes/seconds
+	// so that values like 16.63 (63 minutes) display as 17.03 (1hr 3 min carry)
+	const normalizeDegree = (val) => {
+	  if (val == null) return '';
+	  const num = typeof val === 'number' ? val : parseFloat(val);
+	  if (isNaN(num)) return String(val);
+	  const intPart = Math.floor(num);
+	  const decPart = parseFloat((num - intPart).toFixed(10)); // avoid float drift
+	  if (decPart >= 0.60) {
+		const newInt = intPart + 1;
+		const newDec = (decPart - 0.60).toFixed(2).replace('0.', '');
+		return `${newInt}.${newDec}`;
+	  }
+	  return num.toFixed(2);
+	};
 
   const formattedDateString = date ? `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}` : '—';
 
@@ -338,7 +354,7 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
                         {p.nakshatra_pada ? `P${p.nakshatra_pada}` : '—'}
                       </td>
                       <td className="py-2.5 text-right text-amber-400 font-mono">
-                        {p.local_degree || '—'}
+                        {normalizeDegree(p.local_degree) || '—'}
                       </td>
                     </tr>
                   ))}

@@ -93,8 +93,8 @@ const LABELS = {
 const TITHI_NAMES = {
   'Pratipada':  'பிரதமை',    'Dwitiya':    'துவிதியை',
   'Tritiya':    'திருதியை',  'Chaturthi':  'சதுர்த்தி',
-  'Panchami':   'பஞ்சமி',   'Shashthi':   'சஷ்டி',
-  'Saptami':    'சப்தமி',   'Ashtami':    'அஷ்டமி',
+  'Panchami':   'பஞ்சமி',   'Shasti':   'சஷ்டி',
+  'Sapthami':    'சப்தமி',   'Ashtami':    'அஷ்டமி',
   'Navami':     'நவமி',      'Dashami':    'தசமி',
   'Ekadashi':   'ஏகாதசி',   'Dwadashi':   'துவாதசி',
   'Trayodasi':  'திரயோதசி', 'Chaturdasi': 'சதுர்த்தசி',
@@ -107,7 +107,7 @@ const TITHI_TYPES = {
 };
 
 const NAKSHATRA_NAMES = {
-  'Ashwini':            'அசுவினி',       'Bharani':           'பரணி',
+  'Ashvini':            'அசுவினி',       'Bharani':           'பரணி',
   'Krittika':           'கார்த்திகை',    'Rohini':            'ரோகிணி',
   'Mrigashirsha':       'மிருகசீரிடம்',  'Mrigashira':        'மிருகசீரிடம்',
   'Ardra':              'திருவாதிரை',    'Punarvasu':         'புனர்பூசம்',
@@ -129,11 +129,11 @@ const NAKSHATRA_NAMES = {
 };
 
 const YOGA_NAMES = {
-  'Vishkambha': 'விஷ்கும்பம்', 'Prithi':      'பிரீதி',
+  'Vishkumbha': 'விஷ்கும்பம்', 'Priti':      'பிரீதி',
   'Ayushman':   'ஆயுஷ்மான்',  'Saubhagya':  'சௌபாக்கியம்',
   'Shobhana':   'சோபனம்',      'Atiganda':   'அதிகண்டம்',
-  'Sukarma':    'சுகர்மம்',    'Dhriti':     'திருதி',
-  'Shula':      'சூலம்',        'Ganda':      'கண்டம்',
+  'Sukarma':    'சுகர்மம்',    'Dhrithi':     'திருதி',
+  'Soola':      'சூலம்',        'Ganda':      'கண்டம்',
   'Vriddhi':    'வ்ருத்தி',    'Vridhi':     'வ்ருத்தி',
   'Dhruva':     'துருவம்',      'Vyaghata':   'வ்யாகாதம்',
   'Harshana':   'ஹர்ஷணம்',    'Vajra':      'வஜ்ரம்',
@@ -162,18 +162,126 @@ const DISHA_SHOOL = {
   'SE': 'தென்கிழக்கு', 'SW': 'தென்மேற்கு',
 };
 
+const VAARA_NAMES = {
+  'Sunday':    'ஞாயிறு',
+  'Monday':    'திங்கள்',
+  'Tuesday':   'செவ்வாய்',
+  'Wednesday': 'புதன்',
+  'Thursday':  'வியாழன்',
+  'Friday':    'வெள்ளி',
+  'Saturday':  'சனி',
+};
+
+const TAMIL_MONTH_NAMES = {
+  'chithirai':  'சித்திரை',
+  'vaikasi':    'வைகாசி',
+  'aani':       'ஆனி',
+  'aadi':       'ஆடி',
+  'aavani':     'ஆவணி',
+  'purattasi':  'புரட்டாசி',
+  'aippasi':    'ஐப்பசி',
+  'karthigai':  'கார்த்திகை',
+  'margazhi':   'மார்கழி',
+  'thai':       'தை',
+  'maasi':      'மாசி',
+  'panguni':    'பங்குனி',
+};
+
+const RITU_NAMES = {
+  'Vasantha':  'வசந்த',
+  'Grishma':   'கிரீஷ்ம',
+  'Varsha':    'வர்ஷ',
+  'Sharad':    'சரத்',
+  'Hemanta':   'ஹேமந்த',
+  'Shishira':  'சிசிர',
+  'Kaar': 'கார்'
+};
+
+const AYANA_NAMES = {
+  'Uttarayana':  'உத்தராயணம்',
+  'Dakshinayana': 'தட்சிணாயனம்',
+};
+
+const SAMVAT_YEAR_NAMES = {
+  'Prabhava':       'பிரபவ',
+  'Vibhava':        'விபவ',
+  'Sukla':          'சுக்ல',
+  'Pramodhoodha':   'பிரமோதூத',
+  'Prachorpaththi': 'பிரசோற்பத்தி',
+  'Aangirasa':      'ஆங்கிரஸ',
+  'Srimukha':       'ஸ்ரீமுக',
+  'Bhava':          'பவ',
+  'Yuva':           'யுவ',
+  'Dhaathu':        'தாது',
+  'Eesvara':        'ஈஸ்வர',
+  'Vehudhanya':     'வெகுதான்ய',
+  'Pramathi':       'பிரமாதி',
+  'Vikrama':        'விக்கிரம',
+  'Vishu':          'விஷு',
+  'Chitrabaanu':    'சித்திரபானு',
+  'Subaanu':        'சுபானு',
+  'Thaarana':       'தாரண',
+  'Paarthiba':      'பார்த்திப',
+  'Viya':           'விய',
+  'Sarvajith':      'சர்வஜித்',
+  'Sarvadhari':     'சர்வதாரி',
+  'Virodhi':        'விரோதி',
+  'Vikruthi':       'விக்ருதி',
+  'Kara':           'கர',
+  'Nandhana':       'நந்தன',
+  'Vijaya':         'விஜய',
+  'Jaya':           'ஜய',
+  'Manmatha':       'மன்மத',
+  'Dhunmuki':       'துன்முகி',
+  'Hevilambi':      'ஹேவிளம்பி',
+  'Vilambi':        'விளம்பி',
+  'Vikari':         'விகாரி',
+  'Sarvari':        'சார்வரி',
+  'Plava':          'பிலவ',
+  'Subakrith':      'சுபகிருத்',
+  'Sobakrith':      'சோபகிருத்',
+  'Krodhi':         'க்ரோதி',
+  'Visuvaasuva':    'விசுவாசுவ',
+  'Parabhaava':     'பரபாவ',
+  'Plavanga':       'பிலவங்க',
+  'Keelaka':        'கீலக',
+  'Saumya':         'சௌம்ய',
+  'Sadharana':      'சாதாரண',
+  'Virodhikrithu':  'விரோதிகிருது',
+  'Paridhaabi':     'பரிதாபி',
+  'Pramaadhisa':    'பிரமாதீச',
+  'Aanandha':       'ஆனந்த',
+  'Rakshasa':       'ராக்ஷஸ',
+  'Nala':           'நள',
+  'Pingala':        'பிங்கள',
+  'Kalayukthi':     'களயுக்தி',
+  'Siddharthi':     'சித்தார்த்தி',
+  'Raudhri':        'ரௌத்திரி',
+  'Thunmathi':      'துன்மதி',
+  'Dhundubhi':      'துந்துபி',
+  'Rudhrodhgaari':  'ருத்ரோத்காரி',
+  'Raktakshi':      'ரக்தாக்ஷி',
+  'Krodhana':       'க்ரோதன',
+  'Akshaya':        'அக்ஷய',
+};
+
 // ── Translate helpers ─────────────────────────────────────────────────────────
 const tr = (map, val, lang) => {
   if (!val) return '-';
   return lang === 'ta' ? (map[val] || val) : val;
 };
 
-export const translateNakshatra = (name, lang) => tr(NAKSHATRA_NAMES, name?.trim(), lang);
-export const translateTithi     = (name, lang) => tr(TITHI_NAMES,    name?.trim(), lang);
-export const translateTithiType = (type, lang) => tr(TITHI_TYPES,    type?.trim(), lang);
-export const translateYoga      = (name, lang) => tr(YOGA_NAMES,     name?.trim(), lang);
-export const translateKarana    = (name, lang) => tr(KARANA_NAMES,   name?.trim(), lang);
-export const translateDisha     = (val,  lang) => tr(DISHA_SHOOL,    val?.trim(),  lang);
+const translateNakshatra = (name, lang) => tr(NAKSHATRA_NAMES, name?.trim(), lang);
+const translateTithi     = (name, lang) => tr(TITHI_NAMES,    name?.trim(), lang);
+const translateTithiType = (type, lang) => tr(TITHI_TYPES,    type?.trim(), lang);
+const translateYoga      = (name, lang) => tr(YOGA_NAMES,     name?.trim(), lang);
+const translateKarana    = (name, lang) => tr(KARANA_NAMES,   name?.trim(), lang);
+const translateDisha     = (val,  lang) => tr(DISHA_SHOOL,    val?.trim(),  lang);
+const translateVaara     = (val,  lang) => tr(VAARA_NAMES,    val?.trim(),  lang);
+const translateTamilMonth= (val,  lang) => tr(TAMIL_MONTH_NAMES, val?.trim(), lang);
+const translateRitu      = (val,  lang) => tr(RITU_NAMES,     val?.trim(),  lang);
+const translateAyana     = (val,  lang) => tr(AYANA_NAMES,    val?.trim(),  lang);
+const translateSamvatYear = (val, lang) => tr(SAMVAT_YEAR_NAMES, val?.trim(), lang);
 
 // ── Time Utilities (English API strings only) ─────────────────────────────────
 
@@ -210,7 +318,7 @@ const parseEnglishDateStr = (str, refDateStr) => {
   return null;
 };
 
-export const fmtTime = (str) => {
+const fmtTime = (str) => {
   if (!str || typeof str !== 'string') return '-';
 
   if (/\d{4}/.test(str)) {
@@ -238,7 +346,7 @@ export const fmtTime = (str) => {
   return '-';
 };
 
-export const fmt12 = (t) => {
+const fmt12 = (t) => {
   if (!t) return '-';
   return fmtTime(String(t));
 };
@@ -336,7 +444,7 @@ const toEnglishRelativeTime = (str, todayDateStr) => {
  * Tamil:   "இன்று மாலை 10:05 முதல்\nநாளை காலை 6:00 வரை"
  * English: "Today Evening 10:05 PM – Tomorrow Morning 06:00 AM"
  */
-export const fmtRelativeRange = (startStr, endStr, todayDateStr, lang) => {
+const fmtRelativeRange = (startStr, endStr, todayDateStr, lang) => {
   if (!startStr && !endStr) return '-';
 
   if (lang === 'ta') {
@@ -353,7 +461,7 @@ export const fmtRelativeRange = (startStr, endStr, todayDateStr, lang) => {
   }
 };
 
-export const fmtRange = (obj, lang) => {
+const fmtRange = (obj, lang) => {
   if (!obj) return '-';
   const s = obj.start || obj.start_time;
   const e = obj.end   || obj.end_time;
@@ -361,7 +469,7 @@ export const fmtRange = (obj, lang) => {
 };
 
 // ── Tithi name formatting ─────────────────────────────────────────────────────
-export const formatTithiName = (name, type, lang) => {
+const formatTithiName = (name, type, lang) => {
   const tName = translateTithi(name, lang);
   const tType = translateTithiType(type, lang);
   return tType ? `${tType} ${tName}` : tName;
@@ -374,7 +482,7 @@ export const formatTithiName = (name, type, lang) => {
  * English input: "08:00 AM - 09:30 AM"
  * Returns a normalised "HH:MM AM/PM - HH:MM AM/PM" string.
  */
-export const formatNeramSlot = (slotStr, lang) => {
+const formatNeramSlot = (slotStr, lang) => {
   if (!slotStr) return '-';
 
   // Try Tamil period pattern first: "காலை 08:00 - மாலை 05:30"
@@ -398,22 +506,18 @@ export const formatNeramSlot = (slotStr, lang) => {
 };
 
 /**
- * Format an "asubha" (inauspicious) time value — Rahu Kaal, Gulika, Yamakantam.
- * Accepts either an { start, end } / { start_time, end_time } object, or a
- * plain "HH:MM AM/PM to HH:MM AM/PM" string, and returns a localized,
- * relative-day-aware range string.
+ * Format an asubha (inauspicious) time value.
+ * Accepts an object {start, end} or a plain string like "05:04 PM to 06:40 PM".
  */
-export const fmtAsubha = (val, todayDateStr, lang) => {
+const fmtAsubha = (val, todayDateStr, lang) => {
   if (!val) return '-';
 
-  // Object with start/end
   if (typeof val === 'object' && (val.start || val.start_time)) {
     const s = val.start || val.start_time;
     const e = val.end   || val.end_time;
     return fmtRelativeRange(s, e, todayDateStr, lang);
   }
 
-  // Plain string: "05:04 PM to 06:40 PM"
   if (typeof val === 'string') {
     const match = val.match(/^(.+?)\s+to\s+(.+)$/i);
     if (match) {
@@ -423,6 +527,24 @@ export const fmtAsubha = (val, todayDateStr, lang) => {
   }
 
   return '-';
+};
+
+export {
+  translateNakshatra,
+  translateTithi,
+  translateTithiType,
+  translateYoga,
+  translateKarana,
+  translateDisha,
+  translateVaara,
+  translateTamilMonth,
+  translateRitu,
+  translateAyana,
+  translateSamvatYear,
+  formatTithiName,
+  fmt12,
+  fmtRelativeRange,
+  fmtAsubha,
 };
 
 export const generatePanchangHTML = (jsonobj, lang, user) => {
@@ -523,7 +645,7 @@ export const generatePanchangHTML = (jsonobj, lang, user) => {
 
   // ── 6. Asubha values ──────────────────────────────────────────────────────
   const rahukaalVal = fmtAsubha(pan?.rahukaal, todayDateStr, lang);
-  const gulikaalVal = fmtAsubha(pan?.gulika, todayDateStr, lang);
+  const gulikaalVal = fmtAsubha(pan?.gulika,   todayDateStr, lang);
   const yamghantVal = fmtAsubha(pan?.yamakanta, todayDateStr, lang);
 
   // ── 7. Chandrashtama ──────────────────────────────────────────────────────

@@ -11,6 +11,11 @@ import {
   translateYoga,
   translateKarana,
   translateDisha,
+  translateVaara,        // ← add
+  translateTamilMonth,   // ← add
+  translateRitu,         // ← add
+  translateAyana,     
+  translateSamvatYear,  
   formatTithiName,
   fmt12,
   fmtRelativeRange,
@@ -163,6 +168,14 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
   const karanaNext = pan?.karana?.next_karana ? translateKarana(pan.karana.next_karana, lang) : null;
 
   const pakshaName = masa?.paksha ? translateTithiType(masa.paksha, lang) : null;
+  
+  const vaaraName       = pan?.day?.name       ? translateVaara(pan.day.name, lang)       : null;
+	const tamilMonthName  = masa?.tamil_month    ? translateTamilMonth(masa.tamil_month.toLowerCase(), lang) : null;
+	const rituName        = masa?.ritu_tamil     ? translateRitu(masa.ritu_tamil, lang)      : null;
+	const ayanaName       = masa?.ayana          ? translateAyana(masa.ayana, lang)          : null;
+	const samvatYearName = adv?.years?.vikram_samvaat_name
+	  ? translateSamvatYear(adv.years.vikram_samvaat_name, lang)
+	  : null;
 
   const sunriseDisplay = adv?.sun_rise ? fmt12(adv.sun_rise) : '—';
   const sunsetDisplay = adv?.sun_set ? fmt12(adv.sun_set) : '—';
@@ -317,7 +330,7 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
                 <span className="text-[10px] uppercase tracking-wider text-amber-500 font-black block mb-1">
                   {t('panchang.day') || 'Day'}
                 </span>
-                <h3 className={`text-lg font-serif font-black leading-tight ${isLight ? "text-[#1E120A]" : "text-white"}`}>{pan.day?.name}</h3>
+                <h3 className={`text-lg font-serif font-black leading-tight ${isLight ? "text-[#1E120A]" : "text-white"}`}>{vaaraName}</h3>
               </div>
             </div>
 
@@ -350,7 +363,6 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
                   {t('panchang.yoga') || 'Yoga'}
                 </span>
                 <h3 className={`text-lg font-serif font-black leading-tight ${isLight ? "text-[#1E120A]" : "text-white"}`}>{yogaName || '—'}</h3>
-                {pan.yoga?.meaning && <p className={`text-[11px] leading-normal mt-1.5 font-medium ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{pan.yoga.meaning} · #{pan.yoga.number}</p>}
               </div>
               <div className={`mt-4 space-y-1 text-xs border-t pt-2 ${isLight ? "border-indigo-100" : "border-gray-800/60"}`}>
                 <p className={`font-mono text-[11px] font-medium ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{yogaRange}</p>
@@ -386,8 +398,8 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
                 <span className="text-[10px] uppercase tracking-wider text-teal-500 font-black block mb-1">
                   {t('panchang.month') || 'Tamil Month'}
                 </span>
-                <h3 className={`text-lg font-serif font-black leading-tight ${isLight ? "text-[#1E120A]" : "text-white"}`}>{masa?.tamil_month || '—'}</h3>
-                {masa?.ritu_tamil && <p className="text-xs text-teal-600 font-bold mt-1.5">{masa.ritu_tamil} · {masa.ayana}</p>}
+                <h3 className={`text-lg font-serif font-black leading-tight ${isLight ? "text-[#1E120A]" : "text-white"}`}>{tamilMonthName || masa?.tamil_month || '—'}</h3>
+                {masa?.ritu_tamil && <p className="text-xs text-teal-600 font-bold mt-1.5">{rituName || masa.ritu_tamil} · {ayanaName || masa.ayana}</p>}
               </div>
             </div>
           </div>
@@ -480,17 +492,19 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* Rahukaal */}
-              <div className={`flex items-center justify-between p-3.5 rounded-xl border ${
-                isLight
-                  ? "bg-red-50 border-red-200/60 text-red-900"
-                  : "bg-red-950/20 border-red-500/10 text-red-300"
-              }`}>
+              <div
+				  className={`flex flex-col items-center text-center p-3.5 rounded-xl border ${
+					isLight
+					  ? "bg-red-50 border-red-200/60 text-red-900"
+					  : "bg-red-950/20 border-red-500/10 text-red-300"
+				  }`}
+				>
                 <span className="text-[10px] uppercase tracking-wider font-black">{t('panchang.rahukaal') || 'Rahu Kalam'}</span>
                 <span className="text-xs font-black font-mono">{rahukaalDisplay}</span>
               </div>
 
               {/* Yamakantam */}
-              <div className={`flex items-center justify-between p-3.5 rounded-xl border ${
+              <div className={`flex flex-col items-center text-center p-3.5 rounded-xl border ${
                 isLight
                   ? "bg-orange-50 border-orange-200/60 text-orange-900"
                   : "bg-orange-950/20 border-orange-500/10 text-orange-300"
@@ -500,7 +514,7 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
               </div>
 
               {/* Gulika */}
-              <div className={`flex items-center justify-between p-3.5 rounded-xl border ${
+              <div className={`flex flex-col items-center text-center p-3.5 rounded-xl border ${
                 isLight
                   ? "bg-yellow-50 border-yellow-200/60 text-yellow-900"
                   : "bg-yellow-950/20 border-yellow-500/10 text-yellow-300"
@@ -585,7 +599,7 @@ export default function Panchangam({ isLight = false }: PanchangamProps) {
                   {t('panchang.tamilYear') || 'Tamil Year'}
                 </span>
                 <span className={`font-serif font-black text-md mt-1.5 block ${isLight ? "text-[#1E120A]" : "text-white"}`}>
-                  {adv.years.vikram_samvaat_name}
+                  {samvatYearName || adv.years.vikram_samvaat_name}
                 </span>
               </div>
             </div>

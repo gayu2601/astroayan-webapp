@@ -32,7 +32,21 @@ const PLANET_TAMIL = {
 
 // South Indian chart layout — sign numbers in each cell position
 const KATTAM_LAYOUT = [12, 1, 2, 3, 11, null, null, 4, 10, null, null, 5, 9, 8, 7, 6];
-
+// Converts a decimal degree where the fractional part represents minutes/seconds
+// so that values like 16.63 (63 minutes) display as 17.03 (1hr 3 min carry)
+const normalizeDegree = (val) => {
+  if (val == null) return '';
+  const num = typeof val === 'number' ? val : parseFloat(val);
+  if (isNaN(num)) return String(val);
+  const intPart = Math.floor(num);
+  const decPart = parseFloat((num - intPart).toFixed(10)); // avoid float drift
+  if (decPart >= 0.60) {
+    const newInt = intPart + 1;
+    const newDec = (decPart - 0.60).toFixed(2).replace('0.', '');
+    return `${newInt}.${newDec}`;
+  }
+  return num.toFixed(2);
+};
 /**
  * @param {object} data       - Horoscope API response
  * @param {string} lang       - 'ta' | 'en'
@@ -89,10 +103,8 @@ export const generateReportHTML = (data, lang = 'ta', user = {}) => {
   const tableRows = planetsArray
     .filter(p => !LAGNA_NAMES.includes((p.name || '').toLowerCase()))
     .map(p => {
-      const fullDeg = typeof p.global_degree === 'number'
-        ? p.global_degree?.toFixed(2) : p.global_degree || '';
-      const normDeg = typeof p.local_degree === 'number'
-        ? p.local_degree?.toFixed(2)  : p.local_degree  || '';
+      const fullDeg = normalizeDegree(p.global_degree);
+	  const normDeg = normalizeDegree(p.local_degree);
       return `
         <tr>
           <td>${p.full_name || p.name}</td>
