@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Sparkles, Compass, ArrowLeft, Search, AlertCircle, ShieldAlert, Filter, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 interface RutuLagnaProps {
-lang?: 'ta' | 'en';
-isTa?: boolean;
+language?: 'ta' | 'en';
 }
 export interface RutuLagnaItem {
 rashi: string;

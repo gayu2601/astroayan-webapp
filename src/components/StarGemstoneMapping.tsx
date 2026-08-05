@@ -3,8 +3,7 @@ import { Sparkles, Gem, ArrowLeft, Search, Star, Globe, LayoutGrid, Table } from
 import { useNavigate } from 'react-router-dom';
 
 interface StarGemstoneProps {
-  lang?: 'ta' | 'en';
-  isTa?: boolean;
+  language?: 'ta' | 'en';
 }
 
 export interface GemstoneItem {

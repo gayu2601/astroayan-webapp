@@ -3,8 +3,7 @@ import { Sparkles, Calendar, ArrowLeft, Search, AlertCircle, ShieldAlert, Filter
 import { useNavigate } from 'react-router-dom';
 
 interface RutuMaadhaProps {
-  lang?: 'ta' | 'en';
-  isTa?: boolean;
+  language?: 'ta' | 'en';
 }
 
 export interface RutuMonthItem {
