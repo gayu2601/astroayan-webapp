@@ -110,18 +110,27 @@ interface HoroscopeOutputScreenProps {
   loading: boolean;
   error: string | null;
   onBack: () => void;
+  isLight?: boolean;
 }
 
-export default function HoroscopeOutputScreen({ name, date, data, loading, error, onBack }: HoroscopeOutputScreenProps) {
+export default function HoroscopeOutputScreen({
+  name,
+  date,
+  data,
+  loading,
+  error,
+  onBack,
+  isLight = false,
+}: HoroscopeOutputScreenProps) {
   const { t, isTamil } = useTranslation();
   const { language } = useAuth();
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="text-4xl text-amber-400 animate-pulse">☽</div>
-        <div className="w-8 h-8 border-4 border-violet-500/20 border-t-violet-400 rounded-full animate-spin" />
-        <p className="text-sm text-gray-400 font-serif">
+        <div className="text-4xl text-amber-500 animate-pulse">☽</div>
+        <div className="w-8 h-8 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
+        <p className={`text-sm font-serif ${isLight ? 'text-[#5C4F43]' : 'text-gray-400'}`}>
           {isTamil ? 'விண்மீன்களைக் கணிக்கிறது…' : 'Reading the stars…'}
         </p>
       </div>
@@ -131,12 +140,14 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto space-y-4">
-        <div className="text-4xl text-red-500">✦</div>
-        <h3 className="text-lg font-bold text-white">{isTamil ? 'ஏதோ தவறு நடந்துவிட்டது' : 'Something went wrong'}</h3>
-        <p className="text-xs text-gray-400">{error}</p>
+        <div className="text-4xl text-rose-500">✦</div>
+        <h3 className={`text-lg font-bold ${isLight ? 'text-[#2C241E]' : 'text-white'}`}>
+          {isTamil ? 'ஏதோ தவறு நடந்துவிட்டது' : 'Something went wrong'}
+        </h3>
+        <p className={`text-xs ${isLight ? 'text-[#7A695A]' : 'text-gray-400'}`}>{error}</p>
         <button
           onClick={onBack}
-          className="bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs px-5 py-2.5 rounded-lg transition-colors"
+          className="bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs px-5 py-2.5 rounded-lg transition-colors shadow-md"
         >
           {t('common.retry') || 'Try Again'}
         </button>
@@ -174,10 +185,21 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
   const renderRasiCell = (houseNum: number) => {
     const matchedPlanets = rasiBySign[houseNum] || [];
     const signName = getRasiSignNames(isTamil)[houseNum] || '';
-	console.log(matchedPlanets, signName)
     return (
-      <div className="border border-violet-500/20 bg-slate-950/80 p-1 flex flex-col justify-between items-center text-center h-full min-h-[65px] transition-all hover:bg-violet-950/10">
-        <span className="text-[10px] font-semibold text-amber-500/80 font-sans tracking-wide leading-none">{signName}</span>
+      <div
+        className={`border p-1 flex flex-col justify-between items-center text-center h-full min-h-[65px] transition-all ${
+          isLight
+            ? 'border-amber-500/20 bg-white/90 hover:bg-amber-100/40'
+            : 'border-violet-500/20 bg-slate-950/80 hover:bg-violet-950/10'
+        }`}
+      >
+        <span
+          className={`text-[10px] font-bold font-sans tracking-wide leading-none ${
+            isLight ? 'text-amber-800' : 'text-amber-500/80'
+          }`}
+        >
+          {signName}
+        </span>
         <div className="flex flex-wrap gap-0.5 justify-center items-center mt-auto mb-auto max-w-full">
           {matchedPlanets.map((pName, i) => {
             const s = RASI_BADGE[pName] || { abbr: pName.slice(0, 2), bg: '#444', fg: '#fff' };
@@ -185,7 +207,7 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
               <span
                 key={i}
                 style={{ backgroundColor: s.bg, color: s.fg }}
-                className="text-[9px] font-extrabold px-1 py-0.5 rounded leading-none whitespace-nowrap shadow"
+                className="text-[9px] font-extrabold px-1 py-0.5 rounded leading-none whitespace-nowrap shadow-sm border border-black/10"
                 title={pName}
               >
                 {s.abbr}
@@ -196,60 +218,95 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
       </div>
     );
   };
-  
-  // Converts a decimal degree where the fractional part represents minutes/seconds
-	// so that values like 16.63 (63 minutes) display as 17.03 (1hr 3 min carry)
-	const normalizeDegree = (val) => {
-	  if (val == null) return '';
-	  const num = typeof val === 'number' ? val : parseFloat(val);
-	  if (isNaN(num)) return String(val);
-	  const intPart = Math.floor(num);
-	  const decPart = parseFloat((num - intPart).toFixed(10)); // avoid float drift
-	  if (decPart >= 0.60) {
-		const newInt = intPart + 1;
-		const newDec = (decPart - 0.60).toFixed(2).replace('0.', '');
-		return `${newInt}.${newDec}`;
-	  }
-	  return num.toFixed(2);
-	};
 
-  const formattedDateString = date ? `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}` : '—';
+  // Converts a decimal degree where the fractional part represents minutes/seconds
+  const normalizeDegree = (val: any) => {
+    if (val == null) return '';
+    const num = typeof val === 'number' ? val : parseFloat(val);
+    if (isNaN(num)) return String(val);
+    const intPart = Math.floor(num);
+    const decPart = parseFloat((num - intPart).toFixed(10)); // avoid float drift
+    if (decPart >= 0.60) {
+      const newInt = intPart + 1;
+      const newDec = (decPart - 0.60).toFixed(2).replace('0.', '');
+      return `${newInt}.${newDec}`;
+    }
+    return num.toFixed(2);
+  };
+
+  const formattedDateString = date
+    ? `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()} ${String(
+        date.getHours()
+      ).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+    : '—';
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12 animate-fade-in">
       {/* ── Back button ── */}
       <button
         onClick={onBack}
-        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors"
+        className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
+          isLight ? 'text-[#5C4F43] hover:text-[#1E120A]' : 'text-gray-400 hover:text-white'
+        }`}
       >
         <ChevronLeft className="w-4 h-4" />
         <span>{t('common.back') || 'Back'}</span>
       </button>
 
       {/* ── Profile Header ── */}
-      <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-900/40 border border-gray-800 rounded-xl p-5 backdrop-blur-md">
-        <div className="w-14 h-14 rounded-full bg-slate-950 border border-violet-500/30 flex items-center justify-center font-serif text-2xl text-amber-400 flex-shrink-0">
+      <div
+        className={`flex flex-col sm:flex-row items-center gap-4 rounded-xl p-5 border transition-all ${
+          isLight
+            ? 'bg-gradient-to-r from-amber-500/10 via-amber-50 to-orange-50/50 border-amber-500/30 shadow-md'
+            : 'bg-slate-900/40 border-gray-800 backdrop-blur-md'
+        }`}
+      >
+        <div
+          className={`w-14 h-14 rounded-full border flex items-center justify-center font-serif text-2xl flex-shrink-0 ${
+            isLight
+              ? 'bg-amber-100/80 border-amber-500/30 text-amber-700 shadow-sm'
+              : 'bg-slate-950 border-violet-500/30 text-amber-400'
+          }`}
+        >
           {SIGN_GLYPHS[astro?.ascendant_sign] || '✦'}
         </div>
         <div className="text-center sm:text-left space-y-1.5 flex-1">
-          <h1 className="text-2xl font-serif font-bold text-white tracking-wide">{name}</h1>
+          <h1 className={`text-2xl font-serif font-bold tracking-wide ${isLight ? 'text-[#2C241E]' : 'text-white'}`}>
+            {name}
+          </h1>
           <div className="flex flex-wrap justify-center sm:justify-start gap-1.5">
-            <span className="px-2.5 py-0.5 bg-slate-950 border border-gray-800 text-[10px] font-medium rounded-full text-gray-400 flex items-center gap-1">
+            <span
+              className={`px-2.5 py-0.5 border text-[10px] font-medium rounded-full flex items-center gap-1 ${
+                isLight ? 'bg-white border-amber-500/20 text-[#5C4F43]' : 'bg-slate-950 border-gray-800 text-gray-400'
+              }`}
+            >
               <Calendar className="w-3 h-3" />
               {formattedDateString}
             </span>
             {astro?.ascendant_sign && (
-              <span className="px-2.5 py-0.5 bg-amber-500/10 border border-amber-500/20 text-[10px] font-semibold rounded-full text-amber-400">
+              <span
+                className={`px-2.5 py-0.5 border text-[10px] font-semibold rounded-full ${
+                  isLight ? 'bg-amber-100 border-amber-300 text-amber-900' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                }`}
+              >
                 {astro.ascendant_sign} {isTamil ? 'லக்னம்' : 'Lagna'}
               </span>
             )}
             {astro?.sun_sign && (
-              <span className="px-2.5 py-0.5 bg-violet-500/10 border border-violet-500/20 text-[10px] font-semibold rounded-full text-violet-400">
+              <span
+                className={`px-2.5 py-0.5 border text-[10px] font-semibold rounded-full ${
+                  isLight ? 'bg-violet-100 border-violet-300 text-violet-900' : 'bg-violet-500/10 border-violet-500/20 text-violet-400'
+                }`}
+              >
                 {astro.sun_sign} {isTamil ? 'ராசி' : 'Rasi'}
               </span>
             )}
             {astro?.nakshatra && (
-              <span className="px-2.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-semibold rounded-full text-emerald-400">
+              <span
+                className={`px-2.5 py-0.5 border text-[10px] font-semibold rounded-full ${
+                  isLight ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                }`}
+              >
                 {astro.nakshatra} {isTamil ? 'நட்சத்திரம்' : 'Star'}
               </span>
             )}
@@ -261,14 +318,28 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Avakahada details + Rasi Chart */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-slate-900/40 border border-gray-800 rounded-xl p-4 space-y-4 shadow-xl backdrop-blur-md">
-            <h2 className="text-xs font-semibold tracking-wider uppercase text-amber-400 border-b border-gray-800/60 pb-2 flex items-center gap-1.5 font-sans">
-              <Award className="w-4 h-4 text-amber-400" />
+          <div
+            className={`p-4 space-y-4 rounded-xl border transition-all ${
+              isLight
+                ? 'bg-white/90 border-amber-500/20 shadow-md text-[#2C241E]'
+                : 'bg-slate-900/40 border-gray-800 shadow-xl backdrop-blur-md text-white'
+            }`}
+          >
+            <h2
+              className={`text-xs font-semibold tracking-wider uppercase border-b pb-2 flex items-center gap-1.5 font-sans ${
+                isLight ? 'text-amber-700 border-amber-500/20' : 'text-amber-400 border-gray-800/60'
+              }`}
+            >
+              <Award className="w-4 h-4 text-amber-500" />
               {isTamil ? 'ராசி கட்டம்' : 'Rasi Chart'}
             </h2>
-            
+
             {/* South Indian 4x4 Grid Birth Chart */}
-            <div className="grid grid-cols-4 grid-rows-4 border border-violet-500/30 rounded-lg overflow-hidden bg-slate-950 aspect-square w-full max-w-[340px] mx-auto">
+            <div
+              className={`grid grid-cols-4 grid-rows-4 border rounded-lg overflow-hidden aspect-square w-full max-w-[340px] mx-auto ${
+                isLight ? 'border-amber-500/30 bg-amber-50/50 shadow-inner' : 'border-violet-500/30 bg-slate-950'
+              }`}
+            >
               {/* Row 0 */}
               {renderRasiCell(12)}
               {renderRasiCell(1)}
@@ -278,9 +349,19 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
               {/* Row 1 */}
               {renderRasiCell(11)}
               {/* Spans center col 1 & 2 */}
-              <div className="col-span-2 row-span-2 border border-violet-500/20 bg-slate-950 flex flex-col items-center justify-center text-center p-2">
-                <p className="font-serif text-sm font-extrabold text-amber-400 tracking-wide">{isTamil ? 'ராசி கட்டம்' : 'Rasi Chart'}</p>
-                <p className="text-[10px] text-violet-400 mt-1 uppercase tracking-wider font-sans">Vedic Kundli</p>
+              <div
+                className={`col-span-2 row-span-2 border flex flex-col items-center justify-center text-center p-2 ${
+                  isLight
+                    ? 'border-amber-500/30 bg-gradient-to-br from-amber-100/70 to-orange-100/50'
+                    : 'border-violet-500/20 bg-slate-950'
+                }`}
+              >
+                <p className={`font-serif text-sm font-extrabold tracking-wide ${isLight ? 'text-amber-900' : 'text-amber-400'}`}>
+                  {isTamil ? 'ராசி கட்டம்' : 'Rasi Chart'}
+                </p>
+                <p className={`text-[10px] uppercase tracking-wider font-sans mt-1 ${isLight ? 'text-amber-800/80 font-bold' : 'text-violet-400'}`}>
+                  Vedic Kundli
+                </p>
               </div>
               {renderRasiCell(4)}
 
@@ -298,8 +379,18 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
 
           {/* Avakahada Chakra / Astrological Details */}
           {astro && (
-            <div className="bg-slate-900/40 border border-gray-800 rounded-xl p-4 space-y-3 backdrop-blur-md">
-              <h2 className="text-xs font-semibold tracking-wider uppercase text-amber-400 border-b border-gray-800/60 pb-2 flex items-center gap-1.5 font-sans">
+            <div
+              className={`p-4 space-y-3 rounded-xl border transition-all ${
+                isLight
+                  ? 'bg-white/90 border-amber-500/20 shadow-md'
+                  : 'bg-slate-900/40 border-gray-800 backdrop-blur-md'
+              }`}
+            >
+              <h2
+                className={`text-xs font-semibold tracking-wider uppercase border-b pb-2 flex items-center gap-1.5 font-sans ${
+                  isLight ? 'text-amber-700 border-amber-500/20' : 'text-amber-400 border-gray-800/60'
+                }`}
+              >
                 {isTamil ? 'அவகாஹடா சக்கரம்' : 'Avakahada Chakra'}
               </h2>
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -307,9 +398,24 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
                   const val = astro[key];
                   if (!val) return null;
                   return (
-                    <div key={key} className="flex flex-col bg-slate-950/60 border border-gray-800/40 p-2 rounded">
-                      <span className="text-[10px] uppercase tracking-wider text-gray-500 font-sans font-bold">{label}</span>
-                      <span className="text-white font-medium mt-0.5">{val}</span>
+                    <div
+                      key={key}
+                      className={`flex flex-col p-2 rounded border ${
+                        isLight
+                          ? 'bg-amber-50/60 border-amber-500/15'
+                          : 'bg-slate-950/60 border-gray-800/40'
+                      }`}
+                    >
+                      <span
+                        className={`text-[10px] uppercase tracking-wider font-sans font-bold ${
+                          isLight ? 'text-[#7A695A]' : 'text-gray-500'
+                        }`}
+                      >
+                        {label}
+                      </span>
+                      <span className={`font-semibold mt-0.5 ${isLight ? 'text-[#2C241E]' : 'text-white'}`}>
+                        {val}
+                      </span>
                     </div>
                   );
                 })}
@@ -322,13 +428,27 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
         <div className="lg:col-span-7 space-y-6">
           {/* Planetary Details Table */}
           {hasPlanets && (
-            <div className="bg-slate-900/40 border border-gray-800 rounded-xl p-4 space-y-4 backdrop-blur-md overflow-x-auto">
-              <h2 className="text-xs font-semibold tracking-wider uppercase text-amber-400 border-b border-gray-800/60 pb-2 flex items-center gap-1.5 font-sans">
+            <div
+              className={`p-4 space-y-4 rounded-xl border transition-all overflow-x-auto ${
+                isLight
+                  ? 'bg-white/90 border-amber-500/20 shadow-md'
+                  : 'bg-slate-900/40 border-gray-800 backdrop-blur-md'
+              }`}
+            >
+              <h2
+                className={`text-xs font-semibold tracking-wider uppercase border-b pb-2 flex items-center gap-1.5 font-sans ${
+                  isLight ? 'text-amber-700 border-amber-500/20' : 'text-amber-400 border-gray-800/60'
+                }`}
+              >
                 {isTamil ? 'கிரக நிலைகள்' : 'Planet Details'}
               </h2>
               <table className="w-full text-left text-xs min-w-[500px]">
                 <thead>
-                  <tr className="border-b border-gray-800/50 text-gray-400 uppercase tracking-wider font-semibold text-[10px]">
+                  <tr
+                    className={`border-b uppercase tracking-wider font-semibold text-[10px] ${
+                      isLight ? 'border-amber-500/20 text-[#7A695A]' : 'border-gray-800/50 text-gray-400'
+                    }`}
+                  >
                     <th className="py-2">{isTamil ? 'கிரகம்' : 'Planet'}</th>
                     <th className="py-2">{isTamil ? 'ராசி' : 'Sign'}</th>
                     <th className="py-2">{isTamil ? 'நட்சத்திரம்' : 'Nakshatra'}</th>
@@ -336,24 +456,37 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
                     <th className="py-2 text-right">{isTamil ? 'பாகை' : 'Degree'}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800/30">
+                <tbody className={`divide-y ${isLight ? 'divide-amber-500/15' : 'divide-gray-800/30'}`}>
                   {planets.map((p: any) => (
-                    <tr key={p.name} className="hover:bg-violet-950/5 transition-colors">
-                      <td className="py-2.5 font-semibold text-white flex items-center gap-1.5">
-                        <span className="text-amber-400 text-sm">{PLANET_GLYPHS[p.name] || '★'}</span>
+                    <tr
+                      key={p.name}
+                      className={`transition-colors ${
+                        isLight ? 'hover:bg-amber-50/60' : 'hover:bg-violet-950/5'
+                      }`}
+                    >
+                      <td className={`py-2.5 font-semibold flex items-center gap-1.5 ${isLight ? 'text-[#2C241E]' : 'text-white'}`}>
+                        <span className={`text-sm ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>
+                          {PLANET_GLYPHS[p.name] || '★'}
+                        </span>
                         <span>{p.name}</span>
                         {p.is_retrograde && (
-                          <span className="text-[9px] bg-red-950 border border-red-500/20 text-red-400 font-extrabold px-1 rounded uppercase tracking-wider leading-none">
+                          <span
+                            className={`text-[9px] font-extrabold px-1 rounded uppercase tracking-wider leading-none border ${
+                              isLight
+                                ? 'bg-rose-100 border-rose-300 text-rose-700'
+                                : 'bg-red-950 border-red-500/20 text-red-400'
+                            }`}
+                          >
                             R
                           </span>
                         )}
                       </td>
-                      <td className="py-2.5 text-gray-300">{p.sign || '—'}</td>
-                      <td className="py-2.5 text-amber-300/90">{p.nakshatra || '—'}</td>
-                      <td className="py-2.5 text-center text-violet-300 font-bold">
+                      <td className={`py-2.5 ${isLight ? 'text-[#5C4F43]' : 'text-gray-300'}`}>{p.sign || '—'}</td>
+                      <td className={`py-2.5 font-medium ${isLight ? 'text-amber-800' : 'text-amber-300/90'}`}>{p.nakshatra || '—'}</td>
+                      <td className={`py-2.5 text-center font-bold ${isLight ? 'text-violet-700' : 'text-violet-300'}`}>
                         {p.nakshatra_pada ? `P${p.nakshatra_pada}` : '—'}
                       </td>
-                      <td className="py-2.5 text-right text-amber-400 font-mono">
+                      <td className={`py-2.5 text-right font-mono font-bold ${isLight ? 'text-amber-700' : 'text-amber-400'}`}>
                         {normalizeDegree(p.local_degree) || '—'}
                       </td>
                     </tr>
@@ -365,17 +498,42 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
 
           {/* Housepredictions block */}
           {housePredictions && housePredictions.length > 0 && (
-            <div className="bg-slate-900/40 border border-gray-800 rounded-xl p-4 space-y-3 backdrop-blur-md">
-              <h2 className="text-xs font-semibold tracking-wider uppercase text-amber-400 border-b border-gray-800/60 pb-2 flex items-center gap-1.5 font-sans">
+            <div
+              className={`p-4 space-y-3 rounded-xl border transition-all ${
+                isLight
+                  ? 'bg-white/90 border-amber-500/20 shadow-md'
+                  : 'bg-slate-900/40 border-gray-800 backdrop-blur-md'
+              }`}
+            >
+              <h2
+                className={`text-xs font-semibold tracking-wider uppercase border-b pb-2 flex items-center gap-1.5 font-sans ${
+                  isLight ? 'text-amber-700 border-amber-500/20' : 'text-amber-400 border-gray-800/60'
+                }`}
+              >
                 {isTamil ? 'ஜாதக பலன்கள்' : 'Astrological Characteristics'}
               </h2>
-              <div className="text-xs text-gray-300 leading-relaxed font-serif space-y-3 italic">
+              <div className="text-xs leading-relaxed font-serif space-y-3 italic">
                 {housePredictions.map((h: any, i: number) => {
                   if (!h.prediction) return null;
                   return (
-                    <div key={i} className="bg-slate-950/45 p-3 rounded-lg border border-violet-500/5 hover:border-violet-500/10 transition-all">
-                      {h.location && <span className="block font-sans font-bold text-violet-400 mb-1 tracking-wide uppercase text-[9px]">{h.location}</span>}
-                      <p className="text-white text-xs leading-relaxed">
+                    <div
+                      key={i}
+                      className={`p-3 rounded-lg border transition-all ${
+                        isLight
+                          ? 'bg-amber-50/50 border-amber-500/15 hover:border-amber-500/30'
+                          : 'bg-slate-950/45 border-violet-500/5 hover:border-violet-500/10'
+                      }`}
+                    >
+                      {h.location && (
+                        <span
+                          className={`block font-sans font-bold mb-1 tracking-wide uppercase text-[9px] ${
+                            isLight ? 'text-violet-800' : 'text-violet-400'
+                          }`}
+                        >
+                          {h.location}
+                        </span>
+                      )}
+                      <p className={`text-xs leading-relaxed not-italic ${isLight ? 'text-[#2C241E]' : 'text-white'}`}>
                         {h.prediction.trim()
                           .replace(/^since\s+the\s+\S+\s+lord[^,]*,\s*/i, '')
                           .replace(/^ஜாதகத்தில்[^,]*,\s*/u, '')
@@ -390,11 +548,25 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
 
           {/* Dasha Block */}
           {hasDasha && (
-            <div className="bg-slate-900/40 border border-gray-800 rounded-xl p-4 space-y-4 backdrop-blur-md">
-              <h2 className="text-xs font-semibold tracking-wider uppercase text-amber-400 border-b border-gray-800/60 pb-2 flex items-center gap-1.5 font-sans">
+            <div
+              className={`p-4 space-y-4 rounded-xl border transition-all ${
+                isLight
+                  ? 'bg-white/90 border-amber-500/20 shadow-md'
+                  : 'bg-slate-900/40 border-gray-800 backdrop-blur-md'
+              }`}
+            >
+              <h2
+                className={`text-xs font-semibold tracking-wider uppercase border-b pb-2 flex items-center gap-1.5 font-sans ${
+                  isLight ? 'text-amber-700 border-amber-500/20' : 'text-amber-400 border-gray-800/60'
+                }`}
+              >
                 {isTamil ? 'திசா காலங்கள்' : 'Dasha Periods'}
               </h2>
-              <div className="grid grid-cols-3 border-b border-gray-800/50 pb-2 text-[10px] uppercase font-semibold text-gray-500 tracking-wider">
+              <div
+                className={`grid grid-cols-3 border-b pb-2 text-[10px] uppercase font-semibold tracking-wider ${
+                  isLight ? 'border-amber-500/20 text-[#7A695A]' : 'border-gray-800/50 text-gray-500'
+                }`}
+              >
                 <div>Period</div>
                 <div>At Birth</div>
                 <div>Current</div>
@@ -408,26 +580,30 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
                   const birthEmpty = !row.birth || row.birth === '—';
                   const currentEmpty = !row.current || row.current === '—';
                   return (
-                    <div key={i} className="grid grid-cols-3 items-center text-xs text-white">
-                      <span className="font-semibold text-gray-400">{row.label}</span>
+                    <div key={i} className="grid grid-cols-3 items-center text-xs">
+                      <span className={`font-semibold ${isLight ? 'text-[#5C4F43]' : 'text-gray-400'}`}>{row.label}</span>
                       <div className="flex items-center gap-1.5">
                         {!birthEmpty ? (
                           <>
-                            <span className="text-violet-400 text-sm leading-none">{PLANET_GLYPHS[row.birth] || '★'}</span>
-                            <span className="text-xs text-gray-300">{row.birth}</span>
+                            <span className={`text-sm leading-none ${isLight ? 'text-violet-700' : 'text-violet-400'}`}>
+                              {PLANET_GLYPHS[row.birth] || '★'}
+                            </span>
+                            <span className={`text-xs ${isLight ? 'text-[#2C241E] font-medium' : 'text-gray-300'}`}>{row.birth}</span>
                           </>
                         ) : (
-                          <span className="text-gray-600">—</span>
+                          <span className={isLight ? 'text-gray-400' : 'text-gray-600'}>—</span>
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 font-bold">
                         {!currentEmpty ? (
                           <>
-                            <span className="text-amber-400 text-sm leading-none">{PLANET_GLYPHS[row.current] || '★'}</span>
-                            <span className="text-xs text-amber-300">{row.current}</span>
+                            <span className={`text-sm leading-none ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>
+                              {PLANET_GLYPHS[row.current] || '★'}
+                            </span>
+                            <span className={`text-xs ${isLight ? 'text-amber-900' : 'text-amber-300'}`}>{row.current}</span>
                           </>
                         ) : (
-                          <span className="text-gray-600">—</span>
+                          <span className={isLight ? 'text-gray-400' : 'text-gray-600'}>—</span>
                         )}
                       </div>
                     </div>
@@ -436,12 +612,20 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
               </div>
 
               {/* Dasha dates info */}
-              <div className="text-[10px] text-gray-500 flex flex-col gap-1 border-t border-gray-800/30 pt-3">
+              <div
+                className={`text-[10px] flex flex-col gap-1 border-t pt-3 ${
+                  isLight ? 'border-amber-500/15 text-[#7A695A]' : 'border-gray-800/30 text-gray-500'
+                }`}
+              >
                 {dashaData.birth?.date && (
-                  <p>Birth dasha as of: <span className="text-gray-400">{dashaData.birth.date}</span></p>
+                  <p>
+                    Birth dasha as of: <span className={isLight ? 'text-[#2C241E] font-semibold' : 'text-gray-400'}>{dashaData.birth.date}</span>
+                  </p>
                 )}
                 {dashaData.current?.date && (
-                  <p>Current dasha as of: <span className="text-gray-400">{dashaData.current.date}</span></p>
+                  <p>
+                    Current dasha as of: <span className={isLight ? 'text-[#2C241E] font-semibold' : 'text-gray-400'}>{dashaData.current.date}</span>
+                  </p>
                 )}
               </div>
             </div>
@@ -449,17 +633,40 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
 
           {/* Lucky factors */}
           {hasLucky && (
-            <div className="bg-slate-900/40 border border-gray-800 rounded-xl p-4 space-y-4 backdrop-blur-md">
-              <h2 className="text-xs font-semibold tracking-wider uppercase text-amber-400 border-b border-gray-800/60 pb-2 flex items-center gap-1.5 font-sans">
+            <div
+              className={`p-4 space-y-4 rounded-xl border transition-all ${
+                isLight
+                  ? 'bg-white/90 border-amber-500/20 shadow-md'
+                  : 'bg-slate-900/40 border-gray-800 backdrop-blur-md'
+              }`}
+            >
+              <h2
+                className={`text-xs font-semibold tracking-wider uppercase border-b pb-2 flex items-center gap-1.5 font-sans ${
+                  isLight ? 'text-amber-700 border-amber-500/20' : 'text-amber-400 border-gray-800/60'
+                }`}
+              >
                 {isTamil ? 'அதிர்ஷ்ட காரணிகள்' : 'Lucky Factors'}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {lucky.numbers?.length > 0 && (
                   <div className="space-y-1.5">
-                    <span className="block text-[10px] text-gray-500 uppercase tracking-wider font-bold font-sans">Numbers</span>
+                    <span
+                      className={`block text-[10px] uppercase tracking-wider font-bold font-sans ${
+                        isLight ? 'text-[#7A695A]' : 'text-gray-500'
+                      }`}
+                    >
+                      Numbers
+                    </span>
                     <div className="flex flex-wrap gap-1.5">
                       {lucky.numbers.map((n: any, i: number) => (
-                        <span key={i} className="w-6 h-6 rounded-full bg-violet-500/10 border border-violet-500/20 flex items-center justify-center font-bold text-xs text-violet-300">
+                        <span
+                          key={i}
+                          className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs border ${
+                            isLight
+                              ? 'bg-violet-100 border-violet-300 text-violet-800'
+                              : 'bg-violet-500/10 border-violet-500/20 text-violet-300'
+                          }`}
+                        >
                           {n}
                         </span>
                       ))}
@@ -469,14 +676,30 @@ export default function HoroscopeOutputScreen({ name, date, data, loading, error
 
                 {lucky.colors?.length > 0 && (
                   <div className="space-y-1.5">
-                    <span className="block text-[10px] text-gray-500 uppercase tracking-wider font-bold font-sans">Colours</span>
+                    <span
+                      className={`block text-[10px] uppercase tracking-wider font-bold font-sans ${
+                        isLight ? 'text-[#7A695A]' : 'text-gray-500'
+                      }`}
+                    >
+                      Colours
+                    </span>
                     <div className="flex flex-wrap gap-3">
                       {lucky.colors.map((c: any, i: number) => {
                         const norm = c.charAt(0).toUpperCase() + c.slice(1).toLowerCase();
                         const swatch = COLOR_SWATCHES[norm] || COLOR_SWATCHES[c] || '#888';
                         return (
-                          <div key={i} className="flex items-center gap-1.5 text-xs text-gray-300">
-                            <span style={{ backgroundColor: swatch }} className="w-3.5 h-3.5 rounded-full border border-white/10 shadow" />
+                          <div
+                            key={i}
+                            className={`flex items-center gap-1.5 text-xs font-medium ${
+                              isLight ? 'text-[#2C241E]' : 'text-gray-300'
+                            }`}
+                          >
+                            <span
+                              style={{ backgroundColor: swatch }}
+                              className={`w-3.5 h-3.5 rounded-full border shadow-sm ${
+                                isLight ? 'border-amber-500/30' : 'border-white/10'
+                              }`}
+                            />
                             <span>{c}</span>
                           </div>
                         );

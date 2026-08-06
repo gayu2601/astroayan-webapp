@@ -1738,7 +1738,7 @@ export default function App() {
                         setHoroData(input);
                       }} />
                     ) : (
-                      <HoroscopeOutputScreen name={horoInputName} date={horoInputDate} data={horoDetails} loading={horoDetailsLoading} error={horoDetailsError} onBack={handleHoroBack} />
+                      <HoroscopeOutputScreen name={horoInputName} date={horoInputDate} data={horoDetails} loading={horoDetailsLoading} error={horoDetailsError} onBack={handleHoroBack} isLight={isLight}/>
                     )}
                   </div>
                 )}
