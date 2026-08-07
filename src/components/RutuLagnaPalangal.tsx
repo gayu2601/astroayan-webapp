@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Sparkles, Compass, ArrowLeft, Search, AlertCircle, ShieldAlert, Filter, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ScreenGuard from './ScreenGuard';
+
 interface RutuLagnaProps {
 language?: 'ta' | 'en';
 }
@@ -56,6 +58,7 @@ const matchesRemedy = !filterRemedyOnly || Boolean(item.remedy);
 return matchesSearch && matchesRashi && matchesRemedy;
 });
 return (
+<ScreenGuard featureId="rutu_lagna_palan">
 <div className="space-y-6 max-w-5xl mx-auto">
   {/* Main Title Card */}
   <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-purple-500/15 via-indigo-500/10 to-amber-500/15 border border-purple-500/20 p-6 sm:p-8 backdrop-blur-md">
@@ -196,6 +199,7 @@ return (
     )}
   </div>
 </div>
+</ScreenGuard>
 );
 };
 export default RutuLagnaPalangal;

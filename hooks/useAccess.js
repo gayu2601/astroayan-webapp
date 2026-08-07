@@ -33,6 +33,11 @@ export const FEATURE_ROUTE_MAP = {
   gocharam:      '(app)/gocharam',
   manaiyadi: '(app)/manaiyadi',
   palli_palan:      '(app)/palliPalan',
+  muhurtham: '(app)/muhurtham',
+  vastu: '(app)/vastu',
+  rutu_madha_palan: '(app)/muhurtham',
+  rutu_lagna_palan: '(app)/muhurtham',
+  star_gemstone: '(app)/gemstone-mapping',
 };
 
 // Reverse: route segment → featureId  e.g. 'home' → 'panchang'

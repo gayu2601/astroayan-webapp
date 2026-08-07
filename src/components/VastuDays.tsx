@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "../../hooks/useTranslation";
 import { Clock, Compass, Home, Info, ShieldCheck } from "lucide-react";
+import ScreenGuard from './ScreenGuard';
 
 interface VastuDaysTabProps {
   isLight?: boolean;
@@ -86,6 +87,7 @@ export default function VastuDays({ isLight = true }: VastuDaysTabProps) {
   const { isTamil } = useTranslation();
 
   return (
+  <ScreenGuard featureId="vastu">
     <div className="space-y-8">
       {/* Disclaimer Info Banner */}
       <div
@@ -207,5 +209,6 @@ export default function VastuDays({ isLight = true }: VastuDaysTabProps) {
         ))}
       </div>
     </div>
+	</ScreenGuard>
   );
 }

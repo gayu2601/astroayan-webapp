@@ -9,6 +9,7 @@ const ALL_FEATURES = [
   'porutham_star', 'porutham_mrg', 'porutham_pdf', 'biodata',
   'hora', 'gocharam', 'manaiyadi', 'palli_palan', 'age_calc',
   'panchangam_pdf', 'daily_rasi_palan', 'daily_nakshatra_palan', 'weekly_rasi_palan',
+  'muhurtham', 'vastu', 'rutu_madha_palan', 'rutu_lagna_palan', 'star_gemstone'
 ];
 
 interface Props {

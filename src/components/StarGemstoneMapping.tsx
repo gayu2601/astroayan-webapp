@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, Gem, ArrowLeft, Search, Star, Globe, LayoutGrid, Table } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ScreenGuard from './ScreenGuard';
 
 interface StarGemstoneProps {
   language?: 'ta' | 'en';
@@ -180,6 +181,7 @@ export const StarGemstoneMapping: React.FC<StarGemstoneProps> = ({ language }) =
   });
 
   return (
+  <ScreenGuard featureId="star_gemstone">
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Main Title Card */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-500/15 via-amber-500/10 to-purple-500/15 border border-emerald-500/20 p-6 sm:p-8 backdrop-blur-md">
@@ -347,6 +349,7 @@ export const StarGemstoneMapping: React.FC<StarGemstoneProps> = ({ language }) =
         </div>
       )}
     </div>
+	</ScreenGuard>
   );
 };
 

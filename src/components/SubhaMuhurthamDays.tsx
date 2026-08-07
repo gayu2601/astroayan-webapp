@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "../../hooks/useTranslation";
 import { Calendar, CheckCircle, Info, Sparkles } from "lucide-react";
+import ScreenGuard from './ScreenGuard';
 
 interface SubhaMuhurthamTabProps {
   isLight?: boolean;
@@ -84,6 +85,7 @@ export default function SubhaMuhurthamDays({ isLight = true }: SubhaMuhurthamTab
   const { isTamil } = useTranslation();
 
   return (
+  <ScreenGuard featureId="muhurtham">
     <div className="space-y-8">
       {/* Disclaimer Info Banner */}
       <div
@@ -179,5 +181,6 @@ export default function SubhaMuhurthamDays({ isLight = true }: SubhaMuhurthamTab
         ))}
       </div>
     </div>
+	</ScreenGuard>
   );
 }

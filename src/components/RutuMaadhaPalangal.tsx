@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, Calendar, ArrowLeft, Search, AlertCircle, ShieldAlert, Filter, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ScreenGuard from './ScreenGuard';
 
 interface RutuMaadhaProps {
   language?: 'ta' | 'en';
@@ -62,6 +63,7 @@ export const RutuMaadhaPalangal: React.FC<RutuMaadhaProps> = ({ language }) => {
   });
 
   return (
+  <ScreenGuard featureId="rutu_madha_palan">
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Main Title Card */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-500/15 via-purple-500/10 to-indigo-500/15 border border-amber-500/20 p-6 sm:p-8 backdrop-blur-md">
@@ -202,6 +204,7 @@ export const RutuMaadhaPalangal: React.FC<RutuMaadhaProps> = ({ language }) => {
         )}
       </div>
     </div>
+	</ScreenGuard>
   );
 };
 

@@ -52,6 +52,11 @@ const FEATURE_META: Record<string, { icon: string; name: string; nameTA: string 
   daily_rasi_palan:      { icon: '♈', name: 'Daily Rasi Palan',         nameTA: 'தின ராசி பலன்' },
   daily_nakshatra_palan: { icon: '🌟', name: 'Daily Nakshatra Palan',    nameTA: 'தின நட்சத்திர பலன்' },
   weekly_rasi_palan:     { icon: '📅', name: 'Weekly Rasi Palan',        nameTA: 'வார ராசி பலன்' },
+  muhurtham:       { icon: '🪔', name: 'Subha Muhurtham Days',     nameTA: 'சுப முகூர்த்த நாட்கள்' },
+  vastu:            { icon: '🏡', name: 'Vastu Days',               nameTA: 'வாஸ்து நாட்கள்' },
+  rutu_madha_palan:      { icon: '🌸', name: 'Rutu Madha Palangal',      nameTA: 'ருது மாத பலன்கள்' },
+  rutu_lagna_palan:      { icon: '🌙', name: 'Rutu Lagna Palangal',      nameTA: 'ருது லக்ன பலன்கள்' },
+  star_gemstone:         { icon: '💎', name: 'Stars & Gemstones',          nameTA: 'நட்சத்திர ரத்தினங்கள்' },
 };
 
 const CONTACT_EMAIL = 'astroayancc@gmail.com';

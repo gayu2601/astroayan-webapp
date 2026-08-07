@@ -38,6 +38,11 @@ const FEATURES = [
   { id: 'daily_rasi_palan', icon: '♈', name: 'Daily Rasi Palan', nameTA: 'தின ராசி பலன்', desc: 'இன்றைய ராசி பலன்கள்' },
   { id: 'daily_nakshatra_palan', icon: '🌟', name: 'Daily Nakshatra Palan', nameTA: 'தின நட்சத்திர பலன்', desc: 'இன்றைய நட்சத்திர பலன்கள்' },
   { id: 'weekly_rasi_palan', icon: '📅', name: 'Weekly Rasi Palan', nameTA: 'வார ராசி பலன்', desc: 'இந்த வார ராசி பலன்கள்' },
+  { id: 'muhurtham', icon: '🪔', name: 'Subha Muhurtham Days', nameTA: 'சுப முகூர்த்த நாட்கள்', desc: 'திருமணம் மற்றும் சுப நிகழ்வுகளுக்கான நல்ல நாட்கள்' },
+  { id: 'vastu', icon: '🏡', name: 'Vastu Days', nameTA: 'வாஸ்து நாட்கள்', desc: 'வீடு கட்டுதல் மற்றும் கிரகப்பிரவேசத்திற்கு ஏற்ற நாட்கள்' },
+  { id: 'rutu_madha_palan', icon: '🌸', name: 'Rutu Madha Palangal', nameTA: 'ருது மாத பலன்கள்', desc: 'பெண்களின் முதல் ருது மாதத்தின் பலன்கள்' },
+  { id: 'rutu_lagna_palan', icon: '🌙', name: 'Rutu Lagna Palangal', nameTA: 'ருது லக்ன பலன்கள்', desc: 'முதல் ருது நேர லக்னத்தின் பலன்கள்' },
+  { id: 'star_gemstone', icon: '💎', name: 'Stars & Gemstones', nameTA: 'நட்சத்திர ரத்தினங்கள்', desc: 'ஒவ்வொரு நட்சத்திரத்திற்கான அதிர்ஷ்ட ரத்தினங்கள்' },
 ];
 
 const DURATIONS = [
@@ -67,7 +72,7 @@ const FEATURE_LABELS: Record<string, string> = {
   porutham_pdf: 'Marriage Porutham PDF', biodata: 'Marriage Biodata PDF', hora: 'Hora Muhurtham',
   gocharam: 'Gocharam', age_calc: 'Age Calculator', manaiyadi: 'Manaiyadi Sasthiram',
   palli_palan: 'Palli Vizhum Palan', daily_rasi_palan: 'Daily Rasi Palan',
-  daily_nakshatra_palan: 'Daily Nakshatra Palan', weekly_rasi_palan: 'Weekly Rasi Palan',
+  daily_nakshatra_palan: 'Daily Nakshatra Palan', weekly_rasi_palan: 'Weekly Rasi Palan', muhurtham: 'Subha Muhurtham Days', vastu: 'Vastu Days', rutu_madha_palan: 'Rutu Madha Palangal', rutu_lagna_palan: 'Rutu Lagna Palangal', star_gemstone: 'Stars & Gemstone'
 };
 
 const ADMIN_ID = 'f7191c3d-b329-49e3-965d-c5015663ebba';
