@@ -29,11 +29,11 @@ const CONTAINER_ID = '__thaiyal_toast_root__';
 
 const CONTAINER_CSS = `
   position: fixed;
-  bottom: 1.25rem;
+  top: 1.25rem;
   right: 1.25rem;
   z-index: 99999;
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   gap: 0.5rem;
   pointer-events: none;
   max-width: min(calc(100vw - 2.5rem), 380px);
