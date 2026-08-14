@@ -136,10 +136,28 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
     const ascendantSignNo = lagnaEntry ? lagnaEntry.rasi_no : 1;
 
     // Filter planet rows
-    const filteredPlanetRows = planetsArray.filter((p: any) => {
-      const nameLower = (p.full_name || p.name || '').toLowerCase();
-      return !nameLower.includes('lagna') && !nameLower.includes('ascendant') && !nameLower.includes('லக்');
-    });
+	const filteredPlanetRows = planetsArray.filter((p: any) => {
+	  const isPlanet =
+		p &&
+		typeof p === 'object' &&
+		!Array.isArray(p) &&
+		typeof p.full_name === 'string' &&
+		typeof p.name === 'string' &&
+		typeof p.local_degree === 'number' &&
+		typeof p.global_degree === 'number' &&
+		typeof p.rasi_no === 'number' &&
+		typeof p.zodiac === 'string';
+
+	  if (!isPlanet) return false;
+
+	  const nameLower = p.full_name.toLowerCase();
+
+	  return (
+		!nameLower.includes('lagna') &&
+		!nameLower.includes('ascendant') &&
+		!nameLower.includes('லக்')
+	  );
+	});
 
     // Divisional charts selection data
     const divCharts = [
@@ -188,6 +206,8 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
 	  }
 	  return num.toFixed(2);
 	};
+	
+	console.log(planetsArray, filteredPlanetRows)
 
     return (
       <div className="space-y-6 pb-12">

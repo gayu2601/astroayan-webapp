@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 
 const SIGN_NAMES_EN = [
   'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
@@ -50,9 +50,83 @@ export function CustomKattamGrid({ title, planets, lagnaSignNo, isTamil, theme }
     return elements;
   };
 
+  // The chart itself must ALWAYS remain square.
+  // We measure the actual rendered content of every kattam and only reduce
+  // the planet/value font size when the tallest cell cannot fit.
+  const gridRef = useRef<HTMLDivElement>(null);
+  const cellRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const [planetFontSize, setPlanetFontSize] = useState(9);
+
+  useLayoutEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+
+    const measureAndFit = () => {
+      const cells = Object.values(cellRefs.current).filter(
+        (cell): cell is HTMLDivElement => cell !== null
+      );
+
+      if (!cells.length) return;
+
+      // The parent is aspect-square, so this is the actual available
+      // height for each kattam.
+      const cellHeight = grid.getBoundingClientRect().height / 4;
+
+      // Measure the REAL rendered content of every cell.
+      // We don't infer rows from planet count.
+      let tallestCell = 0;
+
+      cells.forEach((cell) => {
+        tallestCell = Math.max(
+          tallestCell,
+          cell.scrollHeight
+        );
+      });
+
+      // Give the content a little breathing room for borders/padding.
+      const availableContentHeight = Math.max(1, cellHeight - 4);
+
+      if (tallestCell <= availableContentHeight) {
+        // Restore the normal size if everything fits.
+        setPlanetFontSize((current) => current === 9 ? current : 9);
+        return;
+      }
+
+      // Reduce the actual planet/value font until the measured tallest
+      // rendered cell fits inside the fixed square cell.
+      const currentSize = planetFontSize;
+      const scale = availableContentHeight / tallestCell;
+
+      const nextSize = Math.max(
+        5.5,
+        Math.min(9, Math.floor(currentSize * scale * 10) / 10)
+      );
+
+      setPlanetFontSize((current) =>
+        Math.abs(current - nextSize) < 0.1 ? current : nextSize
+      );
+    };
+
+    // Wait until the browser has painted the current font/content.
+    const frame = requestAnimationFrame(measureAndFit);
+
+    const observer = new ResizeObserver(() => {
+      requestAnimationFrame(measureAndFit);
+    });
+    observer.observe(grid);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [planets, lagnaSignNo, isTamil, theme, planetFontSize]);
+
   return (
     <div id="kattam-grid-container" className={`w-full max-w-[380px] mx-auto border-2 ${isLight ? "border-[#D97706]/75 bg-[#FFFDF9]" : "border-amber-500/60 bg-black/60"} overflow-hidden shadow-2xl rounded-xl font-mono text-xs animate-fade-in`}>
-      <div className="grid grid-cols-4 grid-rows-4 aspect-square relative">
+      <div
+        ref={gridRef}
+        className="grid grid-cols-4 grid-rows-4 aspect-square relative"
+      >
         {KATTAM_LAYOUT.map((row, rIdx) => (
           <React.Fragment key={rIdx}>
             {row.map((signNo, cIdx) => {
@@ -67,7 +141,10 @@ export function CustomKattamGrid({ title, planets, lagnaSignNo, isTamil, theme }
                 <div 
                   key={`${rIdx}-${cIdx}`} 
                   id={`sign-box-${signNo}`}
-                  className={`border p-1.5 flex flex-col justify-between aspect-square transition-all ${
+                  ref={(el) => {
+                    cellRefs.current[signNo] = el;
+                  }}
+                  className={`border p-1.5 flex flex-col gap-1 min-h-0 overflow-hidden transition-all ${
                     isLight 
                       ? "border-[#D97706]/15 bg-[#FFFDF9] hover:bg-amber-50/20 text-[#2C241E]" 
                       : "border-amber-500/25 bg-[#0b0825]/90 hover:bg-white/5 text-white"
@@ -77,11 +154,18 @@ export function CustomKattamGrid({ title, planets, lagnaSignNo, isTamil, theme }
                     {signName}
                   </div>
                   
-                  <div className="flex flex-wrap gap-0.5 mt-1 justify-center max-h-[45px] overflow-y-auto">
+                  <div
+                    data-kattam-content
+                    className="flex flex-wrap gap-0.5 mt-1 justify-center content-start overflow-visible min-h-0"
+                  >
                     {signPlanets.map((p, idx) => (
-                      <span 
-                        key={idx} 
-                        className={`px-1 rounded text-[9px] font-black tracking-tighter ${
+                      <span
+                        key={idx}
+                        style={{
+                          fontSize: `${planetFontSize}px`,
+                          lineHeight: `${Math.max(8, planetFontSize + 2)}px`,
+                        }}
+                        className={`px-1 rounded font-black tracking-tighter break-words max-w-full ${
                           p === 'ல' || p === 'La' || p.toLowerCase().includes('lag')
                             ? "bg-indigo-600 text-white"
                             : isLight ? "bg-amber-100 text-[#B45309] border border-[#B45309]/20" : "bg-amber-500/20 border border-amber-500/60 text-amber-300 shadow-[0_0_5px_rgba(245,158,11,0.2)]"

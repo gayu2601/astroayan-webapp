@@ -118,6 +118,21 @@ const KATTAM_CSS = `
   .kt-tamil { text-align: center; color: #8b5c00; font-size: 7px; margin-top: 2px; }
 `;
 
+// ─── Model 4 colored kattam CSS ──────────────────────────────────────────────
+const KATTAM_CSS_M4 = `
+  .kattam-wrap { display: inline-block; vertical-align: top; max-width: 100%; }
+  .kattam-label { font-size: 11px; font-weight: 800; text-align: center; color: #8b5c00; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
+  .kattam-table { border-collapse: collapse; border: 2px solid #e8a000; table-layout: fixed; max-width: 100%; }
+  .kt-top-table { border-collapse: collapse; width: 100%; margin-bottom: 2px; }
+  .kt-cell { border: 1px solid #f0c030; padding: 3px; vertical-align: top; font-size: 8px; background: #fffde8; }
+  .kt-center { text-align: center; vertical-align: middle; font-size: 10px; font-weight: 900; color: #c0392b; text-transform: uppercase; letter-spacing: 1px; background: #fff9d6; border: 1px solid #f0c030; }
+  .kt-rasi-no { color: #888; font-weight: 700; font-family: monospace; font-size: 7px; text-align: left; padding: 0; }
+  .kt-lagna { color: #c0392b; font-weight: 800; border: 0.5px solid #c0392b55; border-radius: 2px; padding: 0 2px; font-size: 7px; text-align: right; white-space: nowrap; }
+  .kt-planets { text-align: center; line-height: 1.3; min-height: 16px; }
+  .kt-planet { display: inline; color: #1a3fa0; font-weight: 800; padding: 0 1px; font-size: 7.5px; }
+  .kt-tamil { text-align: center; color: #8b5c00; font-size: 7px; margin-top: 2px; }
+`;
+
 // ─── Shared section-wrap CSS (table-based, no flex) ──────────────────────────
 // FIX: display:table replaces display:flex for print reliability on Android
 
@@ -277,7 +292,7 @@ function buildModel1Html(d: any, isTamil: boolean) {
 
   // FIX: charts laid out via <table> instead of inline-block inside a div
   const chartsSection = (d.rasiChart || d.navamsaChart) ? `
-    <tr><td colspan="6" class="section-cell">
+    <tr><td colspan="6" class="section-cell charts-section">
       <div class="section-wrap"><div class="section-line"></div><span>${isTamil ? 'ஜோதிட சக்கரங்கள்' : 'DIVISIONAL CHARTS'}</span><div class="section-line"></div></div>
       <table width="100%" cellspacing="0" cellpadding="0">
         <tr>
@@ -292,7 +307,7 @@ function buildModel1Html(d: any, isTamil: boolean) {
     </td></tr>` : '';
 
   const dashaSection = d.dasha ? `
-    <tr><td colspan="6" class="section-cell">
+    <tr><td colspan="6" class="section-cell dasha-section">
       <div class="section-wrap"><div class="section-line"></div><span>${isTamil ? 'தசா புக்தி விவரங்கள்' : 'DASHA INFO'}</span><div class="section-line"></div></div>
       <table width="100%" cellspacing="0" cellpadding="0">
         <tr>
@@ -388,6 +403,12 @@ function buildModel1Html(d: any, isTamil: boolean) {
 
     /* Kattam */
     ${KATTAM_CSS}
+	
+	.charts-section { break-inside: avoid; page-break-inside: avoid; }
+	.dasha-section {
+	  break-inside: avoid;
+	  page-break-inside: avoid;
+	}
 
     /* Dasha */
     .dasha-box { border: 1.5px solid #c8980f55; border-radius: 8px; padding: 10px; text-align: center; background: rgba(200,152,15,0.04); width: 48%; vertical-align: top; }
@@ -518,7 +539,7 @@ function buildModel2Html(d: any, isTamil: boolean) {
     </td></tr>` : '';
 
   const dashaSection = d.dasha ? `
-    <tr><td colspan="6" class="section-cell">
+    <tr><td colspan="6" class="section-cell dasha-section">
       <div class="section-wrap"><div class="section-line"></div><span>${isTamil ? 'தசா புக்தி விவரங்கள்' : 'DASHA INFO'}</span><div class="section-line"></div></div>
       <table width="100%" cellspacing="0" cellpadding="0">
         <tr>
@@ -607,6 +628,10 @@ function buildModel2Html(d: any, isTamil: boolean) {
 
     /* Charts */
     .charts-section { break-inside: avoid; page-break-inside: avoid; }
+	.dasha-section {
+	  break-inside: avoid;
+	  page-break-inside: avoid;
+	}
 
     /* Kattam */
     ${KATTAM_CSS}
@@ -685,9 +710,10 @@ function buildModel3Html(d: any, isTamil: boolean) {
       </tr>`;
   };
 
-  const appName    = d.businessName || (isTamil ? 'ஜோதிட மென்பொருள்' : 'Astrology Software');
+  const appName    = d.businessName || 'AstroAyan';
   const appLoc     = d.businessLocation || '';
   const supportBits = [d.website, d.supportPhone].filter(Boolean).join(' / ');
+  const footerLine = `Software By ${appName} customer support${supportBits ? `: ${supportBits}` : ''}`;
 
   const compatList: string[] = Array.isArray(d.kundliData?.compatibleNakshatras)
     ? d.kundliData.compatibleNakshatras
@@ -729,7 +755,7 @@ function buildModel3Html(d: any, isTamil: boolean) {
         <td style="text-align:center;vertical-align:middle;padding:4px 6px 4px 0;">
           ${d.rasiChart ? buildKattamHtml(d.rasiChart, isTamil ? 'ராசி' : 'RASI', 56) : ''}
         </td>
-        <td class="charts-divider3">💑</td>
+        <td class="charts-divider3"></td>
         <td style="text-align:center;vertical-align:middle;padding:4px 0 4px 6px;">
           ${d.navamsaChart ? buildKattamHtml(d.navamsaChart, isTamil ? 'அம்சம்' : 'AMSAM', 56) : ''}
         </td>
@@ -748,6 +774,7 @@ function buildModel3Html(d: any, isTamil: boolean) {
     @page { margin: 0; size: A4 portrait; }
 
     html, body {
+      height: 100%;
       margin: 0 !important;
       padding: 0 !important;
       -webkit-print-color-adjust: exact !important;
@@ -756,18 +783,37 @@ function buildModel3Html(d: any, isTamil: boolean) {
     body { font-family: 'Segoe UI', Arial, sans-serif; background: #fdf6e3; font-size: 12px; color: #222; }
 
     @media print {
-      html, body { margin: 0 !important; padding: 0 !important; }
+      html, body { margin: 0 !important; padding: 0 !important; height: 100%; }
     }
 
     .card3 {
       border: 4px solid #f0c030;
       border-radius: 14px;
       /* FIX: card padding replaces @page margin */
-      padding: 12px 14px;
+      padding: 16px 18px;
       background: #fffdf7;
       max-width: 100%;
       overflow-x: hidden;
+      /* FIX: stretch to occupy the full printable page. Uses height:100%
+         (via the html/body/#content height:100% chain) rather than flex,
+         since flex collapses in Android print — same reasoning as the
+         table-based kattam/section-wrap fixes above. min-height is a
+         screen/desktop-print fallback in case the height chain breaks. */
+      height: 100%;
+      min-height: 100vh;
+      box-sizing: border-box;
     }
+    @media print {
+      .card3 { height: 100%; min-height: 277mm; }
+    }
+    /* FIX: table-based full-height layout — header/footer auto-size,
+       middle row (height=100% via HTML attribute) absorbs remaining
+       space. This is the classic table sticky-footer technique and is
+       far more reliable than flex across Android print engines. */
+    .card3-table { width: 100%; height: 100%; border-collapse: collapse; }
+    .card3-top-cell { vertical-align: top; }
+    .card3-body-cell { vertical-align: middle; padding: 8px 0; }
+    .card3-footer-cell { vertical-align: bottom; }
 
     .header3 { text-align: center; padding-bottom: 8px; }
     .header3 .app-name { font-size: 19px; font-weight: 800; color: #1a3fa0; }
@@ -806,58 +852,68 @@ function buildModel3Html(d: any, isTamil: boolean) {
     /* Kattam */
     ${KATTAM_CSS}
 
-    .footer3 { text-align: center; font-size: 10px; color: #555; border-top: 1px solid #f0c030; margin-top: 10px; padding-top: 6px; }
+    .footer3 { text-align: center; font-size: 10px; color: #555; border-top: 1px solid #f0c030; padding-top: 6px; }
   </style>
 </head>
 <body>
   <div class="card3">
-    <div class="header3">
-      <div class="app-name">${appName}</div>
-      ${appLoc ? `<div class="app-loc">${appLoc}</div>` : ''}
-      ${supportBits ? `<div class="app-support">${supportBits}</div>` : ''}
-    </div>
-
-    ${compatSection}
-    ${dashaStrip}
-
-    <table class="main-table3" cellspacing="0" cellpadding="0">
+    <table class="card3-table" cellspacing="0" cellpadding="0">
       <tr>
-        <td class="info-td">
-          <table class="info-table" cellspacing="0" cellpadding="0">
-            ${infoRow(isTamil ? 'பெயர்' : 'Name', d.name)}
-            ${infoRow(isTamil ? 'பிறந்த தேதி' : 'DOB / Time', [d.dob, d.tob].filter(Boolean).join('   '))}
-            ${infoRow(isTamil ? 'கல்வி' : 'Education', d.education)}
-            ${infoRow(isTamil ? 'வேலை / வருமானம்' : 'Occupation / Income', [d.occupation, d.salary].filter(Boolean).join(' / '))}
-            ${infoRow(isTamil ? 'ஜாதி / பிரிவு' : 'Caste / Sub-caste', gotram)}
-            ${infoRow(isTamil ? 'குலம் / கோத்திரம்' : 'Kulam / Gothram', kulam)}
-            ${infoRow(isTamil ? 'திருமண நிலை' : 'Marital Status', d.maritalStatus)}
-            ${infoRow(isTamil ? 'நட்சத்திரம் / ராசி' : 'Star / Rasi', rasiNakshatra)}
-            ${infoRow(isTamil ? 'லக்னம்' : 'Lagnam', d.kundliData?.ascendantSign)}
-            ${infoRow(isTamil ? 'நிறம் / உயரம்' : 'Complexion / Height', complexionHeight)}
-            ${infoRow(isTamil ? 'தந்தை பெயர்' : "Father's Name", d.fatherName)}
-            ${infoRow(isTamil ? 'தாயார் பெயர்' : "Mother's Name", d.motherName)}
-            ${infoRow(isTamil ? 'தந்தை தொழில்' : "Father's Job", d.fatherOccupation)}
-            ${infoRow(isTamil ? 'தாயார் தொழில்' : "Mother's Job", d.motherOccupation)}
-            ${infoRow(isTamil ? 'உடன்பிறப்பு' : 'Siblings', subpirappu)}
-            ${infoRow(isTamil ? 'முகவரி' : 'Address', d.address)}
-          </table>
-        </td>
-        <td class="photo-td3">
-          <div class="photo-box3">
-            ${d.photo
-              ? `<img src="${d.photo}" />`
-              : `<table width="125" height="148"><tr><td class="photo-placeholder3">👤<br/>Photo Not<br/>Provided</td></tr></table>`}
+        <td class="card3-top-cell">
+          <div class="header3">
+            <div class="app-name">${isTamil ? 'மென்பொருள் வழங்குனர்' : 'Software By'} ${appName}</div>
+            ${appLoc ? `<div class="app-loc">${appLoc}</div>` : ''}
+            ${supportBits ? `<div class="app-support">${supportBits}</div>` : ''}
           </div>
+          ${compatSection}
+          ${dashaStrip}
+        </td>
+      </tr>
+      <tr height="100%">
+        <td class="card3-body-cell">
+          <table class="main-table3" cellspacing="0" cellpadding="0">
+            <tr>
+              <td class="info-td">
+                <table class="info-table" cellspacing="0" cellpadding="0">
+                  ${infoRow(isTamil ? 'பெயர்' : 'Name', d.name)}
+                  ${infoRow(isTamil ? 'பிறந்த தேதி' : 'DOB / Time', [d.dob, d.tob].filter(Boolean).join('   '))}
+                  ${infoRow(isTamil ? 'கல்வி' : 'Education', d.education)}
+                  ${infoRow(isTamil ? 'வேலை / வருமானம்' : 'Occupation / Income', [d.occupation, d.salary].filter(Boolean).join(' / '))}
+                  ${infoRow(isTamil ? 'ஜாதி / பிரிவு' : 'Caste / Sub-caste', gotram)}
+                  ${infoRow(isTamil ? 'குலம் / கோத்திரம்' : 'Kulam / Gothram', kulam)}
+                  ${infoRow(isTamil ? 'திருமண நிலை' : 'Marital Status', d.maritalStatus)}
+                  ${infoRow(isTamil ? 'நட்சத்திரம் / ராசி' : 'Star / Rasi', rasiNakshatra)}
+                  ${infoRow(isTamil ? 'லக்னம்' : 'Lagnam', d.kundliData?.ascendantSign)}
+                  ${infoRow(isTamil ? 'நிறம் / உயரம்' : 'Complexion / Height', complexionHeight)}
+                  ${infoRow(isTamil ? 'தந்தை பெயர்' : "Father's Name", d.fatherName)}
+                  ${infoRow(isTamil ? 'தாயார் பெயர்' : "Mother's Name", d.motherName)}
+                  ${infoRow(isTamil ? 'தந்தை தொழில்' : "Father's Job", d.fatherOccupation)}
+                  ${infoRow(isTamil ? 'தாயார் தொழில்' : "Mother's Job", d.motherOccupation)}
+                  ${infoRow(isTamil ? 'உடன்பிறப்பு' : 'Siblings', subpirappu)}
+                  ${infoRow(isTamil ? 'முகவரி' : 'Address', d.address)}
+                  ${infoRow(isTamil ? 'எதிர்பார்ப்பு' : 'Expectation', d.expectation)}
+                  ${infoRow(isTamil ? 'குறிப்பு' : 'Notes', d.notes)}
+                  ${infoRow(isTamil ? 'போன்' : 'Phone', d.phone)}
+                </table>
+              </td>
+              <td class="photo-td3">
+                <div class="photo-box3">
+                  ${d.photo
+                    ? `<img src="${d.photo}" />`
+                    : `<table width="125" height="148"><tr><td class="photo-placeholder3">👤<br/>Photo Not<br/>Provided</td></tr></table>`}
+                </div>
+              </td>
+            </tr>
+          </table>
+          ${chartsSection}
+        </td>
+      </tr>
+      <tr>
+        <td class="card3-footer-cell">
+          <div class="footer3">${footerLine}</div>
         </td>
       </tr>
     </table>
-
-    ${notesArr.length ? `<div class="notes-text3">${notesArr.map((n) => `: ${n}`).join('<br/>')}</div>` : ''}
-    ${d.phone ? `<div class="phone-row3">${isTamil ? 'போன் / அணுக' : 'Phone'} : ${d.phone}</div>` : ''}
-
-    ${chartsSection}
-
-    <div class="footer3">${isTamil ? 'ஆதரவு' : 'Support'}: ${[d.supportPhone, d.website].filter(Boolean).join(' \u00b7 ') || (isTamil ? '—' : '—')}</div>
   </div>
 </body>
 </html>`;
@@ -913,7 +969,7 @@ function TemplatePicker({ isTamil, onSelect, onBack }: {
           <div className="p-4 pt-3 flex items-start justify-between gap-2">
             <div>
               <div className="text-sm font-black text-white">
-                {isTamil ? 'மாதிரி 1 — பக்கத்தில் புகைப்படம்' : 'Layout 1 — Photo on Side'}
+                {isTamil ? 'மாதிரி 1' : 'Layout 1'}
               </div>
               <div className="text-[11px] text-gray-400 mt-0.5 leading-snug">
                 {isTamil ? 'புகைப்படம் இடதுபுறம், விவரங்கள் அருகில் — சுருக்கமான வடிவம்' : 'Photo left, details alongside — compact & traditional'}
@@ -944,7 +1000,7 @@ function TemplatePicker({ isTamil, onSelect, onBack }: {
           <div className="p-4 pt-3 flex items-start justify-between gap-2">
             <div>
               <div className="text-sm font-black text-white">
-                {isTamil ? 'மாதிரி 2 — மேலே புகைப்படம்' : 'Layout 2 — Photo on Top'}
+                {isTamil ? 'மாதிரி 2' : 'Layout 2'}
               </div>
               <div className="text-[11px] text-gray-400 mt-0.5 leading-snug">
                 {isTamil ? 'புகைப்படம் மேலே, பரந்த வரிசைகளில் விவரங்கள் — நவீன வடிவம்' : 'Photo centered at top, wide row layout — spacious & modern'}
@@ -960,9 +1016,6 @@ function TemplatePicker({ isTamil, onSelect, onBack }: {
           className="group relative rounded-2xl border-2 border-gray-700 hover:border-amber-500 bg-slate-900/60 hover:bg-slate-800/80 transition-all duration-200 overflow-hidden text-left p-0 cursor-pointer"
         >
           <div className="bg-[#fffdf5] rounded-t-xl mx-2 mt-2 p-3 border border-amber-500/30">
-            <div className="text-center text-[9px] font-black text-blue-800 tracking-widest uppercase mb-1.5">
-              {isTamil ? 'ஜோதிட மென்பொருள்' : 'Astrology Software'}
-            </div>
             <div className="border border-dashed border-green-600/50 rounded px-1 py-0.5 mb-1.5">
               <div className="h-0.5 rounded bg-green-500/40 w-3/4 mx-auto" />
             </div>
@@ -983,10 +1036,10 @@ function TemplatePicker({ isTamil, onSelect, onBack }: {
           <div className="p-4 pt-3 flex items-start justify-between gap-2">
             <div>
               <div className="text-sm font-black text-white">
-                {isTamil ? 'மாதிரி 3 — மென்பொருள் அறிக்கை' : 'Layout 3 — Software Report'}
+                {isTamil ? 'மாதிரி 3' : 'Layout 3'}
               </div>
               <div className="text-[11px] text-gray-400 mt-0.5 leading-snug">
-                {isTamil ? 'பொருந்தும் நட்சத்திரம், திசை பட்டை, வலதுபுறம் புகைப்படம் — அறிக்கை வடிவம்' : 'Compatibility & dasha strips, photo on right — detailed report style'}
+                {isTamil ? 'திசை பட்டை, வலதுபுறம் புகைப்படம் — அறிக்கை வடிவம்' : 'Dasha strips, photo on right — detailed report style'}
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-amber-500 group-hover:translate-x-1 transition-transform flex-shrink-0 mt-0.5" />
@@ -1097,11 +1150,13 @@ export default function BiodataPreview({ formData, biodataOutput, onBack, isLigh
     /* FIX: print — undo scale, hide toolbar, no margins */
     @media print {
       #toolbar { display: none !important; }
+      html, body { height: 100% !important; }
       #content {
         margin-top: 0 !important;
         padding: 0 !important;
         transform: none !important;
         width: 100% !important;
+        height: 100% !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -1168,7 +1223,7 @@ export default function BiodataPreview({ formData, biodataOutput, onBack, isLigh
   );
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
+    <div className={`space-y-6 mx-auto pb-12 ${selectedModel === 3 ? 'max-w-6xl' : 'max-w-4xl'}`}>
 
       {/* Action bar */}
       <div
@@ -1226,7 +1281,9 @@ export default function BiodataPreview({ formData, biodataOutput, onBack, isLigh
 
       {/* In-app themed preview */}
       <div
-        className={`border-4 rounded-2xl p-4 md:p-8 space-y-6 relative overflow-hidden transition-all ${
+        className={`border-4 rounded-2xl p-4 md:p-8 space-y-6 relative overflow-hidden transition-all flex flex-col ${
+          selectedModel === 3 ? 'min-h-[1100px]' : ''
+        } ${
           isLight
             ? 'bg-[#FFFDF7] border-amber-500/50 shadow-xl text-[#2C241E]'
             : 'bg-slate-950 border-amber-500/40 shadow-2xl text-white'
@@ -1237,16 +1294,33 @@ export default function BiodataPreview({ formData, biodataOutput, onBack, isLigh
         <div className={`absolute bottom-2 left-2  text-lg select-none ${isLight ? 'text-amber-500/40' : 'text-amber-500/20'}`}>✦</div>
         <div className={`absolute bottom-2 right-2 text-lg select-none ${isLight ? 'text-amber-500/40' : 'text-amber-500/20'}`}>✦</div>
 
-        <div className="text-center space-y-1">
-          <div className="text-red-500 text-xl font-bold">🕉</div>
-          <h1 className={`text-xl font-serif font-black uppercase tracking-widest ${isLight ? 'text-amber-800' : 'text-amber-500'}`}>
-            {isTamil ? 'விவர பத்திரிகை' : 'Matrimonial Biodata'}
-          </h1>
-          {d.registrationNo && (
-            <span className={`text-[10px] uppercase tracking-widest font-mono block ${isLight ? 'text-[#8B5C00]' : 'text-gray-500'}`}>Reg No: {d.registrationNo}</span>
-          )}
-          <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mt-2" />
-        </div>
+        {selectedModel === 3 ? (
+          <div className="text-center space-y-1">
+            <h1 className={`text-xl font-serif font-black tracking-wide ${isLight ? 'text-blue-900' : 'text-amber-400'}`}>
+              {isTamil ? 'மென்பொருள் வழங்குனர்' : 'Software By'} {d.businessName || 'AstroAyan'}
+            </h1>
+            {d.businessLocation && (
+              <div className={`text-sm font-bold ${isLight ? 'text-blue-900' : 'text-amber-400'}`}>{d.businessLocation}</div>
+            )}
+            {(d.website || d.supportPhone) && (
+              <div className={`text-[11px] ${isLight ? 'text-[#7A695A]' : 'text-gray-400'}`}>
+                {[d.website, d.supportPhone].filter(Boolean).join(' / ')}
+              </div>
+            )}
+            <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mt-2" />
+          </div>
+        ) : (
+          <div className="text-center space-y-1">
+            <div className="text-red-500 text-xl font-bold">🕉</div>
+            <h1 className={`text-xl font-serif font-black uppercase tracking-widest ${isLight ? 'text-amber-800' : 'text-amber-500'}`}>
+              {isTamil ? 'விவர பத்திரிகை' : 'Matrimonial Biodata'}
+            </h1>
+            {d.registrationNo && (
+              <span className={`text-[10px] uppercase tracking-widest font-mono block ${isLight ? 'text-[#8B5C00]' : 'text-gray-500'}`}>Reg No: {d.registrationNo}</span>
+            )}
+            <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mt-2" />
+          </div>
+        )}
 
         {/* MODEL 1: Photo LEFT + details RIGHT */}
         {selectedModel === 1 && (
@@ -1350,25 +1424,32 @@ export default function BiodataPreview({ formData, biodataOutput, onBack, isLigh
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-              <div className="md:col-span-2 space-y-1 min-w-0">
+            <div className="flex flex-col md:flex-row gap-6 pt-2 items-start">
+              <div className="flex-1 w-full space-y-1 min-w-0">
                 {sectionTitle('தனிப்பட்ட விவரங்கள்', 'Personal Information')}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 min-w-0">
-                  {row(isTamil ? 'பெயர்'         : 'Name',              d.name)}
-                  {row(isTamil ? 'பிறந்த தேதி'  : 'DOB / Time',        [d.dob, d.tob].filter(Boolean).join('  '))}
-                  {row(isTamil ? 'கல்வி'         : 'Education',         d.education)}
-                  {row(isTamil ? 'வேலை'          : 'Occupation',        [d.occupation, d.salary].filter(Boolean).join(' / '))}
-                  {row(isTamil ? 'ஜாதி'          : 'Caste',             d.caste)}
-                  {row(isTamil ? 'திருமண நிலை'  : 'Marital Status',    d.maritalStatus)}
-                  {row(isTamil ? 'நட்சத்திரம்/ராசி' : 'Star / Rasi',   [d.kundliData?.nakshatra, d.kundliData?.rasi].filter(Boolean).join(' / '))}
-                  {row(isTamil ? 'லக்னம்'        : 'Lagnam',            d.kundliData?.ascendantSign)}
-                  {row(isTamil ? 'தந்தை பெயர்'  : "Father's Name",     d.fatherName)}
-                  {row(isTamil ? 'தாயார் பெயர்' : "Mother's Name",     d.motherName)}
-                  {row(isTamil ? 'உடன்பிறப்பு'  : 'Siblings',          d.siblings)}
-                  {row(isTamil ? 'முகவரி'        : 'Address',           d.address)}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 min-w-0">
+                  {row(isTamil ? 'பெயர்'            : 'Name',                 d.name)}
+                  {row(isTamil ? 'பிறந்த தேதி'     : 'DOB / Time',           [d.dob, d.tob].filter(Boolean).join('  '))}
+                  {row(isTamil ? 'கல்வி'            : 'Education',            d.education)}
+                  {row(isTamil ? 'வேலை / வருமானம்' : 'Occupation / Income',  [d.occupation, d.salary].filter(Boolean).join(' / '))}
+                  {row(isTamil ? 'ஜாதி / பிரிவு'   : 'Caste / Sub-caste',    [d.caste, d.gotram].filter(Boolean).join(' / '))}
+                  {row(isTamil ? 'குலம் / கோத்திரம்' : 'Kulam / Gothram',   [d.kulam, d.kothram].filter(Boolean).join(' / '))}
+                  {row(isTamil ? 'திருமண நிலை'     : 'Marital Status',       d.maritalStatus)}
+                  {row(isTamil ? 'நட்சத்திரம் / ராசி' : 'Star / Rasi',      [d.kundliData?.nakshatra, d.kundliData?.rasi].filter(Boolean).join(' / '))}
+                  {row(isTamil ? 'லக்னம்'           : 'Lagnam',               d.kundliData?.ascendantSign)}
+                  {row(isTamil ? 'நிறம் / உயரம்'   : 'Complexion / Height',  [d.complexion, d.height].filter(Boolean).join(' / '))}
+                  {row(isTamil ? 'தந்தை பெயர்'     : "Father's Name",        d.fatherName)}
+                  {row(isTamil ? 'தாயார் பெயர்'    : "Mother's Name",        d.motherName)}
+                  {row(isTamil ? 'தந்தை தொழில்'    : "Father's Job",         d.fatherOccupation)}
+                  {row(isTamil ? 'தாயார் தொழில்'   : "Mother's Job",         d.motherOccupation)}
+                  {row(isTamil ? 'உடன்பிறப்பு'     : 'Siblings',             d.siblings)}
+                  {row(isTamil ? 'முகவரி'           : 'Address',              d.address)}
+                  {row(isTamil ? 'எதிர்பார்ப்பு'   : 'Expectation',          d.expectation)}
+                  {row(isTamil ? 'குறிப்பு'         : 'Notes',                d.notes)}
+                  {row(isTamil ? 'போன்'             : 'Phone',                d.phone)}
                 </div>
               </div>
-              <div className="flex flex-col items-center">
+              <div className="flex-shrink-0 flex flex-col items-center self-start">
                 <div
                   className={`w-32 h-40 rounded-xl border-2 overflow-hidden shadow-md flex items-center justify-center ${
                     isLight ? 'border-amber-500/30 bg-amber-50/70' : 'border-amber-500/20 bg-slate-900'
@@ -1384,17 +1465,6 @@ export default function BiodataPreview({ formData, biodataOutput, onBack, isLigh
               </div>
             </div>
 
-            {(d.expectation || d.notes) && (
-              <div className="text-center text-red-400 italic font-semibold text-xs pt-2 space-y-0.5">
-                {d.expectation && <div>: {d.expectation}</div>}
-                {d.notes && <div>: {d.notes}</div>}
-              </div>
-            )}
-            {d.phone && (
-              <div className={`text-center font-bold text-sm pt-1 ${isLight ? 'text-[#2C241E]' : 'text-white'}`}>
-                {isTamil ? 'போன்' : 'Phone'} : {d.phone}
-              </div>
-            )}
           </>
         )}
 
@@ -1514,6 +1584,17 @@ export default function BiodataPreview({ formData, biodataOutput, onBack, isLigh
             </div>
           )}
         </div>
+
+        {selectedModel === 3 && (
+          <div
+            style={{ marginTop: 'auto' }}
+            className={`text-center text-[10px] pt-3 border-t ${isLight ? 'border-amber-500/25 text-[#7A695A]' : 'border-amber-500/20 text-gray-500'}`}
+          >
+            {isTamil ? 'மென்பொருள் வழங்குனர்' : 'Software By'} {d.businessName || 'AstroAyan'}
+            {isTamil ? ' வாடிக்கையாளர் ஆதரவு' : ' customer support'}
+            {(d.website || d.supportPhone) ? `: ${[d.website, d.supportPhone].filter(Boolean).join(' / ')}` : ''}
+          </div>
+        )}
       </div>
     </div>
   );
