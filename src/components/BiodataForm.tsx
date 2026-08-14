@@ -8,9 +8,10 @@ import ScreenGuard from './ScreenGuard';
 interface BiodataFormProps {
   onSubmit: (values: any, reportType: string) => void;
   loading: boolean;
+  isLight?: boolean;
 }
 
-export default function BiodataForm({ onSubmit, loading }: BiodataFormProps) {
+export default function BiodataForm({ onSubmit, loading, isLight = false }: BiodataFormProps) {
   const { t, language, isTamil } = useTranslation();
   const { user } = useAuth();
   
@@ -178,6 +179,7 @@ export default function BiodataForm({ onSubmit, loading }: BiodataFormProps) {
   // storage and returns the bare filename so we store only the key, not the blob.
   const uploadPhotoIfNeeded = async (formValues: any): Promise<any> => {
     let fv = { ...formValues };
+	console.log('fv.photo', fv.photo)
 
     // If it's already a remote URL that we uploaded before, strip back to filename
     if (fv.photo && fv.photo.startsWith('http')) {
@@ -238,7 +240,7 @@ export default function BiodataForm({ onSubmit, loading }: BiodataFormProps) {
       .eq('id', currentEntryId);
     if (error) throw error;
 
-    setValues(formValues); // reflect stored filename back into local state
+    //setValues(formValues); // reflect stored filename back into local state
     fetchEntries();
   } catch (err) {
     console.error('Error updating entry:', err);
@@ -269,7 +271,7 @@ const saveToSupabase = async (entryName: string) => {
       .single();
     if (insertError) throw insertError;
 
-    setValues(formValues);
+    //setValues(formValues);
     setCurrentEntryId(inserted.id);
     setCurrentEntryName(entryName);
     setShowSaveModal(false);
@@ -356,7 +358,7 @@ const saveToSupabase = async (entryName: string) => {
                 </select>
                 <button
                   onClick={() => handleLoadEntry(Number(selectedEntryId))}
-                  className="bg-slate-800 hover:bg-slate-700 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition-all"
+                  className="border border-gray-300 dark:border-gray-800 hover:bg-slate-800 text-gray-600 dark:text-gray-400 hover:text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition-all"
                 >
                   {isTamil ? 'ஏற்றுக' : 'Load'}
                 </button>
@@ -611,15 +613,6 @@ const saveToSupabase = async (entryName: string) => {
       />
     </label>
   )}
-
-  {/* URL fallback input */}
-  <input
-    type="text"
-    value={values.photo.startsWith('data:') ? '' : values.photo}
-    onChange={(e) => setValues({ ...values, photo: e.target.value })}
-    placeholder="…or paste a URL"
-    className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-xs outline-none focus:border-violet-500"
-  />
 </div>
         </div>
 

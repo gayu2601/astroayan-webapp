@@ -1768,7 +1768,7 @@ export default function App() {
                 {marriageSubTab === 'porutham'     && <Porutham isLight={isLight}/>}
                 {marriageSubTab === 'porutham-pdf' && <MarriagePoruthamPdf isLight={isLight}/>}
                 {marriageSubTab === 'stars'        && <StarMarriage language={language} isLight={isLight} />}
-                {marriageSubTab === 'biodata' && <BiodataGenerator />}
+                {marriageSubTab === 'biodata' && <BiodataGenerator isLight={isLight}/>}
               </div>
             } />
 

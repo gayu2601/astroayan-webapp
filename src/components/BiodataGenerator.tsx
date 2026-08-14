@@ -15,7 +15,11 @@ async function geocodePlace(placeName: string) {
   return { lat: parseFloat(lat), lon: parseFloat(lon) };
 }
 
-export default function BiodataGenerator() {
+interface BiodataGeneratorProps {
+  isLight?: boolean;
+}
+
+export default function BiodataGenerator({ isLight }: BiodataGeneratorProps) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<any>(null);
   const { data: biodataOutput, loading, error, fetch: fetchBiodata } = useBiodata();
@@ -49,8 +53,8 @@ export default function BiodataGenerator() {
   };
 
   if (formData && biodataOutput && !loading) {
-    return <BiodataPreview formData={formData} biodataOutput={biodataOutput} onBack={handleBack} />;
+    return <BiodataPreview formData={formData} biodataOutput={biodataOutput} onBack={handleBack} isLight={isLight}/>;
   }
 
-  return <BiodataForm loading={loading} onSubmit={handleSubmit} />;
+  return <BiodataForm loading={loading} onSubmit={handleSubmit} isLight={isLight}/>;
 }
