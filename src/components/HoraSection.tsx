@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../lib/AuthContext";
 import ScreenGuard from './ScreenGuard';
+import TimeInput from './TimeInput';
 
 interface HoraSectionProps {
   isLight?: boolean;
@@ -230,16 +231,10 @@ export default function HoraSection({ isLight = false }: HoraSectionProps) {
           <label className="block text-xs font-black uppercase tracking-wider mb-2 text-gray-400">
             {isTamil ? "நேரம்" : "Time"}
           </label>
-          <input 
-            type="time" 
-            value={selectedTime} 
-            onChange={(e) => setSelectedTime(e.target.value)}
-            className={`w-full px-4 py-2.5 rounded-xl border text-xs font-bold transition-all ${
-              isLight 
-                ? "bg-[#FCFBF7] border-[#E8DCC4] text-[#1E120A] focus:ring-1 focus:ring-amber-500" 
-                : "bg-black/40 border-white/10 text-white focus:ring-1 focus:ring-amber-500"
-            }`}
-          />
+		  <TimeInput
+			  value={selectedTime}
+			  onChange={(e) => setSelectedTime(e.target.value)}
+			/>
         </div>
 
         <button

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ScreenGuard from './ScreenGuard';
+import DateInput from './DateInput';
 
 interface AgeResult {
   years: number;
@@ -54,12 +55,11 @@ export default function AgeCalculator({ language }: Props) {
             <label className="block text-xs font-bold text-gray-400 mb-1">
               {ta ? 'பிறந்த தேதி' : 'Birth Date'}
             </label>
-            <input
-              type="date"
-              value={ageDob}
-              onChange={(e) => setAgeDob(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs"
-            />
+			<DateInput
+			  required
+			  value={ageDob}
+			  onChange={(e) => setAgeDob(e.target.value)}
+			/>
           </div>
           <button
             onClick={runAgeCalc}

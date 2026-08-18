@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useNakshatraPorutham } from '../../hooks/useNakshatraPorutham';
 import { useTobPorutham } from '../../hooks/useTobPorutham';
@@ -7,6 +7,8 @@ import {
   CheckCircle, AlertCircle, Calendar, MapPin, ChevronRight, BarChart3 
 } from 'lucide-react';
 import ScreenGuard from './ScreenGuard';
+import DateInput from './DateInput';
+import TimeInput from './TimeInput';
 
 const NAKSH_TAMIL = [
   'அஸ்வினி', 'பரணி', 'கார்த்திகை', 'ரோகிணி', 'மிருகசீரிடம்',
@@ -65,6 +67,16 @@ export default function MarriagePoruthamPdf({ isLight = true }: MarriagePorutham
   const [boyTob, setBoyTob] = useState('');
   const [girlPlace, setGirlPlace] = useState('');
   const [boyPlace, setBoyPlace] = useState('');
+  
+  const [activeGender, setActiveGender] = useState<'girl' | 'boy'>('girl');
+  
+  const [lat, setLat] = useState<number>(13.0827); // default to Chennai
+  const [lon, setLon] = useState<number>(80.2707); // default to Chennai
+  const [tzone, setTzone] = useState<number>(5.5); // default to India
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [openLocation, setOpenLocation] = useState(false);
+  const debounceRef = useRef<any>(null);
 
   const [apiInput, setApiInput] = useState<any>(null);
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
@@ -88,6 +100,100 @@ export default function MarriagePoruthamPdf({ isLight = true }: MarriagePorutham
       girl_star: girlStar + 1,
       lang: language
     });
+  };
+  
+  // ── Location Autocomplete ──
+  async function fetchSuggestions(queryStr: string) {
+    if (!queryStr || queryStr.length < 2) return [];
+    try {
+      // 1. Try Ola Maps API if key exists
+      const olaKey = '0tHplupDAorsTgwAvRu9tiM2VI8u93PtaJ02wBf9' //process.env.EXPO_PUBLIC_OLA_MAPS_API_KEY;
+      if (olaKey) {
+        const url = `https://api.olamaps.io/places/v1/autocomplete?input=${encodeURIComponent(queryStr)}&api_key=${olaKey}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          return (data.predictions || []).map((p: any) => ({
+            description: p.description,
+            place_id: p.place_id,
+            source: 'olamaps'
+          }));
+        }
+      }
+
+      // 2. Fallback to Nominatim OSM Search API
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(queryStr)}&format=json&limit=5&addressdetails=1`;
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'VedicAstroWeb/1.0' },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.map((item: any) => ({
+          description: item.display_name,
+          place_id: item.place_id?.toString() || Math.random().toString(),
+          source: 'nominatim'
+        }));
+      }
+      return [];
+    } catch (e) {
+      console.error('Location suggestion error:', e);
+      return [];
+    }
+  }
+
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>, gender: 'girl' | 'boy') => {
+    const text = e.target.value;
+	setActiveGender(gender); 
+    gender === 'girl' ? setGirlPlace(text) : setBoyPlace(text);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!text) {
+      setSuggestions([]);
+      setOpenLocation(false);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      setLoadingLocation(true);
+      const results = await fetchSuggestions(text);
+      setSuggestions(results);
+      setOpenLocation(results.length > 0);
+      setLoadingLocation(false);
+    }, 400);
+  };
+
+  const handleSelectLocation = async (item: any) => {
+    activeGender === 'girl' ? setGirlPlace(item.description) : setBoyPlace(item.description);
+    setSuggestions([]);
+    setOpenLocation(false);
+    setLoadingLocation(true);
+    try {
+      const olaKey = process.env.EXPO_PUBLIC_OLA_MAPS_API_KEY;
+      if (item.source === 'olamaps' && olaKey) {
+        const url = `https://api.olamaps.io/places/v1/details?place_id=${item.place_id}&api_key=${olaKey}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          const location = data.result?.geometry?.location;
+          if (location) {
+            setLat(location.lat);
+            setLon(location.lng);
+          }
+        }
+      } else {
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(item.description)}&format=json&limit=1`;
+        const res = await fetch(url, { headers: { 'User-Agent': 'VedicAstroWeb/1.0' } });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data[0]) {
+            setLat(parseFloat(data[0].lat));
+            setLon(parseFloat(data[0].lon));
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error fetching details for selected location:', e);
+    } finally {
+      setLoadingLocation(false);
+    }
   };
 
   const handleTobSubmit = async (e: React.FormEvent) => {
@@ -136,6 +242,14 @@ export default function MarriagePoruthamPdf({ isLight = true }: MarriagePorutham
       setErrorLocal(err.message || String(err));
     }
   };
+  
+  const handleBlur = () => {
+	  setTimeout(() => {
+		setOpenLocation(false);
+		setSuggestions([]);
+	  }, 200); // delay so onClick on suggestion fires first
+	};
+
 
   // Triggers PDF Printing inside new Window
   const handlePrint = () => {
@@ -354,25 +468,45 @@ export default function MarriagePoruthamPdf({ isLight = true }: MarriagePorutham
                       onChange={(e) => setGirlName(e.target.value)}
                       className={`p-3 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800 placeholder:text-gray-500" : "bg-white/5 border-white/5 text-white placeholder:text-gray-400"}`}
                     />
-                    <input
-                      type="date"
-                      value={girlDob}
-                      onChange={(e) => setGirlDob(e.target.value)}
-                      className={`p-3 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800" : "bg-white/5 border-white/5 text-gray-150"}`}
-                    />
-                    <input
-                      type="time"
-                      value={girlTob}
-                      onChange={(e) => setGirlTob(e.target.value)}
-                      className={`p-3 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800" : "bg-white/5 border-white/5 text-gray-150"}`}
-                    />
-                    <input
-                      type="text"
-                      placeholder={isTamil ? 'பிறந்த இடம்' : 'Birth Place'}
-                      value={girlPlace}
-                      onChange={(e) => setGirlPlace(e.target.value)}
-                      className={`p-3 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800 placeholder:text-gray-500" : "bg-white/5 border-white/5 text-white placeholder:text-gray-400"}`}
-                    />
+					<DateInput
+					  required
+					  value={girlDob}
+					  onChange={(e) => setGirlDob(e.target.value)}
+					  isLight={isLight}
+					/>
+                    <TimeInput
+					  value={girlTob}
+					  onChange={(e) => setGirlTob(e.target.value)}
+					/>
+                    <div className="relative">
+					  <input
+						type="text"
+						placeholder={isTamil ? 'பிறந்த இடம்' : 'Birth Place'}
+						value={girlPlace}
+						onChange={(e) => handleLocationChange(e, 'girl')}
+						className={`w-full p-3 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800 placeholder:text-gray-500" : "bg-white/5 border-white/5 text-white placeholder:text-gray-400"}`}
+					  />
+					  {loadingLocation && activeGender === 'girl' && (
+						<div className="absolute inset-y-0 right-3 flex items-center">
+						  <div className="w-4 h-4 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+						</div>
+					  )}
+					  {openLocation && activeGender === 'girl' && suggestions.length > 0 && (
+						<ul className={`absolute z-50 w-full mt-1 rounded-xl border shadow-lg overflow-hidden ${isLight ? "bg-white border-gray-200" : "bg-gray-900 border-white/10"}`}>
+						  {suggestions.map((item) => (
+							<li
+							  key={item.place_id}
+							  onClick={() => handleSelectLocation(item)}
+							  className={`flex items-center gap-2 px-4 py-2.5 text-xs cursor-pointer transition-all ${isLight ? "hover:bg-amber-50 text-gray-700" : "hover:bg-white/10 text-gray-200"}`}
+							>
+							  <MapPin className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+							  {item.description}
+							</li>
+						  ))}
+						</ul>
+					  )}
+					</div>
+
                   </div>
                 </div>
 
@@ -389,25 +523,43 @@ export default function MarriagePoruthamPdf({ isLight = true }: MarriagePorutham
                       onChange={(e) => setBoyName(e.target.value)}
                       className={`p-3 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800 placeholder:text-gray-500" : "bg-white/5 border-white/5 text-white placeholder:text-gray-400"}`}
                     />
-                    <input
-                      type="date"
-                      value={boyDob}
-                      onChange={(e) => setBoyDob(e.target.value)}
-                      className={`p-3 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800" : "bg-white/5 border-white/5 text-gray-150"}`}
-                    />
-                    <input
-                      type="time"
-                      value={boyTob}
-                      onChange={(e) => setBoyTob(e.target.value)}
-                      className={`p-3 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800" : "bg-white/5 border-white/5 text-gray-150"}`}
-                    />
-                    <input
-                      type="text"
-                      placeholder={isTamil ? 'பிறந்த இடம்' : 'Birth Place'}
-                      value={boyPlace}
-                      onChange={(e) => setBoyPlace(e.target.value)}
-                      className={`p-3 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800 placeholder:text-gray-500" : "bg-white/5 border-white/5 text-white placeholder:text-gray-400"}`}
-                    />
+					<DateInput
+					  required
+					  value={boyDob}
+					  onChange={(e) => setBoyDob(e.target.value)}
+					/>
+                    <TimeInput
+					  value={boyTob}
+					  onChange={(e) => setBoyTob(e.target.value)}
+					/>
+                    <div className="relative">
+					  <input
+						type="text"
+						placeholder={isTamil ? 'பிறந்த இடம்' : 'Birth Place'}
+						value={boyPlace}
+						onChange={(e) => handleLocationChange(e, 'boy')}
+						className={`w-full p-3 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${isLight ? "bg-gray-50 border-gray-250 text-gray-800 placeholder:text-gray-500" : "bg-white/5 border-white/5 text-white placeholder:text-gray-400"}`}
+					  />
+					  {loadingLocation && activeGender === 'boy' && (
+						<div className="absolute inset-y-0 right-3 flex items-center">
+						  <div className="w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+						</div>
+					  )}
+					  {openLocation && activeGender === 'boy' && suggestions.length > 0 && (
+						<ul className={`absolute z-50 w-full mt-1 rounded-xl border shadow-lg overflow-hidden ${isLight ? "bg-white border-gray-200" : "bg-gray-900 border-white/10"}`}>
+						  {suggestions.map((item) => (
+							<li
+							  key={item.place_id}
+							  onClick={() => handleSelectLocation(item)}
+							  className={`flex items-center gap-2 px-4 py-2.5 text-xs cursor-pointer transition-all ${isLight ? "hover:bg-amber-50 text-gray-700" : "hover:bg-white/10 text-gray-200"}`}
+							>
+							  <MapPin className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
+							  {item.description}
+							</li>
+						  ))}
+						</ul>
+					  )}
+					</div>
                   </div>
                 </div>
 

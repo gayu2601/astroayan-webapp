@@ -4,6 +4,8 @@ import { useAuth } from '../../lib/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { MapPin, User, Calendar, Clock, Sparkles, BookOpen, ChevronDown, Check, Trash2, ShieldAlert } from 'lucide-react';
 import ScreenGuard from './ScreenGuard';
+import DateInput from './DateInput';
+import TimeInput from './TimeInput';
 
 interface HoroscopeInputFormProps {
   onSubmit: (values: {
@@ -457,13 +459,11 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
                 <span className="absolute inset-y-0 left-3 flex items-center text-amber-600 dark:text-amber-500">
                   <Calendar className="w-4 h-4" />
                 </span>
-                <input
-                  type="date"
-                  required
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-lg pl-9 pr-4 py-2.5 text-gray-900 dark:text-white text-sm outline-none transition-all"
-                />
+                <DateInput
+				  required
+				  value={birthDate}
+				  onChange={(e) => setBirthDate(e.target.value)}
+				/>
               </div>
             </div>
           </div>
@@ -476,15 +476,13 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
               </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-3 flex items-center text-amber-600 dark:text-amber-500">
-                  <Clock className="w-4 h-4" />
+                  <Clock className="w-4 h-4 left-10" />
                 </span>
-                <input
-                  type="time"
-                  required
-                  value={birthTime}
-                  onChange={(e) => setBirthTime(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-lg pl-9 pr-4 py-2.5 text-gray-900 dark:text-white text-sm outline-none transition-all"
-                />
+				<TimeInput
+				  value={birthTime}
+				  onChange={(e) => setBirthTime(e.target.value)}
+				  className="pl-8"
+				/>
               </div>
             </div>
           </div>

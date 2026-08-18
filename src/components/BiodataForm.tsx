@@ -4,6 +4,8 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/AuthContext';
 import { Sparkles, Save, User, BookOpen, Users, Home, Heart, Phone, MapPin, Plus, Trash2, FolderOpen, Calendar, Clock, Image as ImageIcon } from 'lucide-react';
 import ScreenGuard from './ScreenGuard';
+import DateInput from './DateInput';
+import TimeInput from './TimeInput';
 
 interface BiodataFormProps {
   onSubmit: (values: any, reportType: string) => void;
@@ -442,22 +444,19 @@ const saveToSupabase = async (entryName: string) => {
 
           <div className="space-y-1.5">
             <span className="text-[10px] font-extrabold text-gray-600 dark:text-gray-500 uppercase tracking-widest">Date of Birth *</span>
-            <input
-              type="date"
-              value={values.dob}
-              onChange={(e) => setValues({ ...values, dob: e.target.value })}
-              className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-xs outline-none focus:border-violet-500"
-            />
+            <DateInput
+			  required
+			  value={values.dob}
+			  onChange={(e) => setValues({ ...values, dob: e.target.value })}
+			/>
           </div>
 
           <div className="space-y-1.5">
             <span className="text-[10px] font-extrabold text-gray-600 dark:text-gray-500 uppercase tracking-widest">Time of Birth *</span>
-            <input
-              type="time"
-              value={values.tob}
-              onChange={(e) => setValues({ ...values, tob: e.target.value })}
-              className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-xs outline-none focus:border-violet-500"
-            />
+			<TimeInput
+			  value={values.tob}
+			  onChange={(e) => setValues({ ...values, tob: e.target.value })}
+			/>
           </div>
 
           <div className="space-y-1.5 relative">

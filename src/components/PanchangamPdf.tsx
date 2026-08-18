@@ -5,6 +5,7 @@ import {
   Calendar, Clock, MapPin, Printer, Loader2, Sparkles, 
   CheckCircle, AlertCircle, Send, FileText 
 } from 'lucide-react';
+import TimeInput from './TimeInput';
 
 interface PanchangamPdfProps {
   isLight?: boolean;
@@ -168,12 +169,10 @@ export default function PanchangamPdf({ isLight = true }: PanchangamPdfProps) {
                 </label>
                 <div className="relative">
                   <Clock className="absolute left-3.5 top-3.5 w-4.5 h-4.5 text-amber-500/70" />
-                  <input
-                    type="time"
-                    value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                    className={`w-full pl-11 pr-4 py-3 rounded-xl text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-semibold ${isLight ? "bg-gray-50 border-gray-250 text-gray-800" : "bg-white/5 border-white/5 text-gray-150"}`}
-                  />
+                  <TimeInput
+					  value={time}
+					  onChange={(e) => setTime(e.target.value)}
+					/>
                 </div>
               </div>
             </div>

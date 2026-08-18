@@ -1,10 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNakshatraPorutham } from '../../hooks/useNakshatraPorutham';
 import { useTobPorutham } from '../../hooks/useTobPorutham';
 import { useTranslation } from '../../hooks/useTranslation';
 import { NAKSH_TAMIL } from '../../data/constants';
 import { Heart, Star, Clock, AlertCircle, Sparkles, MapPin, CheckCircle, ChevronRight } from 'lucide-react';
 import ScreenGuard from './ScreenGuard';
+import DateInput from './DateInput';
+import TimeInput from './TimeInput';
 
 const STAR_OPTIONS = NAKSH_TAMIL.map((n, i) => ({
   label: n,
@@ -153,28 +155,19 @@ function SingleKattam({ planets = {}, accentClass, label }: SingleKattamProps) {
     );
   };
 
-  // Layout Grid representing the outer cells of 4x4
   return (
     <div className="bg-gray-50 dark:bg-slate-900/20 border border-gray-200 dark:border-gray-800 rounded-xl p-4 flex flex-col items-center w-full max-w-[340px] mx-auto space-y-2">
       <h3 className={`text-sm font-serif font-bold ${accentClass}`}>{label}</h3>
       <div className="grid grid-cols-4 grid-rows-4 border border-violet-200 dark:border-violet-500/20 rounded-lg overflow-hidden bg-white dark:bg-slate-950 aspect-square w-full">
-        {/* Row 0 */}
         {renderCell(12, 0)}
         {renderCell(1, 1)}
         {renderCell(2, 2)}
         {renderCell(3, 3)}
-
-        {/* Row 1 */}
         {renderCell(11, 4)}
-        {/* Center */}
         {renderCell(null, 5)}
         {renderCell(4, 6)}
-
-        {/* Row 2 */}
         {renderCell(10, 7)}
         {renderCell(5, 8)}
-
-        {/* Row 3 */}
         {renderCell(9, 9)}
         {renderCell(8, 10)}
         {renderCell(7, 11)}
@@ -187,11 +180,11 @@ function SingleKattam({ planets = {}, accentClass, label }: SingleKattamProps) {
 export default function Porutham({ isLight = true }: { isLight?: boolean }) {
   const { t, language, isTamil } = useTranslation();
   const [tab, setTab] = useState<'star' | 'time'>('star');
-  
+
   // Star inputs
   const [girlStar, setGirlStar] = useState<number | null>(null);
   const [boyStar, setBoyStar] = useState<number | null>(null);
-  
+
   // TOB inputs
   const [girlDob, setGirlDob] = useState<string>('');
   const [girlTob, setGirlTob] = useState<string>('');
@@ -199,6 +192,15 @@ export default function Porutham({ isLight = true }: { isLight?: boolean }) {
   const [boyDob, setBoyDob] = useState<string>('');
   const [boyTob, setBoyTob] = useState<string>('');
   const [boyPlace, setBoyPlace] = useState<string>('');
+
+  // Location autocomplete state
+  const [activeGender, setActiveGender] = useState<'girl' | 'boy'>('girl');
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [openLocation, setOpenLocation] = useState(false);
+  const debounceRef = useRef<any>(null);
+  const girlDropdownRef = useRef<HTMLDivElement>(null);
+  const boyDropdownRef = useRef<HTMLDivElement>(null);
 
   const [apiInput, setApiInput] = useState<any>(null);
   const [localLoading, setLocalLoading] = useState(false);
@@ -210,6 +212,80 @@ export default function Porutham({ isLight = true }: { isLight?: boolean }) {
   const { porutham: tobPorutham, loading: tobLoading, error: tobError } =
     useTobPorutham(tab === 'time' ? apiInput : null);
 
+  // Outside click handler to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        girlDropdownRef.current && !girlDropdownRef.current.contains(e.target as Node) &&
+        boyDropdownRef.current && !boyDropdownRef.current.contains(e.target as Node)
+      ) {
+        setOpenLocation(false);
+        setSuggestions([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // ── Location Autocomplete ──
+  async function fetchSuggestions(queryStr: string) {
+    if (!queryStr || queryStr.length < 2) return [];
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(queryStr)}&format=json&limit=5&addressdetails=1`;
+      const res = await fetch(url, { headers: { 'User-Agent': 'VedicAstroWeb/1.0' } });
+      if (res.ok) {
+        const data = await res.json();
+        return data.map((item: any) => ({
+          description: item.display_name,
+          place_id: item.place_id?.toString() || Math.random().toString(),
+          source: 'nominatim',
+        }));
+      }
+      return [];
+    } catch (e) {
+      console.error('Location suggestion error:', e);
+      return [];
+    }
+  }
+
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>, gender: 'girl' | 'boy') => {
+    const text = e.target.value;
+    setActiveGender(gender);
+    gender === 'girl' ? setGirlPlace(text) : setBoyPlace(text);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!text) {
+      setSuggestions([]);
+      setOpenLocation(false);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      setLoadingLocation(true);
+      const results = await fetchSuggestions(text);
+      setSuggestions(results);
+      setOpenLocation(results.length > 0);
+      setLoadingLocation(false);
+    }, 400);
+  };
+
+  const handleSelectLocation = async (item: any) => {
+    activeGender === 'girl' ? setGirlPlace(item.description) : setBoyPlace(item.description);
+    setSuggestions([]);
+    setOpenLocation(false);
+    setLoadingLocation(true);
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(item.description)}&format=json&limit=1`;
+      const res = await fetch(url, { headers: { 'User-Agent': 'VedicAstroWeb/1.0' } });
+      if (res.ok) {
+        const data = await res.json();
+        // coords available here if needed in future
+      }
+    } catch (e) {
+      console.error('Error fetching location details:', e);
+    } finally {
+      setLoadingLocation(false);
+    }
+  };
+
   const handleCheck = async () => {
     setLocalError(null);
     if (tab === 'star') {
@@ -218,7 +294,7 @@ export default function Porutham({ isLight = true }: { isLight?: boolean }) {
         return;
       }
       setApiInput({
-		api_key: '6a0b4e5a-b8d5-5e1a-bd97-6128ad38d349', 
+        api_key: '6a0b4e5a-b8d5-5e1a-bd97-6128ad38d349',
         boy_star: boyStar + 1,
         girl_star: girlStar + 1,
         lang: language,
@@ -235,12 +311,12 @@ export default function Porutham({ isLight = true }: { isLight?: boolean }) {
     try {
       const girlCoords = await geocodePlace(girlPlace);
       const boyCoords = await geocodePlace(boyPlace);
-      
+
       const parsedGirlDob = new Date(`${girlDob}T${girlTob}`);
       const parsedBoyDob = new Date(`${boyDob}T${boyTob}`);
 
       setApiInput({
-		api_key: '6a0b4e5a-b8d5-5e1a-bd97-6128ad38d349',   
+        api_key: '6a0b4e5a-b8d5-5e1a-bd97-6128ad38d349',
         boy_dob: formatDate(parsedBoyDob),
         boy_tob: formatOnlyTime(parsedBoyDob),
         girl_dob: formatDate(parsedGirlDob),
@@ -288,356 +364,376 @@ export default function Porutham({ isLight = true }: { isLight?: boolean }) {
       : score >= 7  ? (t('porutham.verdict.excellent') || 'Excellent Match') : score >= 5  ? (t('porutham.verdict.good') || 'Good Match') : (t('porutham.verdict.notRec') || 'Not Recommended');
 
   return (
-  <ScreenGuard featureId="porutham_mrg">
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
-      {/* ── Form Card ── */}
-      <div className="bg-white dark:bg-slate-900/40 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-xl backdrop-blur-md space-y-5">
-        <div className="flex items-center gap-2 text-pink-600 dark:text-pink-500">
-          <Heart className="w-5 h-5 fill-pink-500 animate-pulse" />
-          <h2 className="text-md font-bold uppercase tracking-wider font-sans">
-            {t('porutham.title') || (isTamil ? 'திருமண பொருத்தம்' : 'Marriage Porutham')}
-          </h2>
-        </div>
-
-        {/* 2-Tab Switcher */}
-        <div className="flex bg-gray-100 dark:bg-slate-950/60 p-1 rounded-lg border border-gray-200 dark:border-gray-800 max-w-md">
-          <button
-            onClick={() => { setTab('star'); setApiInput(null); }}
-            className={`flex-1 py-2 text-xs font-semibold rounded-md transition-all ${
-              tab === 'star' ? 'bg-violet-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            {t('porutham.tabStar') || (isTamil ? 'நட்சத்திர பொருத்தம்' : 'Star Matching')}
-          </button>
-          <button
-            onClick={() => { setTab('time'); setApiInput(null); }}
-            className={`flex-1 py-2 text-xs font-semibold rounded-md transition-all ${
-              tab === 'time' ? 'bg-violet-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            {t('porutham.tabTime') || (isTamil ? 'பிறந்த நேர பொருத்தம்' : 'TOB Matching')}
-          </button>
-        </div>
-
-        {tab === 'star' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">
-                👩 {t('porutham.girlStar') || 'Girl\'s Star'}
-              </label>
-              <select
-                value={girlStar ?? ''}
-                onChange={(e) => setGirlStar(e.target.value === '' ? null : Number(e.target.value))}
-                className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-sm outline-none transition-all"
-              >
-                <option value="">{isTamil ? '-- தேர்ந்தெடு --' : '-- Select --'}</option>
-                {STAR_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">
-                👦 {t('porutham.boyStar') || 'Boy\'s Star'}
-              </label>
-              <select
-                value={boyStar ?? ''}
-                onChange={(e) => setBoyStar(e.target.value === '' ? null : Number(e.target.value))}
-                className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-sm outline-none transition-all"
-              >
-                <option value="">{isTamil ? '-- தேர்ந்தெடு --' : '-- Select --'}</option>
-                {STAR_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
+    <ScreenGuard featureId="porutham_mrg">
+      <div className="space-y-6 max-w-4xl mx-auto pb-12">
+        {/* ── Form Card ── */}
+        <div className="bg-white dark:bg-slate-900/40 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-xl backdrop-blur-md space-y-5">
+          <div className="flex items-center gap-2 text-pink-600 dark:text-pink-500">
+            <Heart className="w-5 h-5 fill-pink-500 animate-pulse" />
+            <h2 className="text-md font-bold uppercase tracking-wider font-sans">
+              {t('porutham.title') || (isTamil ? 'திருமண பொருத்தம்' : 'Marriage Porutham')}
+            </h2>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Girl Details */}
-            <div className="border-l-2 border-pink-500 pl-3 space-y-3">
-              <h3 className="text-xs font-extrabold text-pink-700 dark:text-pink-400 uppercase tracking-wider font-sans">
-                👩 {t('porutham.girlDetails') || 'Girl\'s Birth Details'}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <span className="text-[10px] text-gray-600 dark:text-gray-500 uppercase tracking-wider font-bold">Birth Date</span>
-                  <input
-                    type="date"
-                    value={girlDob}
-                    onChange={(e) => setGirlDob(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-xs outline-none focus:border-violet-500"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] text-gray-600 dark:text-gray-500 uppercase tracking-wider font-bold">Birth Time</span>
-                  <input
-                    type="time"
-                    value={girlTob}
-                    onChange={(e) => setGirlTob(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-xs outline-none focus:border-violet-500"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] text-gray-600 dark:text-gray-500 uppercase tracking-wider font-bold">Birth Place</span>
-                  <input
-                    type="text"
-                    value={girlPlace}
-                    onChange={(e) => setGirlPlace(e.target.value)}
-                    placeholder={t('porutham.girlPlaceLabel') || 'e.g. Chennai, Tamil Nadu'}
-                    className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-xs outline-none focus:border-violet-500 placeholder:text-gray-400 dark:placeholder:text-gray-600"
-                  />
-                </div>
-              </div>
-            </div>
 
-            {/* Boy Details */}
-            <div className="border-l-2 border-blue-500 pl-3 space-y-3">
-              <h3 className="text-xs font-extrabold text-blue-700 dark:text-blue-400 uppercase tracking-wider font-sans">
-                👦 {t('porutham.boyDetails') || 'Boy\'s Birth Details'}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <span className="text-[10px] text-gray-600 dark:text-gray-500 uppercase tracking-wider font-bold">Birth Date</span>
-                  <input
-                    type="date"
-                    value={boyDob}
-                    onChange={(e) => setBoyDob(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-xs outline-none focus:border-violet-500"
-                  />
+          {/* 2-Tab Switcher */}
+          <div className="flex bg-gray-100 dark:bg-slate-950/60 p-1 rounded-lg border border-gray-200 dark:border-gray-800 max-w-md">
+            <button
+              onClick={() => { setTab('star'); setApiInput(null); }}
+              className={`flex-1 py-2 text-xs font-semibold rounded-md transition-all ${
+                tab === 'star' ? 'bg-violet-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              {t('porutham.tabStar') || (isTamil ? 'நட்சத்திர பொருத்தம்' : 'Star Matching')}
+            </button>
+            <button
+              onClick={() => { setTab('time'); setApiInput(null); }}
+              className={`flex-1 py-2 text-xs font-semibold rounded-md transition-all ${
+                tab === 'time' ? 'bg-violet-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              {t('porutham.tabTime') || (isTamil ? 'பிறந்த நேர பொருத்தம்' : 'TOB Matching')}
+            </button>
+          </div>
+
+          {tab === 'star' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">
+                  👩 {t('porutham.girlStar') || "Girl's Star"}
+                </label>
+                <select
+                  value={girlStar ?? ''}
+                  onChange={(e) => setGirlStar(e.target.value === '' ? null : Number(e.target.value))}
+                  className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-sm outline-none transition-all"
+                >
+                  <option value="">{isTamil ? '-- தேர்ந்தெடு --' : '-- Select --'}</option>
+                  {STAR_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">
+                  👦 {t('porutham.boyStar') || "Boy's Star"}
+                </label>
+                <select
+                  value={boyStar ?? ''}
+                  onChange={(e) => setBoyStar(e.target.value === '' ? null : Number(e.target.value))}
+                  className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-sm outline-none transition-all"
+                >
+                  <option value="">{isTamil ? '-- தேர்ந்தெடு --' : '-- Select --'}</option>
+                  {STAR_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Girl Details */}
+              <div className="border-l-2 border-pink-500 pl-3 space-y-3">
+                <h3 className="text-xs font-extrabold text-pink-700 dark:text-pink-400 uppercase tracking-wider font-sans">
+                  👩 {t('porutham.girlDetails') || "Girl's Birth Details"}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-gray-600 dark:text-gray-500 uppercase tracking-wider font-bold">Birth Date</span>
+                    <DateInput
+                      required
+                      value={girlDob}
+                      onChange={(e) => setGirlDob(e.target.value)}
+                      isLight={isLight}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-gray-600 dark:text-gray-500 uppercase tracking-wider font-bold">Birth Time</span>
+                    <TimeInput
+                      value={girlTob}
+                      onChange={(e) => setGirlTob(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-gray-600 dark:text-gray-500 uppercase tracking-wider font-bold">Birth Place</span>
+                    <div className="relative" ref={girlDropdownRef}>
+                      <input
+                        type="text"
+                        value={girlPlace}
+                        onChange={(e) => handleLocationChange(e, 'girl')}
+                        placeholder={t('porutham.girlPlaceLabel') || 'e.g. Chennai, Tamil Nadu'}
+                        className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-xs outline-none focus:border-violet-500 placeholder:text-gray-400 dark:placeholder:text-gray-600"
+                      />
+                      {loadingLocation && activeGender === 'girl' && (
+                        <div className="absolute inset-y-0 right-3 flex items-center">
+                          <div className="w-3.5 h-3.5 border-2 border-pink-500/30 border-t-pink-500 rounded-full animate-spin" />
+                        </div>
+                      )}
+                      {openLocation && activeGender === 'girl' && suggestions.length > 0 && (
+                        <ul className="absolute z-50 w-full mt-1 rounded-xl border shadow-lg overflow-hidden bg-white dark:bg-gray-900 border-gray-200 dark:border-white/10">
+                          {suggestions.map((item) => (
+                            <li
+                              key={item.place_id}
+                              onClick={() => handleSelectLocation(item)}
+                              className="flex items-center gap-2 px-4 py-2.5 text-xs cursor-pointer transition-all hover:bg-pink-50 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200"
+                            >
+                              <MapPin className="w-3.5 h-3.5 shrink-0 text-pink-500" />
+                              {item.description}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] text-gray-600 dark:text-gray-500 uppercase tracking-wider font-bold">Birth Time</span>
-                  <input
-                    type="time"
-                    value={boyTob}
-                    onChange={(e) => setBoyTob(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-xs outline-none focus:border-violet-500"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] text-gray-600 dark:text-gray-500 uppercase tracking-wider font-bold">Birth Place</span>
-                  <input
-                    type="text"
-                    value={boyPlace}
-                    onChange={(e) => setBoyPlace(e.target.value)}
-                    placeholder={t('porutham.boyPlaceLabel') || 'e.g. Madurai, Tamil Nadu'}
-                    className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-xs outline-none focus:border-violet-500 placeholder:text-gray-400 dark:placeholder:text-gray-600"
-                  />
+              </div>
+
+              {/* Boy Details */}
+              <div className="border-l-2 border-blue-500 pl-3 space-y-3">
+                <h3 className="text-xs font-extrabold text-blue-700 dark:text-blue-400 uppercase tracking-wider font-sans">
+                  👦 {t('porutham.boyDetails') || "Boy's Birth Details"}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-gray-600 dark:text-gray-500 uppercase tracking-wider font-bold">Birth Date</span>
+                    <DateInput
+                      required
+                      value={boyDob}
+                      onChange={(e) => setBoyDob(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-gray-600 dark:text-gray-500 uppercase tracking-wider font-bold">Birth Time</span>
+                    <TimeInput
+                      value={boyTob}
+                      onChange={(e) => setBoyTob(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-gray-600 dark:text-gray-500 uppercase tracking-wider font-bold">Birth Place</span>
+                    <div className="relative" ref={boyDropdownRef}>
+                      <input
+                        type="text"
+                        value={boyPlace}
+                        onChange={(e) => handleLocationChange(e, 'boy')}
+                        placeholder={t('porutham.boyPlaceLabel') || 'e.g. Madurai, Tamil Nadu'}
+                        className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-xs outline-none focus:border-violet-500 placeholder:text-gray-400 dark:placeholder:text-gray-600"
+                      />
+                      {loadingLocation && activeGender === 'boy' && (
+                        <div className="absolute inset-y-0 right-3 flex items-center">
+                          <div className="w-3.5 h-3.5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                        </div>
+                      )}
+                      {openLocation && activeGender === 'boy' && suggestions.length > 0 && (
+                        <ul className="absolute z-50 w-full mt-1 rounded-xl border shadow-lg overflow-hidden bg-white dark:bg-gray-900 border-gray-200 dark:border-white/10">
+                          {suggestions.map((item) => (
+                            <li
+                              key={item.place_id}
+                              onClick={() => handleSelectLocation(item)}
+                              className="flex items-center gap-2 px-4 py-2.5 text-xs cursor-pointer transition-all hover:bg-blue-50 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200"
+                            >
+                              <MapPin className="w-3.5 h-3.5 shrink-0 text-blue-500" />
+                              {item.description}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+          )}
+
+          <button
+            onClick={handleCheck}
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 text-white font-semibold text-xs py-2.5 rounded-lg transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 h-10 mt-4"
+          >
+            {loading ? (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>{isTamil ? 'பொருத்தம் கணிக்கப்படுகிறது...' : 'Calculating Porutham...'}</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                <span>{t('porutham.checkBtn') || (isTamil ? 'பொருத்தம் காண்க' : 'Check Match')}</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* ── Error Banner ── */}
+        {error && !loading && (
+          <div className="bg-red-50 dark:bg-red-500/10 border border-red-300 dark:border-red-500/20 rounded-xl p-4 flex items-center gap-2.5 text-xs text-red-700 dark:text-red-400">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
-        <button
-          onClick={handleCheck}
-          disabled={loading}
-          className="w-full bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 text-white font-semibold text-xs py-2.5 rounded-lg transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 h-10 mt-4"
-        >
-          {loading ? (
-            <>
-              <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span>{isTamil ? 'பொருத்தம் கணிக்கப்படுகிறது...' : 'Calculating Porutham...'}</span>
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              <span>{t('porutham.checkBtn') || (isTamil ? 'பொருத்தம் காண்க' : 'Check Match')}</span>
-            </>
-          )}
-        </button>
-      </div>
+        {/* ── Result Block ── */}
+        {result && !loading && !error && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Main Score Card */}
+            <div className="bg-white dark:bg-slate-900/40 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-xl backdrop-blur-md">
+              <h3 className="text-xs font-semibold tracking-wider uppercase text-amber-700 dark:text-amber-400 border-b border-gray-200 dark:border-gray-800/60 pb-2 mb-4 font-sans">
+                {t('porutham.result') || 'Matching Score & Verdict'}
+              </h3>
 
-      {/* ── Error Banner ── */}
-      {error && !loading && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-300 dark:border-red-500/20 rounded-xl p-4 flex items-center gap-2.5 text-xs text-red-700 dark:text-red-400">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
+              <div className="flex flex-col sm:flex-row items-center gap-5">
+                <div className="w-24 h-24 rounded-full bg-white dark:bg-slate-950 border-4 border-violet-300 dark:border-violet-500/30 flex flex-col items-center justify-center relative shadow-lg">
+                  <span className="text-2xl font-serif font-black text-amber-600 dark:text-amber-400 leading-none">{score}</span>
+                  <span className="text-[10px] text-gray-600 dark:text-gray-500 font-sans mt-0.5 font-bold uppercase tracking-wider">
+                    / {tab === 'time' ? 36 : 10}
+                  </span>
+                </div>
 
-      {/* ── Result Block ── */}
-      {result && !loading && !error && (
-        <div className="space-y-6 animate-fade-in">
-          {/* Main Score Card */}
-          <div className="bg-white dark:bg-slate-900/40 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-xl backdrop-blur-md">
-            <h3 className="text-xs font-semibold tracking-wider uppercase text-amber-700 dark:text-amber-400 border-b border-gray-200 dark:border-gray-800/60 pb-2 mb-4 font-sans">
-              {t('porutham.result') || 'Matching Score & Verdict'}
-            </h3>
-
-            <div className="flex flex-col sm:flex-row items-center gap-5">
-              {/* Giant Radial/Circle Score Emblem */}
-              <div className="w-24 h-24 rounded-full bg-white dark:bg-slate-950 border-4 border-violet-300 dark:border-violet-500/30 flex flex-col items-center justify-center relative shadow-lg">
-                <span className="text-2xl font-serif font-black text-amber-600 dark:text-amber-400 leading-none">{score}</span>
-                <span className="text-[10px] text-gray-600 dark:text-gray-500 font-sans mt-0.5 font-bold uppercase tracking-wider">
-                  / {tab === 'time' ? 36 : 10}
-                </span>
-              </div>
-
-              <div className="flex-1 text-center sm:text-left space-y-1.5">
-                <h4 className={`text-xl font-extrabold font-serif ${verdictColor}`}>{verdictText}</h4>
-                <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-sans font-medium">
-                  {result.bot_response || (isTamil ? 'திருமணப் பொருத்தம் திருப்திகரமாக உள்ளது' : 'This is a harmonious matching.')}
-                </p>
+                <div className="flex-1 text-center sm:text-left space-y-1.5">
+                  <h4 className={`text-xl font-extrabold font-serif ${verdictColor}`}>{verdictText}</h4>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed font-sans font-medium">
+                    {result.bot_response || (isTamil ? 'திருமணப் பொருத்தம் திருப்திகரமாக உள்ளது' : 'This is a harmonious matching.')}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Porutham Characteristics Table */}
-          <div className="bg-white dark:bg-slate-900/40 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-xl backdrop-blur-md space-y-4">
-            <h3 className="text-xs font-semibold tracking-wider uppercase text-amber-700 dark:text-amber-400 border-b border-gray-200 dark:border-gray-800/60 pb-2 font-sans">
-              {isTamil ? 'பொருத்தங்களின் விவரங்கள்' : '10 Porutham Attributes'}
-            </h3>
+            {/* Porutham Characteristics Table */}
+            <div className="bg-white dark:bg-slate-900/40 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-xl backdrop-blur-md space-y-4">
+              <h3 className="text-xs font-semibold tracking-wider uppercase text-amber-700 dark:text-amber-400 border-b border-gray-200 dark:border-gray-800/60 pb-2 font-sans">
+                {isTamil ? 'பொருத்தங்களின் விவரங்கள்' : '10 Porutham Attributes'}
+              </h3>
 
-            <div className="divide-y divide-gray-200 dark:divide-gray-800/40">
-              {rows.map((r: any) => {
-                const val = r[r.key] || 0;
-                const percent = (val / r.full_score) * 100;
-                const importance = getImportance(r.key);
+              <div className="divide-y divide-gray-200 dark:divide-gray-800/40">
+                {rows.map((r: any) => {
+                  const val = r[r.key] || 0;
+                  const percent = (val / r.full_score) * 100;
+                  const importance = getImportance(r.key);
 
-                let badgeLabel = t('porutham.noMatch') || 'No Match';
-                let tagType = 'bad';
+                  let badgeLabel = t('porutham.noMatch') || 'No Match';
+                  let tagType = 'bad';
 
-                if (percent >= 75) {
-                  badgeLabel = r.key === 'vedha' ? 'No Vedha' : (t('porutham.matches') || 'Matches');
-                  tagType = 'good';
-                } else if (percent >= 35) {
-                  badgeLabel = t('porutham.partial') || 'Partial Match';
-                  tagType = 'med';
-                }
+                  if (percent >= 75) {
+                    badgeLabel = r.key === 'vedha' ? 'No Vedha' : (t('porutham.matches') || 'Matches');
+                    tagType = 'good';
+                  } else if (percent >= 35) {
+                    badgeLabel = t('porutham.partial') || 'Partial Match';
+                    tagType = 'med';
+                  }
 
-                const colors = COLOR_MAPS[tagType];
+                  const colors = COLOR_MAPS[tagType];
 
-                return (
-                  <div key={r.key} className="py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-gray-900 dark:text-white font-serif">{r.name}</span>
-                        <span className={`text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded ${importanceBadgeStyle(importance)}`}>
-                          {importance}
+                  return (
+                    <div key={r.key} className="py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-gray-900 dark:text-white font-serif">{r.name}</span>
+                          <span className={`text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded ${importanceBadgeStyle(importance)}`}>
+                            {importance}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 leading-normal">{r.description}</p>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-semibold font-mono text-gray-600 dark:text-gray-400">{val} / {r.full_score}</span>
+                        <span className={`text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-1 rounded-full border ${colors.bg} ${colors.text} ${colors.border}`}>
+                          {badgeLabel}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 leading-normal">{r.description}</p>
                     </div>
+                  );
+                })}
+              </div>
+            </div>
 
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-semibold font-mono text-gray-600 dark:text-gray-400">{val} / {r.full_score}</span>
-                      <span className={`text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-1 rounded-full border ${colors.bg} ${colors.text} ${colors.border}`}>
-                        {badgeLabel}
-                      </span>
+            {/* Kattam Views (For Time matching only) */}
+            {tab === 'time' && result.boy_planetary_details && result.girl_planetary_details && (
+              <div className="bg-white dark:bg-slate-900/40 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-xl backdrop-blur-md space-y-4">
+                <h3 className="text-xs font-semibold tracking-wider uppercase text-amber-700 dark:text-amber-400 border-b border-gray-200 dark:border-gray-800/60 pb-2 font-sans">
+                  {t('porutham.kattamTitle') || 'Rasi Charts Comparison'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <SingleKattam
+                    planets={result.girl_planetary_details}
+                    accentClass="text-pink-600 dark:text-pink-400"
+                    label={t('porutham.kattam.girl') || "Girl's Chart"}
+                  />
+                  <SingleKattam
+                    planets={result.boy_planetary_details}
+                    accentClass="text-blue-600 dark:text-blue-400"
+                    label={t('porutham.kattam.boy') || "Boy's Chart"}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Astro Comparison Table */}
+            {(result.boy_astro_details || result.girl_astro_details) && (
+              <div className="bg-white dark:bg-slate-900/40 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-xl backdrop-blur-md space-y-4">
+                <h3 className="text-xs font-semibold tracking-wider uppercase text-amber-700 dark:text-amber-400 border-b border-gray-200 dark:border-gray-800/60 pb-2 font-sans">
+                  {t('porutham.astroTitle') || 'Astrological Comparison'}
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                  {/* Girl Details */}
+                  <div className="bg-pink-50 dark:bg-slate-950/45 border border-pink-200 dark:border-pink-500/10 rounded-lg p-4 space-y-3">
+                    <h4 className="text-xs font-extrabold text-pink-700 dark:text-pink-400 border-b border-gray-200 dark:border-gray-800 pb-1 uppercase tracking-wider font-sans">
+                      👩 {t('porutham.girlDetails') || 'Girl Details'}
+                    </h4>
+                    <div className="space-y-2">
+                      {[
+                        { label: 'Ascendant', value: result.girl_astro_details?.ascendant_sign, color: 'text-gray-900 dark:text-white' },
+                        { label: 'Rasi (Moon)', value: result.girl_astro_details?.rasi, color: 'text-gray-900 dark:text-white' },
+                        { label: 'Star', value: result.girl_astro_details?.nakshatra, color: 'text-amber-700 dark:text-amber-400' },
+                        { label: 'Birth Dasha', value: result.girl_astro_details?.birth_dasa, color: 'text-violet-700 dark:text-violet-400' },
+                        { label: 'Current Dasha', value: result.girl_astro_details?.current_dasa, color: 'text-amber-700 dark:text-amber-400' },
+                      ].map(({ label, value, color }) => (
+                        <div key={label} className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-900/40">
+                          <span className="text-gray-600 dark:text-gray-500 font-bold font-sans">{label}</span>
+                          <span className={`${color} font-medium`}>{value || '—'}</span>
+                        </div>
+                      ))}
+                      {result.girl_astro_details?.lucky_gem?.length > 0 && (
+                        <div className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-900/40">
+                          <span className="text-gray-600 dark:text-gray-500 font-bold font-sans">Lucky Gemstone</span>
+                          <span className="text-emerald-700 dark:text-emerald-400 font-medium">{result.girl_astro_details.lucky_gem.join(', ')}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+
+                  {/* Boy Details */}
+                  <div className="bg-blue-50 dark:bg-slate-950/45 border border-blue-200 dark:border-blue-500/10 rounded-lg p-4 space-y-3">
+                    <h4 className="text-xs font-extrabold text-blue-700 dark:text-blue-400 border-b border-gray-200 dark:border-gray-800 pb-1 uppercase tracking-wider font-sans">
+                      👦 {t('porutham.boyDetails') || 'Boy Details'}
+                    </h4>
+                    <div className="space-y-2">
+                      {[
+                        { label: 'Ascendant', value: result.boy_astro_details?.ascendant_sign, color: 'text-gray-900 dark:text-white' },
+                        { label: 'Rasi (Moon)', value: result.boy_astro_details?.rasi, color: 'text-gray-900 dark:text-white' },
+                        { label: 'Star', value: result.boy_astro_details?.nakshatra, color: 'text-amber-700 dark:text-amber-400' },
+                        { label: 'Birth Dasha', value: result.boy_astro_details?.birth_dasa, color: 'text-violet-700 dark:text-violet-400' },
+                        { label: 'Current Dasha', value: result.boy_astro_details?.current_dasa, color: 'text-amber-700 dark:text-amber-400' },
+                      ].map(({ label, value, color }) => (
+                        <div key={label} className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-900/40">
+                          <span className="text-gray-600 dark:text-gray-500 font-bold font-sans">{label}</span>
+                          <span className={`${color} font-medium`}>{value || '—'}</span>
+                        </div>
+                      ))}
+                      {result.boy_astro_details?.lucky_gem?.length > 0 && (
+                        <div className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-900/40">
+                          <span className="text-gray-600 dark:text-gray-500 font-bold font-sans">Lucky Gemstone</span>
+                          <span className="text-emerald-700 dark:text-emerald-400 font-medium">{result.boy_astro_details.lucky_gem.join(', ')}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-
-          {/* Kattam Views (For Time matching only) */}
-          {tab === 'time' && result.boy_planetary_details && result.girl_planetary_details && (
-            <div className="bg-white dark:bg-slate-900/40 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-xl backdrop-blur-md space-y-4">
-              <h3 className="text-xs font-semibold tracking-wider uppercase text-amber-700 dark:text-amber-400 border-b border-gray-200 dark:border-gray-800/60 pb-2 font-sans">
-                {t('porutham.kattamTitle') || 'Rasi Charts Comparison'}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <SingleKattam
-                  planets={result.girl_planetary_details}
-                  accentClass="text-pink-600 dark:text-pink-400"
-                  label={t('porutham.kattam.girl') || 'Girl\'s Chart'}
-                />
-                <SingleKattam
-                  planets={result.boy_planetary_details}
-                  accentClass="text-blue-600 dark:text-blue-400"
-                  label={t('porutham.kattam.boy') || 'Boy\'s Chart'}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Astro Comparison Table (Dasha/Lagna details) */}
-          {(result.boy_astro_details || result.girl_astro_details) && (
-            <div className="bg-white dark:bg-slate-900/40 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-xl backdrop-blur-md space-y-4">
-              <h3 className="text-xs font-semibold tracking-wider uppercase text-amber-700 dark:text-amber-400 border-b border-gray-200 dark:border-gray-800/60 pb-2 font-sans">
-                {t('porutham.astroTitle') || 'Astrological Comparison'}
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-                {/* Girl Details */}
-                <div className="bg-pink-50 dark:bg-slate-950/45 border border-pink-200 dark:border-pink-500/10 rounded-lg p-4 space-y-3">
-                  <h4 className="text-xs font-extrabold text-pink-700 dark:text-pink-400 border-b border-gray-200 dark:border-gray-800 pb-1 uppercase tracking-wider font-sans">
-                    👩 {t('porutham.girlDetails') || 'Girl Details'}
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-900/40">
-                      <span className="text-gray-600 dark:text-gray-500 font-bold font-sans">Ascendant</span>
-                      <span className="text-gray-900 dark:text-white font-medium">{result.girl_astro_details?.ascendant_sign || '—'}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-900/40">
-                      <span className="text-gray-600 dark:text-gray-500 font-bold font-sans">Rasi (Moon)</span>
-                      <span className="text-gray-900 dark:text-white font-medium">{result.girl_astro_details?.rasi || '—'}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-900/40">
-                      <span className="text-gray-600 dark:text-gray-500 font-bold font-sans">Star</span>
-                      <span className="text-amber-700 dark:text-amber-400 font-medium">{result.girl_astro_details?.nakshatra || '—'}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-900/40">
-                      <span className="text-gray-600 dark:text-gray-500 font-bold font-sans">Birth Dasha</span>
-                      <span className="text-violet-700 dark:text-violet-400 font-medium font-mono">{result.girl_astro_details?.birth_dasa || '—'}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-900/40">
-                      <span className="text-gray-600 dark:text-gray-500 font-bold font-sans">Current Dasha</span>
-                      <span className="text-amber-700 dark:text-amber-400 font-medium font-mono">{result.girl_astro_details?.current_dasa || '—'}</span>
-                    </div>
-                    {result.girl_astro_details?.lucky_gem?.length > 0 && (
-                      <div className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-900/40">
-                        <span className="text-gray-600 dark:text-gray-500 font-bold font-sans">Lucky Gemstone</span>
-                        <span className="text-emerald-700 dark:text-emerald-400 font-medium">{result.girl_astro_details.lucky_gem.join(', ')}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Boy Details */}
-                <div className="bg-blue-50 dark:bg-slate-950/45 border border-blue-200 dark:border-blue-500/10 rounded-lg p-4 space-y-3">
-                  <h4 className="text-xs font-extrabold text-blue-700 dark:text-blue-400 border-b border-gray-200 dark:border-gray-800 pb-1 uppercase tracking-wider font-sans">
-                    👦 {t('porutham.boyDetails') || 'Boy Details'}
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-900/40">
-                      <span className="text-gray-600 dark:text-gray-500 font-bold font-sans">Ascendant</span>
-                      <span className="text-gray-900 dark:text-white font-medium">{result.boy_astro_details?.ascendant_sign || '—'}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-900/40">
-                      <span className="text-gray-600 dark:text-gray-500 font-bold font-sans">Rasi (Moon)</span>
-                      <span className="text-gray-900 dark:text-white font-medium">{result.boy_astro_details?.rasi || '—'}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-900/40">
-                      <span className="text-gray-600 dark:text-gray-500 font-bold font-sans">Star</span>
-                      <span className="text-amber-700 dark:text-amber-400 font-medium">{result.boy_astro_details?.nakshatra || '—'}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-900/40">
-                      <span className="text-gray-600 dark:text-gray-500 font-bold font-sans">Birth Dasha</span>
-                      <span className="text-violet-700 dark:text-violet-400 font-medium font-mono">{result.boy_astro_details?.birth_dasa || '—'}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-900/40">
-                      <span className="text-gray-600 dark:text-gray-500 font-bold font-sans">Current Dasha</span>
-                      <span className="text-amber-700 dark:text-amber-400 font-medium font-mono">{result.boy_astro_details?.current_dasa || '—'}</span>
-                    </div>
-                    {result.boy_astro_details?.lucky_gem?.length > 0 && (
-                      <div className="flex justify-between py-1 border-b border-gray-100 dark:border-gray-900/40">
-                        <span className="text-gray-600 dark:text-gray-500 font-bold font-sans">Lucky Gemstone</span>
-                        <span className="text-emerald-700 dark:text-emerald-400 font-medium">{result.boy_astro_details.lucky_gem.join(', ')}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-	</ScreenGuard>
+        )}
+      </div>
+    </ScreenGuard>
   );
 }
