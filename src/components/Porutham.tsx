@@ -443,7 +443,6 @@ export default function Porutham({ isLight = true }: { isLight?: boolean }) {
                       required
                       value={girlDob}
                       onChange={(e) => setGirlDob(e.target.value)}
-                      isLight={isLight}
                     />
                   </div>
                   <div className="space-y-1">
