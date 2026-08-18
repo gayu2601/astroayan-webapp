@@ -472,7 +472,6 @@ export default function MarriagePoruthamPdf({ isLight = true }: MarriagePorutham
 					  required
 					  value={girlDob}
 					  onChange={(e) => setGirlDob(e.target.value)}
-					  isLight={isLight}
 					/>
                     <TimeInput
 					  value={girlTob}
