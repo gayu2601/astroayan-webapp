@@ -6,27 +6,32 @@ const TimeInput = ({ value, onChange, className = "" }) => {
   const mmRef = useRef(null);
   const ampmRef = useRef(null);
 
-  const handleChange = (field, val, nextRef, maxLen) => {
-    const digits = val.replace(/\D/g, "").slice(0, maxLen);
-    const updated = { ...parts, [field]: digits };
-    setParts(updated);
+  const handleChange = (field: string, val: string, nextRef: any, maxLen: number) => {
+	  const digits = val.replace(/\D/g, "").slice(0, maxLen);
+	  
+	  setParts(prev => {
+		const updated = { ...prev, [field]: digits };
 
-    if (digits.length === maxLen && nextRef) {
-      nextRef.current?.focus();
-      nextRef.current?.select();
-    }
+		// Auto-advance
+		if (digits.length === maxLen && nextRef) {
+		  nextRef.current?.focus();
+		}
 
-    const { hh, mm, ampm } = updated;
-    if (hh.length === 2 && mm.length === 2) {
-      let hours = parseInt(hh);
-      if (ampm === "PM" && hours !== 12) hours += 12;
-      if (ampm === "AM" && hours === 12) hours = 0;
-      const h = String(hours).padStart(2, "0");
-      onChange({ target: { value: `${h}:${mm}` } });
-    } else {
-      onChange({ target: { value: "" } });
-    }
-  };
+		// Fire onChange when complete
+		const { hh, mm, ampm } = updated;
+		if (hh.length === 2 && mm.length === 2) {
+		  let hours = parseInt(hh);
+		  if (ampm === "PM" && hours !== 12) hours += 12;
+		  if (ampm === "AM" && hours === 12) hours = 0;
+		  const h = String(hours).padStart(2, "0");
+		  onChange({ target: { value: `${h}:${mm}` } });
+		} else {
+		  onChange({ target: { value: "" } });
+		}
+
+		return updated;
+	  });
+	};
 
   const handleKeyDown = (e, prevRef) => {
     if (e.key === "Backspace" && e.target.value === "" && prevRef) {
