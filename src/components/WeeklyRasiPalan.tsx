@@ -67,7 +67,8 @@ export default function WeeklyRasiPalan({ isLight = false }: WeeklyRasiPalanProp
       zodiac: zodiacObj ? zodiacObj.index : 0,
       api_key: '6a0b4e5a-b8d5-5e1a-bd97-6128ad38d349',
 	  week: 'thisweek',
-      lang: language
+      lang: language,
+	  split: true
     };
   }, [selectedZodiac]);
 
