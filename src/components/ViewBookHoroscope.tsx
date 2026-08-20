@@ -7,6 +7,7 @@ import {
   Sparkles, Calendar, Clock, MapPin, ChevronLeft, Award, HelpCircle, 
   Loader2, BookOpen, Layers, Milestone, Compass, Table, Heart 
 } from 'lucide-react';
+import { formatTo12Hour } from '../../utils/formatTime';
 
 const PLANET_NAMES_TA: Record<string, string> = {
   Sun: 'சூரியன்', Moon: 'சந்திரன்', Mars: 'செவ்வாய்', Mercury: 'புதன்',
@@ -83,7 +84,7 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
       const dobStr = values.dob.toISOString().split('T')[0]; // "YYYY-MM-DD"
       const hours = String(values.tob.getHours()).padStart(2, '0');
       const mins = String(values.tob.getMinutes()).padStart(2, '0');
-      const timeStr = `${hours}:${mins}`; // "HH:MM"
+      const timeStr = formatTo12Hour(`${hours}:${mins}`); // "HH:MM"
 
       const data = await generateReportData({
         name: values.name,

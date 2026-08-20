@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Printer, ArrowLeft, ChevronRight } from 'lucide-react';
+import { formatTo12Hour } from '../../utils/formatTime';
 
 interface BiodataPreviewProps {
   formData: any;
@@ -442,7 +443,7 @@ function buildModel1Html(d: any, isTamil: boolean) {
           <div class="section-wrap"><div class="section-line"></div><span>${isTamil ? 'தனிப்பட்ட விவரங்கள்' : 'PERSONAL DETAILS'}</span><div class="section-line"></div></div>
           <table class="data-table" cellspacing="0" cellpadding="0">
             ${cell2(isTamil ? 'பெயர்' : 'Name', d.name, isTamil ? 'பாலினம்' : 'Gender', d.gender)}
-            ${cell2(isTamil ? 'பிறந்த தேதி' : 'Date of Birth', d.dob, isTamil ? 'பிறந்த நேரம்' : 'Time of Birth', d.tob)}
+            ${cell2(isTamil ? 'பிறந்த தேதி' : 'Date of Birth', d.dob, isTamil ? 'பிறந்த நேரம்' : 'Time of Birth', formatTo12Hour(d.tob))}
             ${cell2(isTamil ? 'பிறந்த இடம்' : 'Birth Place', d.birthPlace, isTamil ? 'மதம்' : 'Religion', d.religion)}
             ${cell2(isTamil ? 'ஜாதி' : 'Caste', d.caste, isTamil ? 'உயரம்' : 'Height', d.height)}
             ${cell2(isTamil ? 'எடை' : 'Weight', d.weight, isTamil ? 'நிறம்' : 'Complexion', d.complexion)}
@@ -664,7 +665,7 @@ function buildModel2Html(d: any, isTamil: boolean) {
     <table class="data-table" cellspacing="0" cellpadding="0">
       ${section(isTamil ? 'தனிப்பட்ட விவரங்கள்' : 'PERSONAL DETAILS')}
       ${row2(isTamil ? 'பெயர்' : 'Name', d.name, isTamil ? 'பாலினம்' : 'Gender', d.gender)}
-      ${row2(isTamil ? 'பிறந்த தேதி' : 'Date of Birth', d.dob, isTamil ? 'பிறந்த நேரம்' : 'Time of Birth', d.tob)}
+      ${row2(isTamil ? 'பிறந்த தேதி' : 'Date of Birth', d.dob, isTamil ? 'பிறந்த நேரம்' : 'Time of Birth', formatTo12Hour(d.tob))}
       ${row(isTamil ? 'பிறந்த இடம்' : 'Birth Place', d.birthPlace)}
       ${row2(isTamil ? 'மதம்' : 'Religion', d.religion, isTamil ? 'ஜாதி' : 'Caste', d.caste)}
       ${row2(isTamil ? 'உயரம்' : 'Height', d.height, isTamil ? 'எடை' : 'Weight', d.weight)}
@@ -876,7 +877,7 @@ function buildModel3Html(d: any, isTamil: boolean) {
               <td class="info-td">
                 <table class="info-table" cellspacing="0" cellpadding="0">
                   ${infoRow(isTamil ? 'பெயர்' : 'Name', d.name)}
-                  ${infoRow(isTamil ? 'பிறந்த தேதி' : 'DOB / Time', [d.dob, d.tob].filter(Boolean).join('   '))}
+                  ${infoRow(isTamil ? 'பிறந்த தேதி' : 'DOB / Time', [d.dob, formatTo12Hour(d.tob)].filter(Boolean).join('   '))}
                   ${infoRow(isTamil ? 'கல்வி' : 'Education', d.education)}
                   ${infoRow(isTamil ? 'வேலை / வருமானம்' : 'Occupation / Income', [d.occupation, d.salary].filter(Boolean).join(' / '))}
                   ${infoRow(isTamil ? 'ஜாதி / பிரிவு' : 'Caste / Sub-caste', gotram)}
@@ -1345,7 +1346,7 @@ export default function BiodataPreview({ formData, biodataOutput, onBack, isLigh
                 {row(isTamil ? 'பெயர்'         : 'Full Name',      d.name)}
                 {row(isTamil ? 'பாலினம்'       : 'Gender',         d.gender)}
                 {row(isTamil ? 'பிறந்த தேதி'  : 'Date of Birth',  d.dob)}
-                {row(isTamil ? 'பிறந்த நேரம்' : 'Time of Birth',  d.tob)}
+                {row(isTamil ? 'பிறந்த நேரம்' : 'Time of Birth',  formatTo12Hour(d.tob))}
                 {row(isTamil ? 'பிறந்த இடம்'  : 'Birth Place',    d.birthPlace)}
                 {row(isTamil ? 'மதம்'          : 'Religion',       d.religion)}
                 {row(isTamil ? 'ஜாதி'          : 'Caste',          d.caste)}
@@ -1382,7 +1383,7 @@ export default function BiodataPreview({ formData, biodataOutput, onBack, isLigh
                 {row(isTamil ? 'பெயர்'         : 'Full Name',      d.name)}
                 {row(isTamil ? 'பாலினம்'       : 'Gender',         d.gender)}
                 {row(isTamil ? 'பிறந்த தேதி'  : 'Date of Birth',  d.dob)}
-                {row(isTamil ? 'பிறந்த நேரம்' : 'Time of Birth',  d.tob)}
+                {row(isTamil ? 'பிறந்த நேரம்' : 'Time of Birth',  formatTo12Hour(d.tob))}
                 {row(isTamil ? 'பிறந்த இடம்'  : 'Birth Place',    d.birthPlace)}
                 {row(isTamil ? 'மதம்'          : 'Religion',       d.religion)}
                 {row(isTamil ? 'ஜாதி'          : 'Caste',          d.caste)}
@@ -1429,7 +1430,7 @@ export default function BiodataPreview({ formData, biodataOutput, onBack, isLigh
                 {sectionTitle('தனிப்பட்ட விவரங்கள்', 'Personal Information')}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 min-w-0">
                   {row(isTamil ? 'பெயர்'            : 'Name',                 d.name)}
-                  {row(isTamil ? 'பிறந்த தேதி'     : 'DOB / Time',           [d.dob, d.tob].filter(Boolean).join('  '))}
+                  {row(isTamil ? 'பிறந்த தேதி & நேரம்'     : 'DOB / Time',           [d.dob, formatTo12Hour(d.tob)].filter(Boolean).join('  '))}
                   {row(isTamil ? 'கல்வி'            : 'Education',            d.education)}
                   {row(isTamil ? 'வேலை / வருமானம்' : 'Occupation / Income',  [d.occupation, d.salary].filter(Boolean).join(' / '))}
                   {row(isTamil ? 'ஜாதி / பிரிவு'   : 'Caste / Sub-caste',    [d.caste, d.gotram].filter(Boolean).join(' / '))}

@@ -1,10 +1,19 @@
-import { useRef, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 
 const DateInput = ({ value, onChange, required }) => {
   const [parts, setParts] = useState({ dd: "", mm: "", yyyy: "" });
   const ddRef = useRef(null);
   const mmRef = useRef(null);
   const yyyyRef = useRef(null);
+
+  useEffect(() => {
+    if (value && value.includes('-')) {
+      const [yyyy, mm, dd] = value.split('-');
+      if (yyyy && mm && dd) setParts({ dd, mm, yyyy });
+    } else if (!value) {
+      setParts({ dd: '', mm: '', yyyy: '' });
+    }
+  }, [value]);
 
   const handleChange = (field, val, nextRef, maxLen, max) => {
     // Only allow digits

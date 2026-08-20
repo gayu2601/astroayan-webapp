@@ -1,10 +1,25 @@
-import { useRef, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 
 const TimeInput = ({ value, onChange, className = "" }) => {
   const [parts, setParts] = useState({ hh: "", mm: "", ampm: "AM" });
   const hhRef = useRef(null);
   const mmRef = useRef(null);
   const ampmRef = useRef(null);
+  
+  useEffect(() => {
+    if (value && value.includes(':')) {
+      const [h, m] = value.split(':');
+      const parsedH = parseInt(h);
+      if (!isNaN(parsedH)) {
+        const ampm = parsedH >= 12 ? 'PM' : 'AM';
+        let hours = parsedH > 12 ? parsedH - 12 : parsedH;
+        if (hours === 0) hours = 12;
+        setParts({ hh: String(hours).padStart(2, '0'), mm: m || '', ampm });
+      }
+    } else if (!value) {
+      setParts({ hh: '', mm: '', ampm: 'AM' });
+    }
+  }, [value]);
 
   const handleChange = (field: string, val: string, nextRef: any, maxLen: number) => {
 	  const digits = val.replace(/\D/g, "").slice(0, maxLen);

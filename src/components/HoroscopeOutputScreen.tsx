@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../lib/AuthContext';
 import { Sparkles, Calendar, Clock, MapPin, ChevronLeft, Award, HelpCircle } from 'lucide-react';
+import { formatTo12Hour } from '../../utils/formatTime';
 
 const PLANET_GLYPHS: Record<string, string> = {
   Sun: '☉', Moon: '☽', Mars: '♂', Mercury: '☿',
@@ -235,10 +236,10 @@ export default function HoroscopeOutputScreen({
   };
 
   const formattedDateString = date
-    ? `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()} ${String(
-        date.getHours()
-      ).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-    : '—';
+	  ? `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()} ${formatTo12Hour(
+		  `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+		)}`
+	  : '—';
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12 animate-fade-in">
@@ -524,15 +525,6 @@ export default function HoroscopeOutputScreen({
                           : 'bg-slate-950/45 border-violet-500/5 hover:border-violet-500/10'
                       }`}
                     >
-                      {h.location && (
-                        <span
-                          className={`block font-sans font-bold mb-1 tracking-wide uppercase text-[9px] ${
-                            isLight ? 'text-violet-800' : 'text-violet-400'
-                          }`}
-                        >
-                          {h.location}
-                        </span>
-                      )}
                       <p className={`text-xs leading-relaxed not-italic ${isLight ? 'text-[#2C241E]' : 'text-white'}`}>
                         {h.prediction.trim()
                           .replace(/^since\s+the\s+\S+\s+lord[^,]*,\s*/i, '')

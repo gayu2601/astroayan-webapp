@@ -4,6 +4,7 @@
 import { getGrahaPalans } from '../data/graha-palan'; 
 import { getVaaraPalan } from '../data/vaara-palan'; 
 import { getNakshatraPalan } from '../data/nakshatra-palan';
+import { formatTo12Hour } from '../utils/formatTime'
 
 const TEXT = {
   en: {
@@ -179,6 +180,7 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
   const year  = dateParts[2] || '';
   const hour  = timeParts[0] || '';
   const min   = timeParts[1] || '';
+  const formatted = formatTo12Hour(`${hour}:${min}`);
 
   const lagnaEntry      = planetsRaw['0'];
   const ascendantDegree = lagnaEntry ? lagnaEntry.global_degree?.toFixed(2) : '0';
@@ -995,7 +997,7 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
         <td><b>${t.labels.tithi}:</b> ${formatTithi(tithiVal)}</td>
       </tr>
       <tr>
-        <td><b>${t.labels.time}:</b> ${hour}:${min}</td>
+        <td><b>${t.labels.time}:</b> ${formatted}</td>
         <td><b>${t.labels.yog}:</b> ${yogVal}</td>
       </tr>
       <tr>
