@@ -563,88 +563,170 @@ export default function HoroscopeOutputScreen({
 
           {/* Dasha Block */}
           {hasDasha && (
-            <div
-              className={`p-4 space-y-4 rounded-xl border transition-all ${
-                isLight
-                  ? 'bg-white/90 border-amber-500/20 shadow-md'
-                  : 'bg-slate-900/40 border-gray-800 backdrop-blur-md'
-              }`}
-            >
-              <h2
-                className={`text-xs font-semibold tracking-wider uppercase border-b pb-2 flex items-center gap-1.5 font-sans ${
-                  isLight ? 'text-amber-700 border-amber-500/20' : 'text-amber-400 border-gray-800/60'
-                }`}
-              >
-                {isTamil ? 'திசா காலங்கள்' : 'Dasha Periods'}
-              </h2>
-              <div
-                className={`grid grid-cols-3 border-b pb-2 text-[10px] uppercase font-semibold tracking-wider ${
-                  isLight ? 'border-amber-500/20 text-[#7A695A]' : 'border-gray-800/50 text-gray-500'
-                }`}
-              >
-                <div>Period</div>
-                <div>At Birth</div>
-                <div>Current</div>
-              </div>
-              <div className="space-y-3.5">
-                {[
-                  { label: 'Mahadasha', birth: dashaData.birth?.mahadasha, current: dashaData.current?.mahadasha },
-                  { label: 'Antardasha', birth: dashaData.birth?.antardasha, current: dashaData.current?.antardasha },
-                  { label: 'Pratyantara', birth: dashaData.birth?.pratyantara, current: dashaData.current?.pratyantara },
-                ].map((row, i) => {
-                  const birthEmpty = !row.birth || row.birth === '—';
-                  const currentEmpty = !row.current || row.current === '—';
-                  return (
-                    <div key={i} className="grid grid-cols-3 items-center text-xs">
-                      <span className={`font-semibold ${isLight ? 'text-[#5C4F43]' : 'text-gray-400'}`}>{row.label}</span>
-                      <div className="flex items-center gap-1.5">
-                        {!birthEmpty ? (
-                          <>
-                            <span className={`text-sm leading-none ${isLight ? 'text-violet-700' : 'text-violet-400'}`}>
-                              {PLANET_GLYPHS[row.birth] || '★'}
-                            </span>
-                            <span className={`text-xs ${isLight ? 'text-[#2C241E] font-medium' : 'text-gray-300'}`}>{row.birth}</span>
-                          </>
-                        ) : (
-                          <span className={isLight ? 'text-gray-400' : 'text-gray-600'}>—</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5 font-bold">
-                        {!currentEmpty ? (
-                          <>
-                            <span className={`text-sm leading-none ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>
-                              {PLANET_GLYPHS[row.current] || '★'}
-                            </span>
-                            <span className={`text-xs ${isLight ? 'text-amber-900' : 'text-amber-300'}`}>{row.current}</span>
-                          </>
-                        ) : (
-                          <span className={isLight ? 'text-gray-400' : 'text-gray-600'}>—</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+			  <div
+				className={`p-4 space-y-4 rounded-xl border transition-all ${
+				  isLight
+					? 'bg-white/90 border-amber-500/20 shadow-md'
+					: 'bg-slate-900/40 border-gray-800 backdrop-blur-md'
+				}`}
+			  >
+				<h2
+				  className={`text-xs font-semibold tracking-wider uppercase border-b pb-2 flex items-center gap-1.5 font-sans ${
+					isLight
+					  ? 'text-amber-700 border-amber-500/20'
+					  : 'text-amber-400 border-gray-800/60'
+				  }`}
+				>
+				  {isTamil ? 'திசா காலங்கள்' : 'Dasha Periods'}
+				</h2>
 
-              {/* Dasha dates info */}
-              <div
-                className={`text-[10px] flex flex-col gap-1 border-t pt-3 ${
-                  isLight ? 'border-amber-500/15 text-[#7A695A]' : 'border-gray-800/30 text-gray-500'
-                }`}
-              >
-                {dashaData.birth?.date && (
-                  <p>
-                    Birth dasha as of: <span className={isLight ? 'text-[#2C241E] font-semibold' : 'text-gray-400'}>{dashaData.birth.date}</span>
-                  </p>
-                )}
-                {dashaData.current?.date && (
-                  <p>
-                    Current dasha as of: <span className={isLight ? 'text-[#2C241E] font-semibold' : 'text-gray-400'}>{dashaData.current.date}</span>
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
+				<div
+				  className={`grid grid-cols-3 border-b pb-2 text-[10px] uppercase font-semibold tracking-wider ${
+					isLight
+					  ? 'border-amber-500/20 text-[#7A695A]'
+					  : 'border-gray-800/50 text-gray-500'
+				  }`}
+				>
+				  <div>{isTamil ? 'காலம்' : 'Period'}</div>
+				  <div>{isTamil ? 'பிறப்பில்' : 'At Birth'}</div>
+				  <div>{isTamil ? 'தற்போது' : 'Current'}</div>
+				</div>
+
+				<div className="space-y-3.5">
+				  {[
+					{
+					  label: isTamil ? 'மகாதிசை' : 'Mahadasha',
+					  birth: dashaData.birth?.mahadasha,
+					  current: dashaData.current?.mahadasha,
+					},
+					{
+					  label: isTamil ? 'அந்தர்திசை' : 'Antardasha',
+					  birth: dashaData.birth?.antardasha,
+					  current: dashaData.current?.antardasha,
+					},
+					{
+					  label: isTamil ? 'பிரத்யந்தர திசை' : 'Pratyantara',
+					  birth: dashaData.birth?.pratyantara,
+					  current: dashaData.current?.pratyantara,
+					},
+				  ].map((row, i) => {
+					const birthEmpty = !row.birth || row.birth === '—';
+					const currentEmpty = !row.current || row.current === '—';
+
+					return (
+					  <div key={i} className="grid grid-cols-3 items-center text-xs">
+						<span
+						  className={`font-semibold ${
+							isLight ? 'text-[#5C4F43]' : 'text-gray-400'
+						  }`}
+						>
+						  {row.label}
+						</span>
+
+						<div className="flex items-center gap-1.5">
+						  {!birthEmpty ? (
+							<>
+							  <span
+								className={`text-sm leading-none ${
+								  isLight ? 'text-violet-700' : 'text-violet-400'
+								}`}
+							  >
+								{PLANET_GLYPHS[row.birth] || '★'}
+							  </span>
+							  <span
+								className={`text-xs ${
+								  isLight
+									? 'text-[#2C241E] font-medium'
+									: 'text-gray-300'
+								}`}
+							  >
+								{row.birth}
+							  </span>
+							</>
+						  ) : (
+							<span
+							  className={
+								isLight ? 'text-gray-400' : 'text-gray-600'
+							  }
+							>
+							  —
+							</span>
+						  )}
+						</div>
+
+						<div className="flex items-center gap-1.5 font-bold">
+						  {!currentEmpty ? (
+							<>
+							  <span
+								className={`text-sm leading-none ${
+								  isLight ? 'text-amber-600' : 'text-amber-400'
+								}`}
+							  >
+								{PLANET_GLYPHS[row.current] || '★'}
+							  </span>
+							  <span
+								className={`text-xs ${
+								  isLight ? 'text-amber-900' : 'text-amber-300'
+								}`}
+							  >
+								{row.current}
+							  </span>
+							</>
+						  ) : (
+							<span
+							  className={
+								isLight ? 'text-gray-400' : 'text-gray-600'
+							  }
+							>
+							  —
+							</span>
+						  )}
+						</div>
+					  </div>
+					);
+				  })}
+				</div>
+
+				{/* Dasha dates info */}
+				<div
+				  className={`text-[10px] flex flex-col gap-1 border-t pt-3 ${
+					isLight
+					  ? 'border-amber-500/15 text-[#7A695A]'
+					  : 'border-gray-800/30 text-gray-500'
+				  }`}
+				>
+				  {dashaData.birth?.date && (
+					<p>
+					  {isTamil ? 'பிறப்பு திசை தேதி:' : 'Birth dasha as of:'}{' '}
+					  <span
+						className={
+						  isLight
+							? 'text-[#2C241E] font-semibold'
+							: 'text-gray-400'
+						}
+					  >
+						{dashaData.birth.date}
+					  </span>
+					</p>
+				  )}
+
+				  {dashaData.current?.date && (
+					<p>
+					  {isTamil ? 'தற்போதைய திசை தேதி:' : 'Current dasha as of:'}{' '}
+					  <span
+						className={
+						  isLight
+							? 'text-[#2C241E] font-semibold'
+							: 'text-gray-400'
+						}
+					  >
+						{dashaData.current.date}
+					  </span>
+					</p>
+				  )}
+				</div>
+			  </div>
+			)}
 
           {/* Lucky factors */}
           {hasLucky && (

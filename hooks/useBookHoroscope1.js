@@ -1,6 +1,57 @@
 const Alert = { alert: (title, msg) => typeof window !== 'undefined' ? window.alert(msg ? `${title}\n${msg}` : title) : console.log(title, msg) };
 import { useAuth } from '../lib/AuthContext';
 
+// Expand short planet codes to full planet names
+const SHORT_TO_FULL = {
+  Su: 'Sun',   Mo: 'Moon',  Ma: 'Mars',   Me: 'Mercury',
+  Ju: 'Jupiter', Ve: 'Venus', Sa: 'Saturn',
+  Ra: 'Rahu',  Ke: 'Ketu',  As: 'Ascendant',
+  // also handle full names passed through unchanged
+  Sun: 'Sun', Moon: 'Moon', Mars: 'Mars', Mercury: 'Mercury',
+  Jupiter: 'Jupiter', Venus: 'Venus', Saturn: 'Saturn',
+  Rahu: 'Rahu', Ketu: 'Ketu',
+};
+
+const expandPlanetCode = (code) => SHORT_TO_FULL[code] ?? code;
+
+const parseDashaString = (str) => {
+  // "Ketu>Ma>Me" → ["Ketu", "Ma", "Me"]
+  if (!str || typeof str !== 'string') return [];
+  return str.split('>').map((s) => s.trim()).filter((s) => s && s !== 'undefined');
+};
+
+/**
+ * Builds a { birth, current } dasha object from a planet-details response,
+ * matching the shape produced by useHoroscope.js's normalizeDasha.
+ */
+const normalizeDasha = (raw) => {
+  const source = raw?.response ?? raw ?? {};
+
+  const birthParts = parseDashaString(source.birth_dasa);
+  const currentParts = parseDashaString(source.current_dasa);
+
+  const birthDate = source.birth_dasa_time?.trim() ?? '';
+  const currentDate = source.current_dasa_time?.trim() ?? '';
+
+  return {
+    birth: birthParts.length > 0 ? {
+      mahadasha: expandPlanetCode(birthParts[0]) ?? '—',
+      antardasha: expandPlanetCode(birthParts[1]) ?? '—',
+      pratyantara: expandPlanetCode(birthParts[2]) ?? '—',
+      date: birthDate,
+      raw: source.birth_dasa,
+    } : null,
+
+    current: currentParts.length > 0 ? {
+      mahadasha: expandPlanetCode(currentParts[0]) ?? '—',
+      antardasha: expandPlanetCode(currentParts[1]) ?? '—',
+      pratyantara: expandPlanetCode(currentParts[2]) ?? '—',
+      date: currentDate,
+      raw: source.current_dasa,
+    } : null,
+  };
+};
+
 const calculateDashaBalance = (dob, firstDashaEnd, lang = 'ta') => {
   const birth = new Date(dob);
   let end;
@@ -172,19 +223,10 @@ export const useBookHoroscope1 = () => {
         return { name, start, end, bhukthis, prediction };
       });
 
-      // ── Current dasha text ──
-      const nadappuDasa =
-        lang === 'ta'
-          ? {
-              text: `${currentDasha?.response?.order_of_dashas?.major?.name} தசா / ${currentDasha?.response?.order_of_dashas?.minor?.name} புக்தி`,
-              endDate: currentDasha?.response?.order_of_dashas?.minor?.end,
-            }
-          : {
-              text: `${currentDasha?.response?.order_of_dashas?.major?.name} Dasha / ${currentDasha?.response?.order_of_dashas?.minor?.name} Bhukthi`,
-              endDate: currentDasha?.response?.order_of_dashas?.minor?.end,
-            };
+      // ── Birth vs current dasha object ──
+      const dashaData = normalizeDasha(planets);
 
-      console.log('nadappuDasa', nadappuDasa);
+      console.log('dashaData', dashaData);
 
       const reportPayload = {
         name,
@@ -198,7 +240,7 @@ export const useBookHoroscope1 = () => {
         d9Chart: d9.response,
         dashaBalance: dashaList?.response?.dasha_remaining_at_birth,
         dashaPlanet: dashaList?.response?.mahadasha[0],
-        nadappuDasa,
+        dashaData,
         predictions: predictions?.response,
         mergedDashas,
         d2Chart: d2.response,
