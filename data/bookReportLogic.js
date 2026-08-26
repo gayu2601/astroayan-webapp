@@ -193,7 +193,7 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
   const astrologerLogo = user?.logo_url || '';
 
   const rasiVal      = astro.rasi             || '';
-  const nakshatraVal = astro.nakshatra        || '';
+  const nakshatraVal = `${astro.nakshatra} - ${astro.nakshatra_pada}`        || '';
   const lagnaVal     = astro.ascendant_sign   || '';
   const tithiVal     = astro.tithi            || '';
   const yogVal       = astro.yoga             || '';

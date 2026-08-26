@@ -15,47 +15,47 @@ const PLANET_NAMES_TA: Record<string, string> = {
 };
 
 const DIVISIONAL_LABELS: Record<string, string> = {
-  d2: 'D2 - Hora',
-  d3: 'D3 - Drekkana',
-  d3s: 'D3S - Somanath',
-  d4: 'D4 - Chaturthamsa',
-  d5: 'D5 - Panchamsa',
-  d7: 'D7 - Saptamsa',
-  d8: 'D8 - Ashtamsa',
-  d10: 'D10 - Dasamsa',
-  d10R: 'D10R - Dasamsa (R)',
-  d12: 'D12 - Dvadasamsa',
-  d16: 'D16 - Shodasamsa',
-  d20: 'D20 - Vimshamsa',
-  d24: 'D24 - Chaturvimshamsa',
-  d24R: 'D24R - Chaturvimshamsa (R)',
-  d27: 'D27 - Saptavimshamsa',
-  d30: 'D30 - Trimshamsa',
-  d40: 'D40 - Khavedamsa',
-  d45: 'D45 - Akshavedamsa',
-  d60: 'D60 - Shashtiamsa',
+  d2: 'Hora',
+  d3: 'Drekkana',
+  d3s: 'Somanath',
+  d4: 'Chaturthamsa',
+  d5: 'Panchamsa',
+  d7: 'Saptamsa',
+  d8: 'Ashtamsa',
+  d10: 'Dasamsa',
+  d10R: 'Dasamsa (R)',
+  d12: 'Dvadasamsa',
+  d16: 'Shodasamsa',
+  d20: 'Vimshamsa',
+  d24: 'Chaturvimshamsa',
+  d24R: 'Chaturvimshamsa (R)',
+  d27: 'Saptavimshamsa',
+  d30: 'Trimshamsa',
+  d40: 'Khavedamsa',
+  d45: 'Akshavedamsa',
+  d60: 'Shashtiamsa',
 };
 
 const DIVISIONAL_LABELS_TA: Record<string, string> = {
-  d2: 'D2 - ஹோரா',
-  d3: 'D3 - திரேக்காணம்',
-  d3s: 'D3S - சோமநாத்',
-  d4: 'D4 - சதுர்த்தாம்சம்',
-  d5: 'D5 - பஞ்சாம்சம்',
-  d7: 'D7 - சப்தாம்சம்',
-  d8: 'D8 - அஷ்டாம்சம்',
-  d10: 'D10 - தசாம்சம்',
-  d10R: 'D10R - தசாம்சம் (R)',
-  d12: 'D12 - துவாதசாம்சம்',
-  d16: 'D16 - சோதசாம்சம்',
-  d20: 'D20 - விம்சாம்சம்',
-  d24: 'D24 - சதுர்விம்சாம்சம்',
-  d24R: 'D24R - சதுர்விம்சாம்சம் (R)',
-  d27: 'D27 - சப்தவிம்சாம்சம்',
-  d30: 'D30 - திரிம்சாம்சம்',
-  d40: 'D40 - கவேதாம்சம்',
-  d45: 'D45 - அக்ஷவேதாம்சம்',
-  d60: 'D60 - ஷஷ்டியாம்சம்',
+  d2: 'ஹோரா',
+  d3: 'திரேக்காணம்',
+  d3s: 'சோமநாத்',
+  d4: 'சதுர்த்தாம்சம்',
+  d5: 'பஞ்சாம்சம்',
+  d7: 'சப்தாம்சம்',
+  d8: 'அஷ்டாம்சம்',
+  d10: 'தசாம்சம்',
+  d10R: 'தசாம்சம் (R)',
+  d12: 'துவாதசாம்சம்',
+  d16: 'சோதசாம்சம்',
+  d20: 'விம்சாம்சம்',
+  d24: 'சதுர்விம்சாம்சம்',
+  d24R: 'சதுர்விம்சாம்சம் (R)',
+  d27: 'சப்தவிம்சாம்சம்',
+  d30: 'திரிம்சாம்சம்',
+  d40: 'கவேதாம்சம்',
+  d45: 'அக்ஷவேதாம்சம்',
+  d60: 'ஷஷ்டியாம்சம்',
 };
 
 export default function ViewBookHoroscope({ isLight = false }: { isLight?: boolean }) {
@@ -282,7 +282,7 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
                   </div>
                   <div className="flex justify-between py-1.5">
                     <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'நட்சத்திரம்' : 'Nakshatra'}</span>
-                    <span className={`font-bold ${isLight ? "text-amber-700" : "text-amber-400"}`}>{reportData.astro?.nakshatra}</span>
+                    <span className={`font-bold ${isLight ? "text-amber-700" : "text-amber-400"}`}>{reportData.astro?.nakshatra}-{reportData.astro?.nakshatra_pada}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
                     <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'திதி' : 'Tithi'}</span>

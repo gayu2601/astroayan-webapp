@@ -88,7 +88,7 @@ export const generateReportHTML = (data, lang = 'ta', user = {}) => {
   const t = TEXT[lang] || TEXT['ta'];
 
   const rasiVal      = astro.rasi             || '';
-  const nakshatraVal = astro.nakshatra        || '';
+  const nakshatraVal = `${astro.nakshatra} - ${astro.nakshatra_pada}`        || '';
   const lagnaVal     = astro.ascendant_sign   || '';
   const tithiVal     = astro.tithi            || '';
   const yogVal       = astro.yoga             || '';

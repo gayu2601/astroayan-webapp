@@ -20,6 +20,7 @@ const AVAK_ROWS = [
   { key: 'rashi',          label: 'Rashi'           },
   { key: 'lagna',          label: 'Lagna'           },
   { key: 'nakshatra',      label: 'Nakshatra'       },
+  { key: 'nakshatra_pada',      label: 'Nakshatra Pada'       },
   { key: 'nakshatra_lord', label: 'Nakshatra Lord'  },
   { key: 'varna',          label: 'Varna'           },
   { key: 'vashya',         label: 'Vashya'          },
@@ -29,6 +30,22 @@ const AVAK_ROWS = [
   { key: 'karan',          label: 'Karan'           },
   { key: 'yoga',           label: 'Yoga'            },
   { key: 'tithi',          label: 'Tithi'           },
+];
+
+const AVAK_ROWS_TAMIL = [
+  { key: 'rashi',          label: 'ராசி' },
+  { key: 'lagna',          label: 'லக்னம்' },
+  { key: 'nakshatra',      label: 'நட்சத்திரம்' },
+  { key: 'nakshatra_pada', label: 'நட்சத்திர பாதம்' },
+  { key: 'nakshatra_lord', label: 'நட்சத்திர அதிபதி' },
+  { key: 'varna',          label: 'வர்ணம்' },
+  { key: 'vashya',          label: 'வசியம்' },
+  { key: 'yoni',           label: 'யோனி' },
+  { key: 'gana',           label: 'கணம்' },
+  { key: 'nadi',           label: 'நாடி' },
+  { key: 'karan',          label: 'கரணம்' },
+  { key: 'yoga',           label: 'யோகம்' },
+  { key: 'tithi',           label: 'திதி' },
 ];
 
 const COLOR_SWATCHES: Record<string, string> = {
@@ -308,7 +325,7 @@ export default function HoroscopeOutputScreen({
                   isLight ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                 }`}
               >
-                {astro.nakshatra} {isTamil ? 'நட்சத்திரம்' : 'Star'}
+                {astro.nakshatra}-{astro.nakshatra_pada} {isTamil ? 'நட்சத்திரம்' : 'Star'}
               </span>
             )}
           </div>
@@ -395,31 +412,37 @@ export default function HoroscopeOutputScreen({
                 {isTamil ? 'அவகாஹடா சக்கரம்' : 'Avakahada Chakra'}
               </h2>
               <div className="grid grid-cols-2 gap-2 text-xs">
-                {AVAK_ROWS.map(({ key, label }) => {
-                  const val = astro[key];
-                  if (!val) return null;
-                  return (
-                    <div
-                      key={key}
-                      className={`flex flex-col p-2 rounded border ${
-                        isLight
-                          ? 'bg-amber-50/60 border-amber-500/15'
-                          : 'bg-slate-950/60 border-gray-800/40'
-                      }`}
-                    >
-                      <span
-                        className={`text-[10px] uppercase tracking-wider font-sans font-bold ${
-                          isLight ? 'text-[#7A695A]' : 'text-gray-500'
-                        }`}
-                      >
-                        {label}
-                      </span>
-                      <span className={`font-semibold mt-0.5 ${isLight ? 'text-[#2C241E]' : 'text-white'}`}>
-                        {val}
-                      </span>
-                    </div>
-                  );
-                })}
+                {(isTamil ? AVAK_ROWS_TAMIL : AVAK_ROWS).map(({ key, label }) => {
+				  const val = astro[key];
+				  if (!val) return null;
+
+				  return (
+					<div
+					  key={key}
+					  className={`flex flex-col p-2 rounded border ${
+						isLight
+						  ? 'bg-amber-50/60 border-amber-500/15'
+						  : 'bg-slate-950/60 border-gray-800/40'
+					  }`}
+					>
+					  <span
+						className={`text-[10px] uppercase tracking-wider font-sans font-bold ${
+						  isLight ? 'text-[#7A695A]' : 'text-gray-500'
+						}`}
+					  >
+						{label}
+					  </span>
+
+					  <span
+						className={`font-semibold mt-0.5 ${
+						  isLight ? 'text-[#2C241E]' : 'text-white'
+						}`}
+					  >
+						{val}
+					  </span>
+					</div>
+				  );
+				})}
               </div>
             </div>
           )}
