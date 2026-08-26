@@ -15,6 +15,15 @@ const DateInput = ({ value, onChange, required }) => {
     }
   }, [value]);
 
+  const fireChange = (updated) => {
+    const { dd, mm, yyyy } = updated;
+    if (dd.length === 2 && mm.length === 2 && yyyy.length === 4) {
+      onChange({ target: { value: `${yyyy}-${mm}-${dd}` } });
+    } else {
+      onChange({ target: { value: "" } });
+    }
+  };
+
   const handleChange = (field, val, nextRef, maxLen, max) => {
     // Only allow digits
     const digits = val.replace(/\D/g, "").slice(0, maxLen);
@@ -28,18 +37,26 @@ const DateInput = ({ value, onChange, required }) => {
     }
 
     // Fire parent onChange with yyyy-mm-dd (HTML date format) when complete
-    const { dd, mm, yyyy } = updated;
-    if (dd.length === 2 && mm.length === 2 && yyyy.length === 4) {
-      onChange({ target: { value: `${yyyy}-${mm}-${dd}` } });
-    } else {
-      onChange({ target: { value: "" } });
-    }
+    fireChange(updated);
   };
 
   const handleKeyDown = (e, field, prevRef) => {
     if (e.key === "Backspace" && e.target.value === "" && prevRef) {
       prevRef.current?.focus();
     }
+  };
+
+  // Pad a lone digit with a leading zero once the user leaves the field,
+  // e.g. typing "2" into DD becomes "02" on blur.
+  const handleBlur = (field, maxLen) => {
+    setParts((prev) => {
+      const val = prev[field];
+      if (val.length === 0 || val.length === maxLen) return prev;
+      const padded = val.padStart(maxLen, "0");
+      const updated = { ...prev, [field]: padded };
+      fireChange(updated);
+      return updated;
+    });
   };
 
   const baseClass =
@@ -57,6 +74,7 @@ const DateInput = ({ value, onChange, required }) => {
         required={required}
         onChange={(e) => handleChange("dd", e.target.value, mmRef, 2, 31)}
         onKeyDown={(e) => handleKeyDown(e, "dd", null)}
+        onBlur={() => handleBlur("dd", 2)}
         className={`${baseClass} w-7`}
       />
       <span className="text-gray-400 dark:text-gray-500 select-none">-</span>
@@ -69,6 +87,7 @@ const DateInput = ({ value, onChange, required }) => {
         value={parts.mm}
         onChange={(e) => handleChange("mm", e.target.value, yyyyRef, 2, 12)}
         onKeyDown={(e) => handleKeyDown(e, "mm", ddRef)}
+        onBlur={() => handleBlur("mm", 2)}
         className={`${baseClass} w-7`}
       />
       <span className="text-gray-400 dark:text-gray-500 select-none">-</span>

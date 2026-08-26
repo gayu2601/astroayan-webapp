@@ -121,6 +121,297 @@ const RASI_BADGE: Record<string, { abbr: string; bg: string; fg: string }> = {
   'Ascendant':{ abbr: 'As',  bg: '#7E57C2', fg: '#FFFFFF' },
 };
 
+// ─── Janana & Gochara Oppeedu ─────────────────────────────────────────────────
+
+// South Indian chart layout — house numbers in each grid cell (row-major)
+const SOUTH_INDIAN_LAYOUT: (number | null)[] = [
+  12, 1,  2,  3,
+  11, null, null, 4,
+  10, null, null, 5,
+   9, 8,  7,  6,
+];
+
+// Planet color for degree text in Janana (birth) cells
+const JANANA_PLANET_COLOR: Record<string, string> = {
+  Sun:       '#D97706', // amber
+  Moon:      '#6B7280', // gray
+  Mars:      '#DC2626', // red
+  Mercury:   '#16A34A', // green
+  Jupiter:   '#CA8A04', // yellow-dark
+  Venus:     '#2563EB', // blue
+  Saturn:    '#1E3A8A', // dark blue
+  Rahu:      '#065F46', // dark green
+  Ketu:      '#4B5563', // dark gray
+  Ascendant: '#7C3AED', // violet
+};
+
+// Planet color for Gochara (transit) cells
+const GOCHARA_PLANET_COLOR: Record<string, string> = {
+  Sun:       '#F59E0B',
+  Moon:      '#9CA3AF',
+  Mars:      '#F87171',
+  Mercury:   '#34D399',
+  Jupiter:   '#FCD34D',
+  Venus:     '#60A5FA',
+  Saturn:    '#818CF8',
+  Rahu:      '#6EE7B7',
+  Ketu:      '#D1D5DB',
+  Ascendant: '#C4B5FD',
+};
+
+// Tamil planet abbreviations used in the reference image
+const PLANET_ABBR_TA: Record<string, string> = {
+  Sun:       'சூரி',
+  Moon:      'சந்',
+  Mars:      'செவ்',
+  Mercury:   'புத',
+  Jupiter:   'குரு',
+  Venus:     'சுக்',
+  Saturn:    'சனி',
+  Rahu:      'ராகு',
+  Ketu:      'கேது',
+  Ascendant: 'லக்',
+};
+
+const PLANET_ABBR_EN: Record<string, string> = {
+  Sun: 'Su', Moon: 'Mo', Mars: 'Ma', Mercury: 'Me',
+  Jupiter: 'Ju', Venus: 'Ve', Saturn: 'Sa',
+  Rahu: 'Ra', Ketu: 'Ke', Ascendant: 'As',
+};
+
+function JananaGocharaOppeedu({
+  planets,
+  gocharaPlanets,
+  astroDetails,
+  isLight,
+  isTamil,
+}: {
+  planets: any[];
+  gocharaPlanets: any[];
+  astroDetails: any;
+  isLight: boolean;
+  isTamil: boolean;
+}) {
+  const [activeView, setActiveView] = React.useState<'both' | 'janana' | 'gochara'>('both');
+
+  // Map each house → list of { name, degree } for natal planets
+  const jananaByHouse = React.useMemo<Record<number, { name: string; degree: string }[]>>(() => {
+    const map: Record<number, { name: string; degree: string }[]> = {};
+    if (!Array.isArray(planets)) return map;
+    planets.forEach((p: any) => {
+      const h = p.house;
+      if (!h) return;
+      if (!map[h]) map[h] = [];
+      const deg = p.local_degree ? parseFloat(p.local_degree).toFixed(1) : '';
+      map[h].push({ name: p.name, degree: deg });
+    });
+    return map;
+  }, [planets]);
+
+  const gocharaByHouse = React.useMemo<Record<number, { name: string; degree: string }[]>>(() => {
+    const map: Record<number, { name: string; degree: string }[]> = {};
+    if (!Array.isArray(gocharaPlanets)) return map;
+    gocharaPlanets.forEach((p: any) => {
+      const h = p.house;
+      if (!h) return;
+      if (!map[h]) map[h] = [];
+      const deg = p.local_degree ? parseFloat(p.local_degree).toFixed(1) : '';
+      map[h].push({ name: p.name, degree: deg });
+    });
+    return map;
+  }, [gocharaPlanets]);
+
+  const showJanana  = activeView === 'both' || activeView === 'janana';
+  const showGochara = activeView === 'both' || activeView === 'gochara';
+
+  const abbr = isTamil ? PLANET_ABBR_TA : PLANET_ABBR_EN;
+
+  // A grouped sub-card for one planet set inside a house — carries its own
+  // badge ("ஜ"/"கோ") and border language (solid amber vs dashed teal) so the
+  // Janana/Gochara distinction reads at a glance, even in a screenshot.
+  const renderGroup = (
+    items: { name: string; degree: string }[],
+    kind: 'janana' | 'gochara'
+  ) => {
+    if (!items.length) return null;
+    const isJanana = kind === 'janana';
+    const colorMap = isJanana ? JANANA_PLANET_COLOR : GOCHARA_PLANET_COLOR;
+
+    return (
+      <div
+        className="rounded-md px-1.5 py-1 flex flex-col gap-0.5 relative"
+        style={{
+          background: isJanana
+            ? isLight ? '#FFFBEB' : 'rgba(217,119,6,0.08)'
+            : isLight ? '#F0FDFA' : 'rgba(20,184,166,0.08)',
+          borderWidth: 1,
+          borderStyle: isJanana ? 'solid' : 'dashed',
+          borderColor: isJanana
+            ? isLight ? '#FDE68A' : 'rgba(217,119,6,0.4)'
+            : isLight ? '#5EEAD4' : 'rgba(45,212,191,0.4)',
+        }}
+      >
+        <span
+          className="absolute -top-1.5 -left-1.5 rounded-full flex items-center justify-center font-extrabold"
+          style={{
+            fontSize: 7,
+            width: 13,
+            height: 13,
+            background: isJanana ? '#F59E0B' : '#0D9488',
+            color: '#fff',
+            border: `1.5px solid ${isLight ? '#fff' : '#0f172a'}`,
+          }}
+        >
+          {isJanana ? (isTamil ? 'ஜ' : 'J') : (isTamil ? 'கோ' : 'G')}
+        </span>
+        {items.map((p, i) => (
+          <div key={i} className="flex items-baseline gap-1 leading-none">
+            <span
+              style={{ fontSize: 9, fontWeight: 800, color: colorMap[p.name] || '#888' }}
+              className="whitespace-nowrap"
+            >
+              {abbr[p.name] || p.name.slice(0, 2)}
+            </span>
+            {p.degree && (
+              <span
+                style={{ fontSize: 8, fontWeight: 600, color: colorMap[p.name] || '#888', opacity: 0.8 }}
+              >
+                {p.degree}°
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // NOTE: cells no longer carry their own `border`. Two adjacent cells each
+  // contributing a semi-transparent border used to read as a pale "gap"
+  // between kattams. Instead the grid container supplies a solid teal
+  // background plus a 1px `gap` (the "mortar"), and each cell is a flush
+  // rectangle with no border of its own — giving one crisp hairline between
+  // every house instead of a doubled, wider-looking seam.
+  const renderCell = (houseNum: number | null) => {
+    if (houseNum === null) return null; // center cells handled separately
+
+    const janana  = jananaByHouse[houseNum]  || [];
+    const gochara = gocharaByHouse[houseNum] || [];
+
+    return (
+      <div
+        className="relative flex flex-col justify-start gap-1 p-1 h-full min-h-[68px]"
+        style={{ background: isLight ? '#fff' : '#020617' }}
+      >
+        {/* House number — top-right corner */}
+        <span
+          className={`absolute top-0.5 right-1 text-[9px] font-bold leading-none ${
+            isLight ? 'text-gray-400' : 'text-gray-600'
+          }`}
+        >
+          {houseNum}
+        </span>
+
+        <div className="flex flex-col gap-1.5 mt-3">
+          {showJanana && renderGroup(janana, 'janana')}
+          {showGochara && renderGroup(gochara, 'gochara')}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div
+      className={`p-4 space-y-4 rounded-xl border transition-all ${
+        isLight
+          ? 'bg-white/90 border-teal-600/20 shadow-md'
+          : 'bg-slate-900/40 border-teal-500/20 backdrop-blur-md'
+      }`}
+    >
+      {/* Section header */}
+      <h2
+        className={`text-xs font-semibold tracking-wider uppercase border-b pb-2 flex items-center gap-1.5 font-sans ${
+          isLight ? 'text-teal-700 border-teal-600/20' : 'text-teal-400 border-teal-500/20'
+        }`}
+      >
+        <span className="text-base leading-none">⚖</span>
+        {isTamil ? 'ஜனன & கோச்சார ஒப்பீடு' : 'Janana & Gochara Comparison'}
+      </h2>
+
+      {/* 4×4 South Indian grid */}
+      <div
+        className="grid grid-cols-4 grid-rows-4 rounded-lg overflow-hidden aspect-square w-full max-w-[340px] mx-auto shadow-inner"
+        style={{
+          gap: 1,
+          background: isLight ? '#0D9488' : 'rgba(20,184,166,0.25)',
+          border: `1px solid ${isLight ? '#0D9488' : 'rgba(20,184,166,0.25)'}`,
+        }}
+      >
+        {SOUTH_INDIAN_LAYOUT.map((houseNum, idx) => {
+          // Center block: indices 5, 6, 9, 10 form the 2×2 centre
+          const centerIndices = [5, 6, 9, 10];
+          if (centerIndices.includes(idx)) {
+            if (idx === 5) {
+              // Render the 2×2 center spanning block only once
+              return (
+                <div
+                  key={idx}
+                  className="col-span-2 row-span-2 flex flex-col items-center justify-center text-center gap-2 p-2"
+                  style={{
+                    background: isLight
+                      ? 'linear-gradient(135deg, rgba(240,253,250,0.6), rgba(236,253,245,0.4))'
+                      : '#020617',
+                  }}
+                >
+                  <p className={`font-serif text-[11px] font-extrabold tracking-wide leading-snug ${isLight ? 'text-teal-900' : 'text-teal-400'}`}>
+                    {isTamil ? 'ஜனனம் +' : 'Janana +'}
+                    <br />
+                    {isTamil ? 'கோச்சாரம்' : 'Gochara'}
+                  </p>
+                </div>
+              );
+            }
+            return null; // skip indices 6, 9, 10 — covered by col-span-2 row-span-2
+          }
+
+          return (
+            <div key={idx} className="relative">
+              {renderCell(houseNum)}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-4 justify-center text-[10px]">
+        <div className="flex items-center gap-1.5">
+          <span
+            className="inline-flex items-center justify-center rounded-full font-bold"
+            style={{ width: 14, height: 14, fontSize: 7, background: '#F59E0B', color: '#fff' }}
+          >
+            {isTamil ? 'ஜ' : 'J'}
+          </span>
+          <span className={isLight ? 'text-[#5C4F43]' : 'text-gray-400'}>
+            {isTamil ? 'ஜனன கிரகங்கள் — திடக்கோடு பெட்டி' : 'Birth (Janana) — solid border box'}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span
+            className="inline-flex items-center justify-center rounded-full font-bold"
+            style={{ width: 14, height: 14, fontSize: 7, background: '#0D9488', color: '#fff' }}
+          >
+            {isTamil ? 'கோ' : 'G'}
+          </span>
+          <span className={isLight ? 'text-[#5C4F43]' : 'text-gray-400'}>
+            {isTamil ? 'கோச்சார கிரகங்கள் — புள்ளிக்கோடு பெட்டி' : 'Transit (Gochara) — dashed border box'}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────
+
 interface HoroscopeOutputScreenProps {
   name: string;
   date: Date;
@@ -178,13 +469,16 @@ export default function HoroscopeOutputScreen({
   const {
     astroDetails: astro,
     planets,
+    gocharaPlanets,
     housePredictions,
     dashaData,
     lucky,
   } = data;
+  console.log(dashaData)
 
   const hasPlanets = planets && planets.length > 0;
   const hasDasha = !!dashaData;
+console.log('hasDasha', hasDasha)
   const hasLucky = !!lucky;
 
   // Render Rasi Chart Builder helper
@@ -394,6 +688,17 @@ export default function HoroscopeOutputScreen({
               {renderRasiCell(6)}
             </div>
           </div>
+
+          {/* ── Janana & Gochara Oppeedu ── */}
+          {hasPlanets && (
+            <JananaGocharaOppeedu
+              planets={planets}
+              gocharaPlanets={gocharaPlanets || []}
+              astroDetails={astro}
+              isLight={isLight}
+              isTamil={isTamil}
+            />
+          )}
 
           {/* Avakahada Chakra / Astrological Details */}
           {astro && (

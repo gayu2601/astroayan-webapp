@@ -335,17 +335,17 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
 						  <div className="space-y-3.5">
 							{[
 							  {
-								label: isTamil ? 'மகா தசை' : 'Mahadasha',
+								label: isTamil ? 'தசா' : 'Dasha',
 								birth: dashaData.birth?.mahadasha,
 								current: dashaData.current?.mahadasha,
 							  },
 							  {
-								label: isTamil ? 'அந்தர தசை' : 'Antardasha',
+								label: isTamil ? 'புக்தி' : 'Bhukthi',
 								birth: dashaData.birth?.antardasha,
 								current: dashaData.current?.antardasha,
 							  },
 							  {
-								label: isTamil ? 'பிரத்யந்தர தசை' : 'Pratyantara',
+								label: isTamil ? 'அந்தரம்' : 'Antharam',
 								birth: dashaData.birth?.pratyantara,
 								current: dashaData.current?.pratyantara,
 							  },

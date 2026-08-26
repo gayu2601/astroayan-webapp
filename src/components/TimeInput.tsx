@@ -21,6 +21,19 @@ const TimeInput = ({ value, onChange, className = "" }) => {
     }
   }, [value]);
 
+  const fireChange = (updated: { hh: string; mm: string; ampm: string }) => {
+    const { hh, mm, ampm } = updated;
+    if (hh.length === 2 && mm.length === 2) {
+      let hours = parseInt(hh);
+      if (ampm === "PM" && hours !== 12) hours += 12;
+      if (ampm === "AM" && hours === 12) hours = 0;
+      const h = String(hours).padStart(2, "0");
+      onChange({ target: { value: `${h}:${mm}` } });
+    } else {
+      onChange({ target: { value: "" } });
+    }
+  };
+
   const handleChange = (field: string, val: string, nextRef: any, maxLen: number) => {
 	  const digits = val.replace(/\D/g, "").slice(0, maxLen);
 	  
@@ -33,16 +46,7 @@ const TimeInput = ({ value, onChange, className = "" }) => {
 		}
 
 		// Fire onChange when complete
-		const { hh, mm, ampm } = updated;
-		if (hh.length === 2 && mm.length === 2) {
-		  let hours = parseInt(hh);
-		  if (ampm === "PM" && hours !== 12) hours += 12;
-		  if (ampm === "AM" && hours === 12) hours = 0;
-		  const h = String(hours).padStart(2, "0");
-		  onChange({ target: { value: `${h}:${mm}` } });
-		} else {
-		  onChange({ target: { value: "" } });
-		}
+		fireChange(updated);
 
 		return updated;
 	  });
@@ -54,19 +58,24 @@ const TimeInput = ({ value, onChange, className = "" }) => {
     }
   };
 
+  // Pad a lone digit with a leading zero once the user leaves the field,
+  // e.g. typing "2" into HH becomes "02" on blur.
+  const handleBlur = (field: "hh" | "mm") => {
+    setParts((prev) => {
+      const val = prev[field];
+      if (val.length === 0 || val.length === 2) return prev;
+      const padded = val.padStart(2, "0");
+      const updated = { ...prev, [field]: padded };
+      fireChange(updated);
+      return updated;
+    });
+  };
+
   const toggleAmPm = () => {
     const newAmPm = parts.ampm === "AM" ? "PM" : "AM";
     const updated = { ...parts, ampm: newAmPm };
     setParts(updated);
-
-    const { hh, mm } = updated;
-    if (hh.length === 2 && mm.length === 2) {
-      let hours = parseInt(hh);
-      if (newAmPm === "PM" && hours !== 12) hours += 12;
-      if (newAmPm === "AM" && hours === 12) hours = 0;
-      const h = String(hours).padStart(2, "0");
-      onChange({ target: { value: `${h}:${mm}` } });
-    }
+    fireChange(updated);
   };
 
   const baseClass = "bg-transparent outline-none border-none text-sm text-center";
@@ -82,6 +91,7 @@ const TimeInput = ({ value, onChange, className = "" }) => {
         value={parts.hh}
         onChange={(e) => handleChange("hh", e.target.value, mmRef, 2)}
         onKeyDown={(e) => handleKeyDown(e, null)}
+        onBlur={() => handleBlur("hh")}
         className={`${baseClass} w-7 text-gray-900 dark:text-white placeholder:text-gray-400`}
         style={{ border: "none" }}
       />
@@ -95,6 +105,7 @@ const TimeInput = ({ value, onChange, className = "" }) => {
         value={parts.mm}
         onChange={(e) => handleChange("mm", e.target.value, ampmRef, 2)}
         onKeyDown={(e) => handleKeyDown(e, hhRef)}
+        onBlur={() => handleBlur("mm")}
         className={`${baseClass} w-7 text-gray-900 dark:text-white placeholder:text-gray-400`}
         style={{ border: "none" }}
       />

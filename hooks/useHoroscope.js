@@ -57,6 +57,19 @@ function buildChartParams(input) {
   };
 }
 
+function buildTodayParams(input) {
+  const now = new Date();
+  return {
+    dob: `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`,
+    tob: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+    lat: input.lat,
+    lon: input.lon,
+    tz: input.tzone,
+    lang: input.lang,
+    api_key: API_KEY,
+  };
+}
+
 async function vGet(
   endpoint,
   params = {}
@@ -326,11 +339,14 @@ export function useHoroscopeData() {
           buildParams(input);
 		const paramsChart = buildChartParams(input)
 
+        const todayParams = buildTodayParams(input);
+
         const [
           planetsRaw,
           astroRaw,
           charsRaw,
           chartRaw,
+          gocharaRaw,
         ] =
           await Promise.all([
             vGet(
@@ -348,19 +364,28 @@ export function useHoroscopeData() {
               params
             ),
 
-
             vGet(
               '/horoscope/chart-image',
               paramsChart
             ),
+
+            vGet(
+              '/horoscope/planet-details',
+              todayParams
+            ),
           ]);
 		  
-		  console.log(planetsRaw, astroRaw, charsRaw, chartRaw)
+          console.log(planetsRaw, astroRaw, charsRaw, chartRaw, gocharaRaw);
 
         setData({
           planets:
             normalizePlanets(
               planetsRaw
+            ),
+
+          gocharaPlanets:
+            normalizePlanets(
+              gocharaRaw
             ),
 
           astroDetails:
@@ -369,9 +394,8 @@ export function useHoroscopeData() {
             ),
 
           housePredictions: normalizeHousePredictions(charsRaw),
-		  dashaData: normalizeDasha(planetsRaw),
-
-			lucky: normalizeLucky(planetsRaw)
+          dashaData: normalizeDasha(planetsRaw),
+          lucky: normalizeLucky(planetsRaw),
         });
       } catch (err) {
         console.log(
