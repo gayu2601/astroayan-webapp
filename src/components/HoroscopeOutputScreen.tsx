@@ -3,6 +3,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../lib/AuthContext';
 import { Sparkles, Calendar, Clock, MapPin, ChevronLeft, Award, HelpCircle } from 'lucide-react';
 import { formatTo12Hour } from '../../utils/formatTime';
+import BhavaChakra from './BhavaChakra';
 
 const PLANET_GLYPHS: Record<string, string> = {
   Sun: '☉', Moon: '☽', Mars: '♂', Mercury: '☿',
@@ -98,7 +99,7 @@ const RASI_SIGN_NAMES_EN: Record<number, string> = {
 const getRasiSignNames = (isTamil: boolean): Record<number, string> =>
   isTamil ? RASI_SIGN_NAMES_TA : RASI_SIGN_NAMES_EN;
 
-const RASI_BADGE: Record<string, { abbr: string; bg: string; fg: string }> = {
+export const RASI_BADGE: Record<string, { abbr: string; bg: string; fg: string }> = {
   'சூரியன்':  { abbr: 'சூரி',  bg: '#FFF176', fg: '#5D4037' },
   'சந்திரன்': { abbr: 'சந்',   bg: '#E0E0E0', fg: '#37474F' },
   'செவ்வாய்': { abbr: 'செவ்',  bg: '#FFCCBC', fg: '#BF360C' },
@@ -124,7 +125,7 @@ const RASI_BADGE: Record<string, { abbr: string; bg: string; fg: string }> = {
 // ─── Janana & Gochara Oppeedu ─────────────────────────────────────────────────
 
 // South Indian chart layout — house numbers in each grid cell (row-major)
-const SOUTH_INDIAN_LAYOUT: (number | null)[] = [
+export const SOUTH_INDIAN_LAYOUT: (number | null)[] = [
   12, 1,  2,  3,
   11, null, null, 4,
   10, null, null, 5,
@@ -160,7 +161,8 @@ const GOCHARA_PLANET_COLOR: Record<string, string> = {
 };
 
 // Tamil planet abbreviations used in the reference image
-const PLANET_ABBR_TA: Record<string, string> = {
+export const PLANET_ABBR_TA: Record<string, string> = {
+  // English keys
   Sun:       'சூரி',
   Moon:      'சந்',
   Mars:      'செவ்',
@@ -171,9 +173,22 @@ const PLANET_ABBR_TA: Record<string, string> = {
   Rahu:      'ராகு',
   Ketu:      'கேது',
   Ascendant: 'லக்',
+
+  // Tamil keys
+  சூரியன்:    'சூரி',
+  சந்திரன்:   'சந்',
+  செவ்வாய்:   'செவ்',
+  புதன்:      'புத',
+  குரு:       'குரு',
+  வியாழன்:    'குரு',
+  சுக்கிரன்:   'சுக்',
+  சனி:        'சனி',
+  ராகு:       'ராகு',
+  கேது:       'கேது',
+  லக்னம்:     'லக்',
 };
 
-const PLANET_ABBR_EN: Record<string, string> = {
+export const PLANET_ABBR_EN: Record<string, string> = {
   Sun: 'Su', Moon: 'Mo', Mars: 'Ma', Mercury: 'Me',
   Jupiter: 'Ju', Venus: 'Ve', Saturn: 'Sa',
   Rahu: 'Ra', Ketu: 'Ke', Ascendant: 'As',
@@ -194,32 +209,34 @@ function JananaGocharaOppeedu({
 }) {
   const [activeView, setActiveView] = React.useState<'both' | 'janana' | 'gochara'>('both');
 
-  // Map each house → list of { name, degree } for natal planets
-  const jananaByHouse = React.useMemo<Record<number, { name: string; degree: string }[]>>(() => {
-    const map: Record<number, { name: string; degree: string }[]> = {};
-    if (!Array.isArray(planets)) return map;
-    planets.forEach((p: any) => {
-      const h = p.house;
-      if (!h) return;
-      if (!map[h]) map[h] = [];
-      const deg = p.local_degree ? parseFloat(p.local_degree).toFixed(1) : '';
-      map[h].push({ name: p.name, degree: deg });
-    });
-    return map;
-  }, [planets]);
+	const jananaByRasi = React.useMemo<Record<number, { name: string; degree: string }[]>>(() => {
+	  const map: Record<number, { name: string; degree: string }[]> = {};
+	  if (!Array.isArray(planets)) return map;
+	  planets.forEach((p: any) => {
+		  const rasi = Math.floor(parseFloat(p.fullDegree) / 30) + 1;
+		  const h = rasi;
+		  if (!h || h < 1 || h > 12) return;
+		  if (!map[h]) map[h] = [];
+		  const deg = p.fullDegree ? parseFloat(p.fullDegree).toFixed(1) : '';
+		  map[h].push({ name: p.name, degree: deg });
+		});
+	  return map;
+	}, [planets]);
 
-  const gocharaByHouse = React.useMemo<Record<number, { name: string; degree: string }[]>>(() => {
-    const map: Record<number, { name: string; degree: string }[]> = {};
-    if (!Array.isArray(gocharaPlanets)) return map;
-    gocharaPlanets.forEach((p: any) => {
-      const h = p.house;
-      if (!h) return;
-      if (!map[h]) map[h] = [];
-      const deg = p.local_degree ? parseFloat(p.local_degree).toFixed(1) : '';
-      map[h].push({ name: p.name, degree: deg });
-    });
-    return map;
-  }, [gocharaPlanets]);
+	// gocharaByHouse → gocharaByRasi
+	const gocharaByRasi = React.useMemo<Record<number, { name: string; degree: string }[]>>(() => {
+	  const map: Record<number, { name: string; degree: string }[]> = {};
+	  if (!Array.isArray(gocharaPlanets)) return map;
+	  gocharaPlanets.forEach((p: any) => {
+		  const rasi = Math.floor(parseFloat(p.fullDegree) / 30) + 1;
+		  const h = rasi;
+		  if (!h || h < 1 || h > 12) return;
+		  if (!map[h]) map[h] = [];
+		  const deg = p.fullDegree ? parseFloat(p.fullDegree).toFixed(1) : '';
+		  map[h].push({ name: p.name, degree: deg });
+		});
+	  return map;
+	}, [gocharaPlanets]);
 
   const showJanana  = activeView === 'both' || activeView === 'janana';
   const showGochara = activeView === 'both' || activeView === 'gochara';
@@ -294,8 +311,8 @@ function JananaGocharaOppeedu({
   const renderCell = (houseNum: number | null) => {
     if (houseNum === null) return null; // center cells handled separately
 
-    const janana  = jananaByHouse[houseNum]  || [];
-    const gochara = gocharaByHouse[houseNum] || [];
+    const janana  = jananaByRasi[houseNum]  || [];
+    const gochara = gocharaByRasi[houseNum] || [];
 
     return (
       <div
@@ -473,6 +490,7 @@ export default function HoroscopeOutputScreen({
     housePredictions,
     dashaData,
     lucky,
+    bhavaChakra,
   } = data;
   console.log(dashaData)
 
@@ -689,6 +707,16 @@ console.log('hasDasha', hasDasha)
             </div>
           </div>
 
+          {/* ── Bhava Chakram ── */}
+          {hasPlanets && bhavaChakra?.cusps && (
+            <BhavaChakra
+              planets={planets}
+              cusps={bhavaChakra.cusps}
+              isLight={isLight}
+              isTamil={isTamil}
+            />
+          )}
+
           {/* ── Janana & Gochara Oppeedu ── */}
           {hasPlanets && (
             <JananaGocharaOppeedu
@@ -816,7 +844,7 @@ console.log('hasDasha', hasDasha)
                         {p.nakshatra_pada ? `P${p.nakshatra_pada}` : '—'}
                       </td>
                       <td className={`py-2.5 text-right font-mono font-bold ${isLight ? 'text-amber-700' : 'text-amber-400'}`}>
-                        {normalizeDegree(p.local_degree) || '—'}
+                        {normalizeDegree(p.global_degree) || '—'}
                       </td>
                     </tr>
                   ))}
