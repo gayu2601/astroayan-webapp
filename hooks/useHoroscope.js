@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { computeBhavaCusps } from '../utils/bhavaCusps';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -315,6 +316,36 @@ function normalizeDasha(raw) {
   };
 }
 
+function buildBhavaChakra(planetsRaw, input) {
+  const resp = planetsRaw?.response;
+  console.log('resp', resp)
+  if (!resp || typeof resp !== 'object') return null;
+
+  // "As" (Ascendant) is a numeric-keyed entry, same shape as the other planets
+  const ascEntry = Object.values(resp).find(
+    (v) => v && typeof v === 'object' && (v.name === 'As' || v.name === 'லக்' || v.full_name === 'Ascendant')
+  );
+  console.log(ascEntry)
+  
+  try {
+    const cusps = computeBhavaCusps({
+      year: input.year,
+      month: input.month,
+      day: input.day,
+      hour: input.hour,
+      min: input.min,
+      lon: input.lon,
+      tzone: input.tzone,
+      ayanamsa: 1,
+      ascendantDegree: ascEntry.global_degree,
+    });
+    return { cusps };
+  } catch (err) {
+    console.log('buildBhavaChakra error:', err);
+    return null;
+  }
+}
+
 // ─── Main Hook ────────────────────────────────────────────────────────────────
 
 export function useHoroscopeData() {
@@ -396,6 +427,7 @@ export function useHoroscopeData() {
           housePredictions: normalizeHousePredictions(charsRaw),
           dashaData: normalizeDasha(planetsRaw),
           lucky: normalizeLucky(planetsRaw),
+          bhavaChakra: buildBhavaChakra(planetsRaw, input),
         });
       } catch (err) {
         console.log(

@@ -689,9 +689,6 @@ console.log('hasDasha', hasDasha)
                 <p className={`font-serif text-sm font-extrabold tracking-wide ${isLight ? 'text-amber-900' : 'text-amber-400'}`}>
                   {isTamil ? 'ராசி கட்டம்' : 'Rasi Chart'}
                 </p>
-                <p className={`text-[10px] uppercase tracking-wider font-sans mt-1 ${isLight ? 'text-amber-800/80 font-bold' : 'text-violet-400'}`}>
-                  Vedic Kundli
-                </p>
               </div>
               {renderRasiCell(4)}
 

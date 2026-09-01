@@ -110,9 +110,6 @@ export default function BhavaChakra({ planets, cusps, isLight, isTamil }: BhavaC
           <p className={`font-serif text-sm font-extrabold tracking-wide ${isLight ? 'text-teal-900' : 'text-teal-400'}`}>
             {isTamil ? 'பாவக சக்கரம்' : 'Bhava Chakram'}
           </p>
-          <p className={`text-[10px] uppercase tracking-wider font-sans mt-1 ${isLight ? 'text-teal-800/80 font-bold' : 'text-teal-400'}`}>
-            {isTamil ? 'ஸ்ரீபதி பத்ததி' : 'Sripati Paddhati'}
-          </p>
         </div>
         {renderCell(4)}
 

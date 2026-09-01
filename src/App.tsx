@@ -25,6 +25,8 @@ import DailyNakshatraPalan from './components/DailyNakshatraPalan';
 import WeeklyRasiPalan from './components/WeeklyRasiPalan';
 import HoraSection from './components/HoraSection';
 import GocharamTransit from './components/GocharamTransit';
+import CholiPrasnamForm from './components/CholiPrasnamForm';
+import VetrilaiPrasnamApp from './components/VetrilaiPrasnamApp';
 import toast from '../lib/toast'
 
 // ── Newly Modularized Web TypeScript Components ─────────────────────────────
@@ -1613,6 +1615,26 @@ export default function App() {
                     {[
                       { path: '/vedic-tools/palli', icon: <Info className="h-5 w-5" />, titleTa: "பல்லி விழும் பலன்", titleEn: "Lizard Omen Guide", descTa: "உடலின் எந்த பகுதியில் பல்லி விழுகிறது என்பதற்கான சுப/அசுப பலன்கள்.", descEn: "Traditional body-part lizard falling omen outcomes.", ctaTa: "பலன் காண்க", ctaEn: "Explore Omens" },
                       { path: '/vedic-tools/manaiyadi', icon: <Landmark className="h-5 w-5" />, titleTa: "மனையடி சாஸ்திரம்", titleEn: "Manaiyadi Shastram", descTa: "வீட்டு அறை அடி கணக்கின் சுப/அசுப பலன்கள்.", descEn: "House vastu room measurement auspiciousness guide.", ctaTa: "அடி சாஸ்திரம் காண்க", ctaEn: "Verify Vastu" },
+					  { 
+						  path: '/vedic-tools/prasannam',
+						  icon: <Landmark className="h-5 w-5" />,
+						  titleTa: "சோழி பிரசன்னம்",
+						  titleEn: "Choli Prasannam",
+						  descTa: "சோழிகளைப் பயன்படுத்தி உங்கள் கேள்விகளுக்கான பிரசன்ன பலன்களையும் வழிகாட்டுதலையும் அறியலாம்.",
+						  descEn: "Seek answers and guidance to your questions through the traditional Choli Prasannam method.",
+						  ctaTa: "சோழி பிரசன்னம் காண்க",
+						  ctaEn: "Check Choli Prasannam"
+						},
+						{ 
+						  path: '/vedic-tools/vetrilai-prasannam',
+						  icon: <Landmark className="h-5 w-5" />,
+						  titleTa: "வெற்றிலைப் பிரசன்னம்",
+						  titleEn: "Vetrilai Prasannam",
+						  descTa: "வெற்றிலையைப் பயன்படுத்தி உங்கள் கேள்விகளுக்கான பிரசன்ன பலன்களையும் வழிகாட்டுதலையும் அறியலாம்.",
+						  descEn: "Seek answers and guidance to your questions through the traditional Vetrilai Prasannam method.",
+						  ctaTa: "வெற்றிலைப் பிரசன்னம் காண்க",
+						  ctaEn: "Check Vetrilai Prasannam"
+						},
 					  { path: '/vedic-tools/muhurtham', icon: <CalendarCheck className="h-5 w-5" />, titleTa: "சுபமுகூர்த்தம்", titleEn: "Subha Muhurtham Days", descTa: "2026-ன் சுப முகூர்த்தங்கள்.", descEn: "Pick Auspicious Marriage Muhurtham days in 2026.", ctaTa: "நாட்கள் காண்க", ctaEn: "View Days" },
 					  { path: '/vedic-tools/vastu', icon: <House className="h-5 w-5" />, titleTa: "வாஸ்து", titleEn: "Vastu Days", descTa: "2026-ன் வாஸ்து செய்ய உகந்த நேரங்கள்.", descEn: "Pick Auspicious Vastu building days in 2026.", ctaTa: "நாட்கள் காண்க", ctaEn: "View Days" },
 
@@ -1786,6 +1808,20 @@ export default function App() {
                       {[
                         { id: 'palli',      title: language === 'ta' ? 'பல்லி விழும் பலன்'  : 'Lizard Omen Guide',    desc: language === 'ta' ? 'உடலின் எந்த பகுதியில் பல்லி விழுகிறது என்பதற்கான சுப/அசுப பலன்கள்.' : 'Traditional body-part lizard falling omen outcomes.' },
                         { id: 'manaiyadi', title: language === 'ta' ? 'மனையடி சாஸ்திரம்'  : 'Manaiyadi Shastram',   desc: language === 'ta' ? 'வீட்டு அறை அடி கணக்கின் சுப/அசுப பலன்கள்.' : 'Verify your structural layout measurements for optimal house prosperity.' },
+						{ 
+						  id: 'prasannam',
+						  title: language === 'ta' ? 'சோழி பிரசன்னம்' : 'Choli Prasannam',
+						  desc: language === 'ta'
+							? 'சோழிகளைப் பயன்படுத்தி உங்கள் கேள்விகளுக்கான பிரசன்ன பலன்களையும் வழிகாட்டுதலையும் அறியலாம்.'
+							: 'Seek answers and guidance to your questions through the traditional Choli Prasannam method.'
+						},
+						{ 
+						  id: 'vetrilai-prasannam',
+						  title: language === 'ta' ? 'வெற்றிலைப் பிரசன்னம்' : 'Vetrilai Prasannam',
+						  desc: language === 'ta'
+							? 'வெற்றிலையைப் பயன்படுத்தி உங்கள் கேள்விகளுக்கான பிரசன்ன பலன்களையும் வழிகாட்டுதலையும் அறியலாம்.'
+							: 'Seek answers and guidance to your questions through the traditional Vetrilai Prasannam method.'
+						},
 						{ id: 'muhurtham',  title: language === 'ta' ? 'சுபமுகூர்த்தம்' : 'Muhurtham', desc: language === 'ta' ? '2026 ஆம் ஆண்டிற்கான சுப முகூர்த்தங்கள்.' : 'View Auspicious Wedding Muhurtham dates in 2026.' },
 						{ id: 'vastu',  title: language === 'ta' ? 'வாஸ்து' : 'Vastu', desc: language === 'ta' ? '2026 ஆம் ஆண்டிற்கான வாஸ்து செய்ய உகந்த நேரங்கள்.' : 'View Auspicious house-building Vastu hours in 2026.' },
                         {
@@ -1822,6 +1858,8 @@ export default function App() {
                 ) : (
                   <div className="space-y-4">
                     {vedicToolSub === 'manaiyadi' && <ManaiyadiShastram language={language} isLight={isLight} />}
+					{vedicToolSub === 'prasannam' && <CholiPrasnamForm language={language} isLight={isLight} />}
+					{vedicToolSub === 'vetrilai-prasannam' && <VetrilaiPrasnamApp language={language} isLight={isLight} />}
                     {vedicToolSub === 'palli'     && <LizardOmens language={language} isLight={isLight} />}
 					{vedicToolSub === 'muhurtham' && <SubhaMuhurthamDays isLight={isLight} />}
 					{vedicToolSub === 'vastu' && <VastuDays isLight={isLight} />}

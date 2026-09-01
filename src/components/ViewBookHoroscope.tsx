@@ -136,84 +136,206 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
   }
 
   if (reportData) {
-    // Format planets raw list
-    const planetsArray = reportData.planets ? Object.values(reportData.planets) : [];
-    const lagnaEntry: any = planetsArray.find((p: any) => p.name === 'லக்' || p.name === 'Lagna' || p.full_name?.toLowerCase().includes('lagna') || p.full_name?.toLowerCase().includes('ascendant'));
-    const ascendantSignNo = lagnaEntry ? lagnaEntry.rasi_no : 1;
+    // ------------------------------------------------------------------
+    // Adapt the single "exact predictions" API response (reportData.api)
+    // into the same shape the rest of this component already expects.
+    // The old multi-endpoint hook produced: astro, planets, d1Chart,
+    // d9Chart, d2Chart..d60Chart, dashaBalance, dashaData, mergedDashas,
+    // ashtakvargaChart, predictions, grahaPalans, nakshatraPalan, vaaraPalan.
+    // We rebuild that same shape here as `rd`, which every reference
+    // further down in this render now uses instead of the raw payload.
+    // ------------------------------------------------------------------
+    const hookPayload: any = reportData;
+    const apiPayload: any = hookPayload.api || hookPayload;
+    const basicData: any = apiPayload?.basic?.data || {};
+    const vargaList: any[] = apiPayload?.varga_charts?.data?.varga_charts || [];
 
-    // Filter planet rows
-	const filteredPlanetRows = planetsArray.filter((p: any) => {
-	  const isPlanet =
-		p &&
-		typeof p === 'object' &&
-		!Array.isArray(p) &&
-		typeof p.full_name === 'string' &&
-		typeof p.name === 'string' &&
-		typeof p.local_degree === 'number' &&
-		typeof p.global_degree === 'number' &&
-		typeof p.rasi_no === 'number' &&
-		typeof p.zodiac === 'string';
-
-	  if (!isPlanet) return false;
-
-	  const nameLower = p.full_name.toLowerCase();
-
-	  return (
-		!nameLower.includes('lagna') &&
-		!nameLower.includes('ascendant') &&
-		!nameLower.includes('லக்')
-	  );
-	});
-
-    // Divisional charts selection data
-    const divCharts = [
-      { key: 'd2', label: isTamil ? DIVISIONAL_LABELS_TA.d2 : DIVISIONAL_LABELS.d2, data: reportData.d2Chart },
-      { key: 'd3', label: isTamil ? DIVISIONAL_LABELS_TA.d3 : DIVISIONAL_LABELS.d3, data: reportData.d3Chart },
-      { key: 'd3s', label: isTamil ? DIVISIONAL_LABELS_TA.d3s : DIVISIONAL_LABELS.d3s, data: reportData.d3sChart },
-      { key: 'd4', label: isTamil ? DIVISIONAL_LABELS_TA.d4 : DIVISIONAL_LABELS.d4, data: reportData.d4Chart },
-      { key: 'd5', label: isTamil ? DIVISIONAL_LABELS_TA.d5 : DIVISIONAL_LABELS.d5, data: reportData.d5Chart },
-      { key: 'd7', label: isTamil ? DIVISIONAL_LABELS_TA.d7 : DIVISIONAL_LABELS.d7, data: reportData.d7Chart },
-      { key: 'd8', label: isTamil ? DIVISIONAL_LABELS_TA.d8 : DIVISIONAL_LABELS.d8, data: reportData.d8Chart },
-      { key: 'd10', label: isTamil ? DIVISIONAL_LABELS_TA.d10 : DIVISIONAL_LABELS.d10, data: reportData.d10Chart },
-      { key: 'd10R', label: isTamil ? DIVISIONAL_LABELS_TA.d10R : DIVISIONAL_LABELS.d10R, data: reportData.d10RChart },
-      { key: 'd12', label: isTamil ? DIVISIONAL_LABELS_TA.d12 : DIVISIONAL_LABELS.d12, data: reportData.d12Chart },
-      { key: 'd16', label: isTamil ? DIVISIONAL_LABELS_TA.d16 : DIVISIONAL_LABELS.d16, data: reportData.d16Chart },
-      { key: 'd20', label: isTamil ? DIVISIONAL_LABELS_TA.d20 : DIVISIONAL_LABELS.d20, data: reportData.d20Chart },
-      { key: 'd24', label: isTamil ? DIVISIONAL_LABELS_TA.d24 : DIVISIONAL_LABELS.d24, data: reportData.d24Chart },
-      { key: 'd24R', label: isTamil ? DIVISIONAL_LABELS_TA.d24R : DIVISIONAL_LABELS.d24R, data: reportData.d24RChart },
-      { key: 'd27', label: isTamil ? DIVISIONAL_LABELS_TA.d27 : DIVISIONAL_LABELS.d27, data: reportData.d27Chart },
-      { key: 'd30', label: isTamil ? DIVISIONAL_LABELS_TA.d30 : DIVISIONAL_LABELS.d30, data: reportData.d30Chart },
-      { key: 'd40', label: isTamil ? DIVISIONAL_LABELS_TA.d40 : DIVISIONAL_LABELS.d40, data: reportData.d40Chart },
-      { key: 'd45', label: isTamil ? DIVISIONAL_LABELS_TA.d45 : DIVISIONAL_LABELS.d45, data: reportData.d45Chart },
-      { key: 'd60', label: isTamil ? DIVISIONAL_LABELS_TA.d60 : DIVISIONAL_LABELS.d60, data: reportData.d60Chart },
-    ].filter(c => c.data && Object.keys(c.data).length > 0);
-
-    const activeDivChart = divCharts.find(c => c.key === selectedDivKey) || divCharts[0];
-
-    // Helper to format planet array for Kattam view
-    const makeKattamPlanets = (chartResponse: any) => {
-      if (!chartResponse) return [];
-      return Object.values(chartResponse).map((p: any) => ({
-        rasi_no: p.rasi_no,
-        name: isTamil ? (PLANET_NAMES_TA[p.full_name || p.name] || p.name) : p.name
-      }));
+    const PLANET_ID_TO_NAME: Record<string, string> = {
+      PLANET_SUN: 'Sun', PLANET_MOON: 'Moon', PLANET_MARS: 'Mars', PLANET_MERCURY: 'Mercury',
+      PLANET_JUPITER: 'Jupiter', PLANET_VENUS: 'Venus', PLANET_SATURN: 'Saturn',
+      PLANET_RAHU: 'Rahu', PLANET_KETU: 'Ketu', PLANET_ASCENDANT: 'Ascendant',
     };
-	
-	const normalizeDegree = (val) => {
-	  if (val == null) return '';
-	  const num = typeof val === 'number' ? val : parseFloat(val);
-	  if (isNaN(num)) return String(val);
-	  const intPart = Math.floor(num);
-	  const decPart = parseFloat((num - intPart).toFixed(10)); // avoid float drift
-	  if (decPart >= 0.60) {
-		const newInt = intPart + 1;
-		const newDec = (decPart - 0.60).toFixed(2).replace('0.', '');
-		return `${newInt}.${newDec}`;
-	  }
-	  return num.toFixed(2);
-	};
-	
-	console.log('reportData', reportData)
+    const SHORT_TO_FULL_NAME: Record<string, string> = {
+      Su: 'Sun', Mo: 'Moon', Ma: 'Mars', Me: 'Mercury', Ju: 'Jupiter',
+      Ve: 'Venus', Sa: 'Saturn', Ra: 'Rahu', Ke: 'Ketu', As: 'Ascendant',
+    };
+    const SIGN_ORDER = ['ARIES', 'TAURUS', 'GEMINI', 'CANCER', 'LEO', 'VIRGO', 'LIBRA', 'SCORPIO', 'SAGITTARIUS', 'CAPRICORN', 'AQUARIUS', 'PISCES'];
+
+    // "SIGN_GEMINI" -> "Gemini", "NAKSHATRA_MRIGASHIRA" -> "Mrigashira", etc.
+    const prettifyEnum = (id?: string, prefix?: string) => {
+      if (!id) return '';
+      const stripped = prefix && id.startsWith(prefix) ? id.slice(prefix.length) : id;
+      return stripped.split('_').filter(Boolean).map((w) => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
+    };
+    const signIdToRasiNo = (signId?: string) => {
+      if (!signId) return 1;
+      const idx = SIGN_ORDER.indexOf(signId.replace('SIGN_', ''));
+      return idx >= 0 ? idx + 1 : 1;
+    };
+    const planetLabel = (fullName?: string) => {
+      if (!fullName) return '—';
+      return isTamil ? (PLANET_NAMES_TA[fullName] || fullName) : fullName;
+    };
+
+    // Ascendant / Lagna sign number (drives every Kattam grid)
+    const lagnaSignId: string | undefined = basicData?.lagna_functional_roles?.lagna_sign_id;
+    const ascendantSignNo = signIdToRasiNo(lagnaSignId);
+
+    // Planetary longitude table — classical 9 grahas only (drop chart points & ascendant)
+    const rawPlanets: any[] = basicData?.planets || [];
+    const filteredPlanetRows = rawPlanets
+      .filter((p: any) => typeof p?.point_id === 'string' && p.point_id.startsWith('PLANET_') && p.point_id !== 'PLANET_ASCENDANT')
+      .map((p: any) => ({
+        full_name: PLANET_ID_TO_NAME[p.point_id] || prettifyEnum(p.point_id, 'PLANET_'),
+        zodiac: prettifyEnum(p.sign_id, 'SIGN_'),
+        local_degree: typeof p.degree_in_sign === 'number' ? p.degree_in_sign : null,
+        local_degree_dms: p.degree_in_sign_dms,
+        nakshatra: prettifyEnum(p.nakshatra_id, 'NAKSHATRA_'),
+        nakshatra_pada: p.pada,
+        nakshatra_lord: PLANET_ID_TO_NAME[p.nakshatra_lord_id] || prettifyEnum(p.nakshatra_lord_id, 'PLANET_'),
+        retro: !!p.retrograde,
+      }));
+
+    // Panchang / basic astro summary (replaces the old rd.astro block)
+    const moonPlanet = rawPlanets.find((p: any) => p.point_id === 'PLANET_MOON');
+    const astro = {
+      ascendant_sign: prettifyEnum(lagnaSignId, 'SIGN_'),
+      rasi: prettifyEnum(moonPlanet?.sign_id, 'SIGN_'),
+      nakshatra: prettifyEnum(basicData?.essentials?.nakshatra?.nakshatra_id, 'NAKSHATRA_'),
+      nakshatra_pada: basicData?.essentials?.nakshatra?.pada,
+      tithi: prettifyEnum(basicData?.essentials?.tithi?.tithi_id, 'TITHI_'),
+      yoga: prettifyEnum(basicData?.essentials?.nithya_yoga?.nithya_yoga_id, 'NITHYA_YOGA_'),
+      karana: prettifyEnum(basicData?.essentials?.karana?.karana_id, 'KARANA_'),
+    };
+
+    // Dasha balance at birth + birth/current dasha snapshot
+    const dasa: any = basicData?.dasa || {};
+    const dashaBalance: string = dasa?.birth_balance?.formatted_balance || '';
+    const firstPeriod: any = (dasa?.periods || [])[0];
+    const dashaData = {
+      birth: dasa?.birth_balance ? {
+        mahadasha: planetLabel(PLANET_ID_TO_NAME[dasa.birth_balance.first_dasha_lord_id] || dasa.birth_balance.first_dasha_lord_id),
+        antardasha: firstPeriod?.bhuktis?.[0]
+          ? planetLabel(PLANET_ID_TO_NAME[firstPeriod.bhuktis[0].bhukti_lord_id] || firstPeriod.bhuktis[0].bhukti_lord_id)
+          : '—',
+        pratyantara: '—',
+        date: basicData?.input?.birth_date || '',
+      } : null,
+      current: dasa?.current_period ? {
+        mahadasha: planetLabel(PLANET_ID_TO_NAME[dasa.current_period.dasha?.dasha_lord_id] || dasa.current_period.dasha?.dasha_lord_id),
+        antardasha: dasa.current_period.bhukti
+          ? planetLabel(PLANET_ID_TO_NAME[dasa.current_period.bhukti.bhukti_lord_id] || dasa.current_period.bhukti.bhukti_lord_id)
+          : '—',
+        pratyantara: '—',
+        date: '',
+      } : null,
+    };
+
+    // Mahadasha -> Bhukthi timeline, with a short derived summary per dasha
+    // built from the API's own interpretation.summary_id for each bhukti
+    // (the new API has no free-text predictions, so this is the closest
+    // real signal we have — e.g. "Venus: Favorable · Sun: Neutral").
+    const mergedDashas = (dasa?.periods || []).map((period: any) => {
+      const name = PLANET_ID_TO_NAME[period.dasha_lord_id] || prettifyEnum(period.dasha_lord_id, 'PLANET_');
+      const bhukthis = (period.bhuktis || []).map((b: any) => ({
+        name: PLANET_ID_TO_NAME[b.bhukti_lord_id] || prettifyEnum(b.bhukti_lord_id, 'PLANET_'),
+        start: b.start_date,
+        end: b.end_date,
+      }));
+      const summaryParts = (period.bhuktis || [])
+        .map((b: any) => {
+          const label = planetLabel(PLANET_ID_TO_NAME[b.bhukti_lord_id] || b.bhukti_lord_id);
+          const summaryId = b?.interpretation?.summary_id as string | undefined;
+          const summary = summaryId ? prettifyEnum(summaryId, 'DASA_SUMMARY_') : '';
+          return summary ? `${label}: ${summary}` : null;
+        })
+        .filter(Boolean);
+      return {
+        name,
+        start: period.start_date,
+        end: period.end_date,
+        bhukthis,
+        prediction: summaryParts.length ? { personalized_prediction: summaryParts.join(' · ') } : null,
+      };
+    });
+
+    // Divisional (varga) charts — build a {rasi_no, name}[] list per sign-keyed chart
+    const makeKattamPlanets = (signChart: any) => {
+      if (!signChart) return [];
+      const out: { rasi_no: number; name: string }[] = [];
+      Object.entries(signChart).forEach(([signKey, entries]: [string, any]) => {
+        const rasi_no = signIdToRasiNo('SIGN_' + signKey.toUpperCase());
+        (entries as any[]).forEach((p: any) => {
+          const fullName = PLANET_ID_TO_NAME[p.point_id] || SHORT_TO_FULL_NAME[p.short_name] || p.short_name || prettifyEnum(p.point_id, 'PLANET_');
+          out.push({ rasi_no, name: planetLabel(fullName) });
+        });
+      });
+      return out;
+    };
+
+    const findVarga = (division: number) => vargaList.find((v: any) => v.division === division)?.chart;
+    const d1Chart = findVarga(1) || basicData?.rasi_chart;
+    const d9Chart = findVarga(9);
+
+    const DIVISION_KEY_MAP: Record<number, string> = {
+      2: 'd2', 3: 'd3', 4: 'd4', 5: 'd5', 7: 'd7', 8: 'd8', 10: 'd10',
+      12: 'd12', 16: 'd16', 20: 'd20', 24: 'd24', 27: 'd27', 30: 'd30', 40: 'd40', 45: 'd45', 60: 'd60',
+    };
+    const divChartData: Record<string, any> = {};
+    vargaList.forEach((v: any) => {
+      const key = DIVISION_KEY_MAP[v.division];
+      if (key) divChartData[`${key}Chart`] = v.chart;
+    });
+
+    // Reassemble the exact shape the JSX below already relies on (same
+    // field names the old multi-endpoint hook used to produce). Fields the
+    // new API doesn't provide (ashtakavarga bindus, narrative house/graha/
+    // nakshatra/vaara predictions) are left undefined; the JSX below
+    // already renders graceful "no data" states for those.
+    const rd: any = {
+      name: hookPayload?.name ?? basicData?.input?.name,
+      fatherName: hookPayload?.fatherName ?? basicData?.input?.father_name,
+      motherName: hookPayload?.motherName ?? basicData?.input?.mother_name,
+      place: hookPayload?.place ?? basicData?.input?.place,
+      astro,
+      dashaBalance,
+      dashaData,
+      mergedDashas,
+      d1Chart,
+      d9Chart,
+      ...divChartData,
+      ashtakvargaChart: undefined,
+      predictions: undefined,
+      grahaPalans: undefined,
+      nakshatraPalan: undefined,
+      vaaraPalan: undefined,
+    };
+
+    // Divisional chart selector list (D2..D60 — D1/D9 are shown separately above)
+    const divCharts = [
+      { key: 'd2', label: isTamil ? DIVISIONAL_LABELS_TA.d2 : DIVISIONAL_LABELS.d2, data: rd.d2Chart },
+      { key: 'd3', label: isTamil ? DIVISIONAL_LABELS_TA.d3 : DIVISIONAL_LABELS.d3, data: rd.d3Chart },
+      { key: 'd3s', label: isTamil ? DIVISIONAL_LABELS_TA.d3s : DIVISIONAL_LABELS.d3s, data: rd.d3sChart },
+      { key: 'd4', label: isTamil ? DIVISIONAL_LABELS_TA.d4 : DIVISIONAL_LABELS.d4, data: rd.d4Chart },
+      { key: 'd5', label: isTamil ? DIVISIONAL_LABELS_TA.d5 : DIVISIONAL_LABELS.d5, data: rd.d5Chart },
+      { key: 'd7', label: isTamil ? DIVISIONAL_LABELS_TA.d7 : DIVISIONAL_LABELS.d7, data: rd.d7Chart },
+      { key: 'd8', label: isTamil ? DIVISIONAL_LABELS_TA.d8 : DIVISIONAL_LABELS.d8, data: rd.d8Chart },
+      { key: 'd10', label: isTamil ? DIVISIONAL_LABELS_TA.d10 : DIVISIONAL_LABELS.d10, data: rd.d10Chart },
+      { key: 'd10R', label: isTamil ? DIVISIONAL_LABELS_TA.d10R : DIVISIONAL_LABELS.d10R, data: rd.d10RChart },
+      { key: 'd12', label: isTamil ? DIVISIONAL_LABELS_TA.d12 : DIVISIONAL_LABELS.d12, data: rd.d12Chart },
+      { key: 'd16', label: isTamil ? DIVISIONAL_LABELS_TA.d16 : DIVISIONAL_LABELS.d16, data: rd.d16Chart },
+      { key: 'd20', label: isTamil ? DIVISIONAL_LABELS_TA.d20 : DIVISIONAL_LABELS.d20, data: rd.d20Chart },
+      { key: 'd24', label: isTamil ? DIVISIONAL_LABELS_TA.d24 : DIVISIONAL_LABELS.d24, data: rd.d24Chart },
+      { key: 'd24R', label: isTamil ? DIVISIONAL_LABELS_TA.d24R : DIVISIONAL_LABELS.d24R, data: rd.d24RChart },
+      { key: 'd27', label: isTamil ? DIVISIONAL_LABELS_TA.d27 : DIVISIONAL_LABELS.d27, data: rd.d27Chart },
+      { key: 'd30', label: isTamil ? DIVISIONAL_LABELS_TA.d30 : DIVISIONAL_LABELS.d30, data: rd.d30Chart },
+      { key: 'd40', label: isTamil ? DIVISIONAL_LABELS_TA.d40 : DIVISIONAL_LABELS.d40, data: rd.d40Chart },
+      { key: 'd45', label: isTamil ? DIVISIONAL_LABELS_TA.d45 : DIVISIONAL_LABELS.d45, data: rd.d45Chart },
+      { key: 'd60', label: isTamil ? DIVISIONAL_LABELS_TA.d60 : DIVISIONAL_LABELS.d60, data: rd.d60Chart },
+    ].filter((c) => c.data && Object.keys(c.data).length > 0);
+
+    const activeDivChart = divCharts.find((c) => c.key === selectedDivKey) || divCharts[0];
+
 
     return (
       <div className="space-y-6 pb-12">
@@ -227,8 +349,8 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
               <ChevronLeft className="w-5 h-5" />
             </button>
             <div>
-              <h2 className={`text-xl font-cinzel font-black ${isLight ? "text-amber-700" : "text-amber-400"}`}>{reportData.name}</h2>
-              <p className={`text-xs font-mono ${isLight ? "text-gray-500" : "text-gray-400"}`}>{reportData.place}</p>
+              <h2 className={`text-xl font-cinzel font-black ${isLight ? "text-amber-700" : "text-amber-400"}`}>{rd.name}</h2>
+              <p className={`text-xs font-mono ${isLight ? "text-gray-500" : "text-gray-400"}`}>{rd.place}</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -272,42 +394,42 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
                 <div className={`p-4 space-y-3 divide-y text-xs transition-all ${isLight ? "divide-amber-500/10 text-[#5C4F43]" : "divide-white/5 text-gray-300"}`}>
                   <div className="flex justify-between py-1.5">
                     <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'பெயர்' : "Name"}</span>
-                    <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>{reportData.name}</span>
+                    <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>{rd.name}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
                     <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'தந்தை பெயர்' : "Father's Name"}</span>
-                    <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>{reportData.fatherName || '—'}</span>
+                    <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>{rd.fatherName || '—'}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
                     <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'லக்னம்' : 'Lagna'}</span>
-                    <span className={`font-bold ${isLight ? "text-indigo-700" : "text-indigo-400"}`}>{reportData.astro?.ascendant_sign}</span>
+                    <span className={`font-bold ${isLight ? "text-indigo-700" : "text-indigo-400"}`}>{rd.astro?.ascendant_sign}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
                     <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'ராசி' : 'Rashi'}</span>
-                    <span className={`font-bold ${isLight ? "text-purple-700" : "text-purple-300"}`}>{reportData.astro?.rasi}</span>
+                    <span className={`font-bold ${isLight ? "text-purple-700" : "text-purple-300"}`}>{rd.astro?.rasi}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
                     <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'நட்சத்திரம்' : 'Nakshatra'}</span>
-                    <span className={`font-bold ${isLight ? "text-amber-700" : "text-amber-400"}`}>{reportData.astro?.nakshatra}-{reportData.astro?.nakshatra_pada}</span>
+                    <span className={`font-bold ${isLight ? "text-amber-700" : "text-amber-400"}`}>{rd.astro?.nakshatra}-{rd.astro?.nakshatra_pada}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
                     <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'திதி' : 'Tithi'}</span>
-                    <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>{reportData.astro?.tithi || reportData.planets?.panchang?.tithi || '—'}</span>
+                    <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>{rd.astro?.tithi || rd.planets?.panchang?.tithi || '—'}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
                     <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'யோகம்' : 'Yogam'}</span>
-                    <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>{reportData.astro?.yoga || reportData.planets?.panchang?.yoga || '—'}</span>
+                    <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>{rd.astro?.yoga || rd.planets?.panchang?.yoga || '—'}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
                     <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'கரணம்' : 'Karanam'}</span>
-                    <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>{reportData.astro?.karana || reportData.planets?.panchang?.karana || '—'}</span>
+                    <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>{rd.astro?.karana || rd.planets?.panchang?.karana || '—'}</span>
                   </div>
                   <div className="flex justify-between py-1.5">
                     <span className={`font-semibold ${isLight ? "text-gray-500" : "text-gray-400"}`}>{isTamil ? 'ஜனன கால திசா இருப்பு' : 'Dasha Balance at Birth'}</span>
-                    <span className={`font-bold text-right ${isLight ? "text-gray-900" : "text-white"}`}>{reportData.dashaBalance || '—'}</span>
+                    <span className={`font-bold text-right ${isLight ? "text-gray-900" : "text-white"}`}>{rd.dashaBalance || '—'}</span>
                   </div>
-                  {!!reportData.dashaData && (() => {
-					  const dashaData = reportData.dashaData;
+                  {!!rd.dashaData && (() => {
+					  const dashaData = rd.dashaData;
 					  return (
 						<div
 						  className={`p-4 space-y-4 rounded-xl border transition-all ${
@@ -423,7 +545,7 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
                   </h4>
                   <CustomKattamGrid 
                     title={isTamil ? "இராசி" : "Rasi"} 
-                    planets={makeKattamPlanets(reportData.d1Chart)} 
+                    planets={makeKattamPlanets(rd.d1Chart)} 
                     lagnaSignNo={ascendantSignNo} 
                     isTamil={isTamil} 
                     theme={isLight ? "light" : "dark"} 
@@ -435,7 +557,7 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
                   </h4>
                   <CustomKattamGrid 
                     title={isTamil ? "நவாம்சம்" : "Navamsa"} 
-                    planets={makeKattamPlanets(reportData.d9Chart)} 
+                    planets={makeKattamPlanets(rd.d9Chart)} 
                     lagnaSignNo={ascendantSignNo} 
                     isTamil={isTamil} 
                     theme={isLight ? "light" : "dark"} 
@@ -469,7 +591,7 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
                               {p.retro && <span className="ml-1 text-red-500 font-bold text-[9px]">(R)</span>}
                             </td>
                             <td className="p-3">{p.zodiac}</td>
-                            <td className="p-3 font-semibold">{normalizeDegree(p.local_degree)}°</td>
+                            <td className="p-3 font-semibold">{typeof p.local_degree === 'number' ? p.local_degree.toFixed(2) : (p.local_degree_dms || '—')}°</td>
                             <td className={`p-3 font-semibold ${isLight ? "text-amber-700" : "text-amber-400"}`}>{p.nakshatra}</td>
                             <td className="p-3 font-bold">{p.nakshatra_pada}</td>
                             <td className={`p-3 ${isLight ? "text-gray-500" : "text-gray-400"}`}>{p.nakshatra_lord || '—'}</td>
@@ -553,7 +675,7 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
           const SIGN_NAMES_TA = ['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'];
           const SIGN_NAMES_EN = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
 
-          const ashtak = reportData.ashtakvargaChart as {
+          const ashtak = rd.ashtakvargaChart as {
             ashtakvarga_order: string[];
             ashtakvarga_points: number[][];
             ashtakvarga_total: number[];
@@ -761,9 +883,9 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
               </p>
             </div>
 
-            {reportData.mergedDashas ? (
+            {rd.mergedDashas ? (
               <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2">
-                {reportData.mergedDashas.map((dasha: any, idx: number) => {
+                {rd.mergedDashas.map((dasha: any, idx: number) => {
                   return (
                     <div key={idx} className={`border rounded-xl overflow-hidden shadow-sm hover:shadow transition-all ${isLight ? "border-amber-500/10 bg-gradient-to-r from-amber-50/10 to-white" : "border-white/5 bg-gradient-to-r from-white/5 to-black/25"}`}>
                       <div className={`p-4 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 transition-all ${isLight ? "bg-amber-500/5 border-amber-500/10" : "bg-white/5 border-white/5"}`}>
@@ -835,22 +957,22 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
               .trim();
           };
 
-          const grahaPalanTexts: string[] = reportData.grahaPalans
-            ? (Array.isArray(reportData.grahaPalans)
-                ? reportData.grahaPalans.map((g: any) => g.palan || g).filter(Boolean)
+          const grahaPalanTexts: string[] = rd.grahaPalans
+            ? (Array.isArray(rd.grahaPalans)
+                ? rd.grahaPalans.map((g: any) => g.palan || g).filter(Boolean)
                 : [])
             : [];
 
-          const nakshatraPalanText: string = reportData.nakshatraPalan?.palan
-            || reportData.nakshatraPalan
+          const nakshatraPalanText: string = rd.nakshatraPalan?.palan
+            || rd.nakshatraPalan
             || '';
 
-          const vaaraPalanText: string = reportData.vaaraPalan
-            ? `${reportData.vaaraPalan.palan || ''} ${reportData.vaaraPalan.vazhipaadu || ''}`.trim()
+          const vaaraPalanText: string = rd.vaaraPalan
+            ? `${rd.vaaraPalan.palan || ''} ${rd.vaaraPalan.vazhipaadu || ''}`.trim()
             : '';
 
-          const bhavaPalans: string[] = Array.isArray(reportData.predictions)
-            ? reportData.predictions
+          const bhavaPalans: string[] = Array.isArray(rd.predictions)
+            ? rd.predictions
                 .filter((p: any) => p.personalised_prediction)
                 .map((p: any) => stripLeadingSince(p.personalised_prediction))
             : [];
@@ -894,9 +1016,9 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
                   <h4 className={`font-bold text-sm sm:text-base flex items-center gap-2 border-b pb-3 transition-all ${isLight ? "text-purple-800 border-purple-100" : "text-purple-300 border-white/5"}`}>
                     <Sparkles className="w-4 h-4" />
                     {isTamil ? 'நட்சத்திர பலன்கள்' : 'Birth Star Predictions'}
-                    {reportData.astro?.nakshatra && (
+                    {rd.astro?.nakshatra && (
                       <span className={`ml-2 text-[10px] px-2 py-0.5 rounded font-normal transition-all ${isLight ? "bg-purple-100 text-purple-700" : "bg-purple-500/20 text-purple-300"}`}>
-                        {reportData.astro.nakshatra}
+                        {rd.astro.nakshatra}
                       </span>
                     )}
                   </h4>
@@ -921,9 +1043,9 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
                   <BookOpen className="w-4 h-4" />
                   {isTamil ? 'பாவ பலன்கள் (அதிபதி பலன்கள்)' : 'House Predictions'}
                 </h4>
-                {Array.isArray(reportData.predictions) && reportData.predictions.length > 0 ? (
+                {Array.isArray(rd.predictions) && rd.predictions.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {reportData.predictions.map((pred: any, idx: number) => (
+                    {rd.predictions.map((pred: any, idx: number) => (
                       <div key={idx} className={`p-4 rounded-xl border space-y-2 text-xs transition-all ${isLight ? "bg-gray-50 border-gray-100" : "bg-black/25 border-white/5"}`}>
                         <div className={`flex justify-between items-center border-b pb-2 transition-all ${isLight ? "border-gray-200" : "border-white/5"}`}>
                           <span className={`font-bold ${isLight ? "text-gray-900" : "text-white"}`}>
@@ -952,14 +1074,14 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
               </div>
 
               {/* 5. Dasha Predictions */}
-              {Array.isArray(reportData.mergedDashas) && reportData.mergedDashas.some((d: any) => d.prediction?.prediction || d.prediction?.personalized_prediction) && (
+              {Array.isArray(rd.mergedDashas) && rd.mergedDashas.some((d: any) => d.prediction?.prediction || d.prediction?.personalized_prediction) && (
                 <div className={`p-6 rounded-xl border shadow-xl space-y-4 transition-all ${isLight ? "bg-white border-amber-500/15" : "bg-black/35 border-white/5"}`}>
                   <h4 className={`font-bold text-sm sm:text-base flex items-center gap-2 border-b pb-3 transition-all ${isLight ? "text-indigo-800 border-indigo-100" : "text-indigo-300 border-white/5"}`}>
                     <Milestone className="w-4 h-4" />
                     {isTamil ? 'தசா பலன்கள்' : 'Dasha Predictions'}
                   </h4>
                   <div className="space-y-4">
-                    {reportData.mergedDashas
+                    {rd.mergedDashas
                       .filter((d: any) => d.prediction?.prediction || d.prediction?.personalized_prediction)
                       .map((dasha: any, idx: number) => {
                         const predText = dasha.prediction?.prediction || dasha.prediction?.personalized_prediction || '';
