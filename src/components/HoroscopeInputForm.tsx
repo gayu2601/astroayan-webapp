@@ -87,7 +87,7 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
     if (!queryStr || queryStr.length < 2) return [];
     try {
       // 1. Try Ola Maps API if key exists
-      const olaKey = process.env.EXPO_PUBLIC_OLA_MAPS_API_KEY;
+      const olaKey = '0tHplupDAorsTgwAvRu9tiM2VI8u93PtaJ02wBf9';
       if (olaKey) {
         const url = `https://api.olamaps.io/places/v1/autocomplete?input=${encodeURIComponent(queryStr)}&api_key=${olaKey}`;
         const res = await fetch(url);

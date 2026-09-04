@@ -1,15 +1,104 @@
 const Alert = { alert: (title, msg) => typeof window !== 'undefined' ? window.alert(msg ? `${title}\n${msg}` : title) : console.log(title, msg) };
 import { useAuth } from '../lib/AuthContext';
-import { supabase } from '../lib/supabase';
+
+// Expand short planet codes to full planet names
+const SHORT_TO_FULL = {
+  Su: 'Sun',   Mo: 'Moon',  Ma: 'Mars',   Me: 'Mercury',
+  Ju: 'Jupiter', Ve: 'Venus', Sa: 'Saturn',
+  Ra: 'Rahu',  Ke: 'Ketu',  As: 'Ascendant',
+  // also handle full names passed through unchanged
+  Sun: 'Sun', Moon: 'Moon', Mars: 'Mars', Mercury: 'Mercury',
+  Jupiter: 'Jupiter', Venus: 'Venus', Saturn: 'Saturn',
+  Rahu: 'Rahu', Ketu: 'Ketu',
+};
+
+const expandPlanetCode = (code) => SHORT_TO_FULL[code] ?? code;
+
+const parseDashaString = (str) => {
+  // "Ketu>Ma>Me" → ["Ketu", "Ma", "Me"]
+  if (!str || typeof str !== 'string') return [];
+  return str.split('>').map((s) => s.trim()).filter((s) => s && s !== 'undefined');
+};
+
+/**
+ * Builds a { birth, current } dasha object from a planet-details response,
+ * matching the shape produced by useHoroscope.js's normalizeDasha.
+ */
+const normalizeDasha = (raw) => {
+  const source = raw?.response ?? raw ?? {};
+
+  const birthParts = parseDashaString(source.birth_dasa);
+  const currentParts = parseDashaString(source.current_dasa);
+
+  const birthDate = source.birth_dasa_time?.trim() ?? '';
+  const currentDate = source.current_dasa_time?.trim() ?? '';
+
+  return {
+    birth: birthParts.length > 0 ? {
+      mahadasha: expandPlanetCode(birthParts[0]) ?? '—',
+      antardasha: expandPlanetCode(birthParts[1]) ?? '—',
+      pratyantara: expandPlanetCode(birthParts[2]) ?? '—',
+      date: birthDate,
+      raw: source.birth_dasa,
+    } : null,
+
+    current: currentParts.length > 0 ? {
+      mahadasha: expandPlanetCode(currentParts[0]) ?? '—',
+      antardasha: expandPlanetCode(currentParts[1]) ?? '—',
+      pratyantara: expandPlanetCode(currentParts[2]) ?? '—',
+      date: currentDate,
+      raw: source.current_dasa,
+    } : null,
+  };
+};
+
+const calculateDashaBalance = (dob, firstDashaEnd, lang = 'ta') => {
+  const birth = new Date(dob);
+  let end;
+  const parts = firstDashaEnd.split('-');
+  if (parts[0].length === 4) {
+    end = new Date(firstDashaEnd);
+  } else {
+    end = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+  }
+
+  let years = end.getFullYear() - birth.getFullYear();
+  let months = end.getMonth() - birth.getMonth();
+  let days = end.getDate() - birth.getDate();
+
+  if (days < 0) {
+    months -= 1;
+    days += new Date(end.getFullYear(), end.getMonth(), 0).getDate();
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+
+  if (lang === 'ta') {
+    return `${years} வருடம், ${months} மாதம், ${days} நாள்`;
+  } else {
+    return `${years} Year(s), ${months} Month(s), ${days} Day(s)`;
+  }
+};
 
 export const useBookHoroscope1 = () => {
   const { user } = useAuth();
 
-  // TODO: point this at the real "exact predictions" endpoint + auth for
-  // your account. It must return the combined { status, meta, basic,
-  // varga_charts } shape (see exactPredictionsApi_horoscope.txt).
-  const EXACT_PREDICTIONS_API_URL = 'https://api.exactpredictions.in/v2/horoscope';
-  const EXACT_PREDICTIONS_API_KEY = 'epk_a67f82d69786979c58ef3a06bbf86e3ccb45f1e2ab30640d';
+  const ASTRO_BASE = 'https://api.vedicastroapi.com/v3-json';
+
+  const astroGet = async (endpoint, params) => {
+    console.log(params);
+    const query = new URLSearchParams(params).toString();
+    const res = await fetch(`${ASTRO_BASE}/${endpoint}?${query}`, {
+      method: 'GET',
+    });
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`${endpoint} failed: ${res.status} — ${errBody}`);
+    }
+    return res.json();
+  };
 
   const geocodePlace = async (place) => {
     const encoded = encodeURIComponent(place);
@@ -27,86 +116,163 @@ export const useBookHoroscope1 = () => {
   };
 
   /**
-   * Fetches the horoscope in a single call to the "exact predictions" API
-   * and returns { name, fatherName, motherName, place, api }, where `api`
-   * is the raw { status, meta, basic, varga_charts } response. Any
-   * old-shape derivation (astro summary, dasha tables, divisional charts,
-   * etc.) now happens on the fly in ViewBookHoroscope.tsx from `api`.
+   * Fetches all astro data and returns a reportPayload object
+   * ready to be passed directly to <BookReportScreen data={...} />.
    *
    * @returns {Promise<object|undefined>} reportPayload, or undefined on error
    */
   const generateReportData = async (formData, lang) => {
-	  console.log("in generateReportData", formData);
+    console.log('in generateReportData', formData);
+    const { name, fatherName, motherName, dob, time, place } = formData;
 
-	  const {
-		name,
-		fatherName,
-		motherName,
-		dob,
-		time,
-		place,
-	  } = formData;
+    try {
+      const [year, month, day] = dob.split('-').map(Number);
+      const [hour, min] = time.split(':').map(Number);
 
-	  try {
-		const [year, month, day] = dob.split("-").map(Number);
-		const [hour, minute] = time.split(":").map(Number);
+      const { lat, lon } = await geocodePlace(place);
 
-		const { lat, lon } = await geocodePlace(place);
+      const pad = (n) => String(n).padStart(2, '0');
 
-		const birthParams = {
-		  name,
-		  father_name: fatherName,
-		  mother_name: motherName,
-		  year,
-		  month,
-		  day,
-		  hour,
-		  minute,
-		  lat,
-		  lon,
-		  tz: 5.5,
-		  dst: 0,
-		  place,
-		  language: lang || "en",
-		};
+      const birthParams = {
+        api_key: '6a0b4e5a-b8d5-5e1a-bd97-6128ad38d349',
+        dob: `${pad(day)}/${pad(month)}/${year}`,
+        tob: `${pad(hour)}:${pad(min)}`,
+        lat,
+        lon,
+        tz: 5.5,
+        lang,
+      };
 
-		const { data, error } = await supabase.functions.invoke(
-		  "generate-book-horoscope",
-		  {
-			body: birthParams,
-		  }
-		);
+      const [
+        planets, astro, d1, d9, dashaList, currentDasha, antardashaList,
+        predictions, dashaPredictions,
+        d2, d3, d3s, d4, d5, d7, d8, d10, d10R, d12, d16,
+        d20, d24, d24R, d27, d40, d45, d60, d30, ashtakvarga,
+      ] = await Promise.all([
+        astroGet('horoscope/planet-details', birthParams),
+        astroGet('extended-horoscope/extended-kundli-details', birthParams),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D1' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D9' }),
+        astroGet('dashas/maha-dasha', birthParams),
+        astroGet('dashas/current-mahadasha', birthParams),
+        astroGet('dashas/antar-dasha', birthParams),
+        astroGet('horoscope/personal-characteristics', birthParams),
+        astroGet('dashas/maha-dasha-predictions', birthParams),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D2' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D3' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D3-s' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D4' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D5' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D7' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D8' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D10' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D10-R' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D12' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D16' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D20' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D24' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D24-R' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D27' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D40' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D45' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D60' }),
+        astroGet('horoscope/divisional-charts', { ...birthParams, div: 'D30' }),
+        astroGet('horoscope/ashtakvarga', { ...birthParams, planet: 'total' }),
+      ]);
 
-		if (error) {
-		  throw error;
-		}
+      console.log(dashaList, currentDasha, antardashaList, dashaPredictions);
 
-		const api = data;
+      // ── Build antardasha lookup ──
+      const antardashaLookup = {};
+      const antardashaNames = antardashaList.response.antardashas;
+      const antardashaEnds = antardashaList.response.antardasha_order;
+      antardashaNames.forEach((list, index) => {
+        const majorPlanet = list[0].split('/')[0];
+        antardashaLookup[majorPlanet] = {
+          names: list,
+          ends: antardashaEnds[index],
+        };
+      });
 
-		const reportPayload = {
-		  name,
-		  fatherName,
-		  motherName,
-		  place,
-		  birthParams,
-		  api,
-		};
+      // ── Build merged dashas ──
+      const mahaNames = dashaList.response.mahadasha;
+      const mahaEnds = dashaList.response.mahadasha_order;
+      const firstMahaStart = dashaList.response.dasha_start_date;
 
-		console.log("reportPayload", reportPayload);
+      const mergedDashas = mahaNames.map((name, index) => {
+        const start = index === 0 ? firstMahaStart : mahaEnds[index - 1];
+        const end = mahaEnds[index];
 
-		return reportPayload;
+        const antars = antardashaLookup[name];
+        let bhukthis = [];
+        if (antars) {
+          bhukthis = antars.names.map((item, i) => {
+            const [, bhukthi] = item.split('/');
+            return {
+              name: bhukthi,
+              start: i === 0 ? start : antars.ends[i - 1],
+              end: antars.ends[i],
+            };
+          });
+        }
 
-	  } catch (error) {
-		console.error("generateReportData error:", error);
+        const prediction = dashaPredictions.response.dashas?.find(
+          (x) => x.dasha === name
+        );
 
-		Alert.alert(
-		  "பிழை",
-		  error.message || "தரவுகளைப் பெறுவதில் சிக்கல்."
-		);
+        return { name, start, end, bhukthis, prediction };
+      });
 
-		return undefined;
-	  }
-	};
+      // ── Birth vs current dasha object ──
+      const dashaData = normalizeDasha(planets);
+
+      console.log('dashaData', dashaData);
+
+      const reportPayload = {
+        name,
+        fatherName,
+        motherName,
+        birthParams,
+        place,
+        planets: planets.response,
+        astro: astro.response,
+        d1Chart: d1.response,
+        d9Chart: d9.response,
+        dashaBalance: dashaList?.response?.dasha_remaining_at_birth,
+        dashaPlanet: dashaList?.response?.mahadasha[0],
+        dashaData,
+        predictions: predictions?.response,
+        mergedDashas,
+        d2Chart: d2.response,
+        d3Chart: d3.response,
+        d3sChart: d3s.response,
+        d4Chart: d4.response,
+        d5Chart: d5.response,
+        d7Chart: d7.response,
+        d8Chart: d8.response,
+        d10Chart: d10.response,
+        d10RChart: d10R.response,
+        d12Chart: d12.response,
+        d16Chart: d16.response,
+        d20Chart: d20.response,
+        d24Chart: d24.response,
+        d24RChart: d24R.response,
+        d27Chart: d27.response,
+        d30Chart: d30.response,
+        d40Chart: d40.response,
+        d45Chart: d45.response,
+        d60Chart: d60.response,
+        ashtakvargaChart: ashtakvarga.response,
+      };
+
+      console.log('reportPayload', reportPayload);
+      return reportPayload;
+    } catch (error) {
+      console.error(error);
+      Alert.alert('பிழை', error.message || 'தரவுகளைப் பெறுவதில் சிக்கல்.');
+      return undefined;
+    }
+  };
 
   return { generateReportData };
 };
