@@ -161,9 +161,9 @@ function normalizePlanets(raw) {
   }
 
   console.log('arr', arr);
-
-  return arr.map((p) => ({
-    name: p.full_name ?? p.name ?? '',
+  
+  let a = arr.map((p) => ({
+    name: p.name ?? p.full_name ?? '',
 
     sign: p.zodiac ?? '',
 
@@ -196,6 +196,9 @@ function normalizePlanets(raw) {
     basic_avastha:
       p.basic_avastha ?? '',
   }));
+  console.log('a', a)
+
+  return a;
 }
 function normalizeAstroDetails(raw) {
 	console.log('in normalizeAstroDetails', raw);
@@ -316,7 +319,7 @@ function normalizeDasha(raw) {
   };
 }
 
-function buildBhavaChakra(planetsRaw, input) {
+function buildBhavaChakra(planetsRaw, astroRaw, input) {
   const resp = planetsRaw?.response;
   console.log('resp', resp)
   if (!resp || typeof resp !== 'object') return null;
@@ -326,7 +329,32 @@ function buildBhavaChakra(planetsRaw, input) {
     (v) => v && typeof v === 'object' && (v.name === 'As' || v.name === 'லக்' || v.full_name === 'Ascendant')
   );
   console.log(ascEntry)
-  
+
+  if (!ascEntry || !Number.isFinite(Number(ascEntry.global_degree))) {
+    console.warn('buildBhavaChakra: no usable Ascendant ("As") entry in planet-details response — skipping Bhava Chakram rather than defaulting to 0°/Aries.');
+    return null;
+  }
+
+  // The real Lahiri ayanamsa the API used for THIS chart must come from the
+  // response — it was previously hardcoded to `1`, which is nowhere close
+  // to the actual ~24° offset and threw off every cusp derived from the
+  // MC (house 10, and everything trisected off it). Try the field names
+  // this API is known to use; log the raw response if none match so the
+  // real key can be confirmed from devtools.
+  const ayanamsaRaw =
+    resp?.ayanamsa ??
+    resp?.panchang?.ayanamsa ??
+    astroRaw?.response?.ayanamsa ??
+    astroRaw?.response?.panchang?.ayanamsa ??
+    astroRaw?.ayanamsa;
+
+  const ayanamsa = Number(ayanamsaRaw);
+
+  if (!Number.isFinite(ayanamsa) || ayanamsa <= 0) {
+    console.warn('buildBhavaChakra: could not find a real ayanamsa value in the API response (checked resp.ayanamsa, resp.panchang.ayanamsa, astroRaw.response.ayanamsa, astroRaw.response.panchang.ayanamsa). Got:', ayanamsaRaw, '— check the logged raw responses above for the correct key and update this list. Skipping rather than using a placeholder.');
+    return null;
+  }
+
   try {
     const cusps = computeBhavaCusps({
       year: input.year,
@@ -336,8 +364,8 @@ function buildBhavaChakra(planetsRaw, input) {
       min: input.min,
       lon: input.lon,
       tzone: input.tzone,
-      ayanamsa: 1,
-      ascendantDegree: ascEntry.global_degree,
+      ayanamsa,
+      ascendantDegree: Number(ascEntry.global_degree),
     });
     return { cusps };
   } catch (err) {
@@ -378,6 +406,7 @@ export function useHoroscopeData() {
           charsRaw,
           chartRaw,
           gocharaRaw,
+		  d9Chart
         ] =
           await Promise.all([
             vGet(
@@ -404,9 +433,11 @@ export function useHoroscopeData() {
               '/horoscope/planet-details',
               todayParams
             ),
+			
+			vGet('/horoscope/divisional-charts', { ...params, div: 'D9' }),
           ]);
 		  
-          console.log(planetsRaw, astroRaw, charsRaw, chartRaw, gocharaRaw);
+          console.log(planetsRaw, astroRaw, charsRaw, chartRaw, gocharaRaw, d9Chart);
 
         setData({
           planets:
@@ -427,7 +458,11 @@ export function useHoroscopeData() {
           housePredictions: normalizeHousePredictions(charsRaw),
           dashaData: normalizeDasha(planetsRaw),
           lucky: normalizeLucky(planetsRaw),
-          bhavaChakra: buildBhavaChakra(planetsRaw, input),
+          bhavaChakra: buildBhavaChakra(planetsRaw, astroRaw, input),
+		  d9Planets:
+            normalizePlanets(
+              d9Chart
+            ),
         });
       } catch (err) {
         console.log(
@@ -444,7 +479,7 @@ export function useHoroscopeData() {
         setLoading(false);
       }
     }, []);
-
+console.log('dta', data)
   return {
     data,
     loading,

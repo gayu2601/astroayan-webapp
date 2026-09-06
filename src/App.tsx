@@ -27,6 +27,7 @@ import HoraSection from './components/HoraSection';
 import GocharamTransit from './components/GocharamTransit';
 import CholiPrasnamForm from './components/CholiPrasnamForm';
 import VetrilaiPrasnamApp from './components/VetrilaiPrasnamApp';
+import JamakkolCalculator from './components/JamakkolCalculator';
 import toast from '../lib/toast'
 
 // ── Newly Modularized Web TypeScript Components ─────────────────────────────
@@ -1615,6 +1616,16 @@ export default function App() {
                     {[
                       { path: '/vedic-tools/palli', icon: <Info className="h-5 w-5" />, titleTa: "பல்லி விழும் பலன்", titleEn: "Lizard Omen Guide", descTa: "உடலின் எந்த பகுதியில் பல்லி விழுகிறது என்பதற்கான சுப/அசுப பலன்கள்.", descEn: "Traditional body-part lizard falling omen outcomes.", ctaTa: "பலன் காண்க", ctaEn: "Explore Omens" },
                       { path: '/vedic-tools/manaiyadi', icon: <Landmark className="h-5 w-5" />, titleTa: "மனையடி சாஸ்திரம்", titleEn: "Manaiyadi Shastram", descTa: "வீட்டு அறை அடி கணக்கின் சுப/அசுப பலன்கள்.", descEn: "House vastu room measurement auspiciousness guide.", ctaTa: "அடி சாஸ்திரம் காண்க", ctaEn: "Verify Vastu" },
+					  {
+						  path: '/vedic-tools/jamakkol',
+						  icon: <Landmark className="h-5 w-5" />,
+						  titleTa: "ஜாமக்கோள் பிரசன்னம்",
+						  titleEn: "Jamakkol Prasannam",
+						  descTa: "ஜாமக்கோள் முறையைப் பயன்படுத்தி உங்கள் கேள்விகளுக்கான பிரசன்ன பலன்களையும் வழிகாட்டுதலையும் அறியலாம்.",
+						  descEn: "Seek answers and guidance to your questions through the traditional Jamakkol Prasannam method.",
+						  ctaTa: "ஜாமக்கோள் பிரசன்னம் காண்க",
+						  ctaEn: "Check Jamakkol Prasannam"
+						},
 					  { 
 						  path: '/vedic-tools/prasannam',
 						  icon: <Landmark className="h-5 w-5" />,
@@ -1809,6 +1820,13 @@ export default function App() {
                         { id: 'palli',      title: language === 'ta' ? 'பல்லி விழும் பலன்'  : 'Lizard Omen Guide',    desc: language === 'ta' ? 'உடலின் எந்த பகுதியில் பல்லி விழுகிறது என்பதற்கான சுப/அசுப பலன்கள்.' : 'Traditional body-part lizard falling omen outcomes.' },
                         { id: 'manaiyadi', title: language === 'ta' ? 'மனையடி சாஸ்திரம்'  : 'Manaiyadi Shastram',   desc: language === 'ta' ? 'வீட்டு அறை அடி கணக்கின் சுப/அசுப பலன்கள்.' : 'Verify your structural layout measurements for optimal house prosperity.' },
 						{ 
+						  id: 'jamakkol',
+						  title: language === 'ta' ? 'ஜாமக்கோள் பிரசன்னம்' : 'Jamakkol Prasannam',
+						  desc: language === 'ta'
+							? 'ஜாமக்கோள் முறையைப் பயன்படுத்தி உங்கள் கேள்விகளுக்கான பிரசன்ன பலன்களையும் வழிகாட்டுதலையும் அறியலாம்.'
+							: 'Seek answers and guidance to your questions through the traditional Jamakkol Prasannam method.'
+						},
+						{ 
 						  id: 'prasannam',
 						  title: language === 'ta' ? 'சோழி பிரசன்னம்' : 'Choli Prasannam',
 						  desc: language === 'ta'
@@ -1858,6 +1876,7 @@ export default function App() {
                 ) : (
                   <div className="space-y-4">
                     {vedicToolSub === 'manaiyadi' && <ManaiyadiShastram language={language} isLight={isLight} />}
+					{vedicToolSub === 'jamakkol' && <JamakkolCalculator language={language} isLight={isLight} />}
 					{vedicToolSub === 'prasannam' && <CholiPrasnamForm language={language} isLight={isLight} />}
 					{vedicToolSub === 'vetrilai-prasannam' && <VetrilaiPrasnamApp language={language} isLight={isLight} />}
                     {vedicToolSub === 'palli'     && <LizardOmens language={language} isLight={isLight} />}

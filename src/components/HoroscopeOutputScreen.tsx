@@ -57,7 +57,7 @@ const COLOR_SWATCHES: Record<string, string> = {
   Ivory: '#fffff0',
 };
 
-const RASI_SIGN_TO_HOUSE: Record<string, number> = {
+export const RASI_SIGN_TO_HOUSE: Record<string, number> = {
   Aries: 1, Taurus: 2, Gemini: 3, Cancer: 4,
   Leo: 5, Virgo: 6, Libra: 7, Scorpio: 8,
   Sagittarius: 9, Capricorn: 10, Aquarius: 11, Pisces: 12,
@@ -96,8 +96,101 @@ const RASI_SIGN_NAMES_EN: Record<number, string> = {
   12: 'Pisces',
 };
 
-const getRasiSignNames = (isTamil: boolean): Record<number, string> =>
+export const getRasiSignNames = (isTamil: boolean): Record<number, string> =>
   isTamil ? RASI_SIGN_NAMES_TA : RASI_SIGN_NAMES_EN;
+
+// ─── Shared "place planets on the fixed South-Indian grid" helper ─────────
+// The API already returns `rasi_no` (the planet's absolute sign, 1-12) on
+// every planet object, so there is no need to parse a `sign`/`zodiac` string
+// through RASI_SIGN_TO_HOUSE to figure out which box it belongs in — that
+// indirection was also fragile (it silently breaks if the field is called
+// `zodiac` instead of `sign`, or if `name` isn't in the language the badge
+// map expects). We bucket by `rasi_no` directly and resolve the badge from
+// `full_name`, which the API always sends in English, so the abbreviation
+// is correct regardless of what `name` happens to contain.
+interface PlacedPlanet { abbr: string; bg: string; fg: string; fullName: string; retro: boolean }
+
+function buildPlanetsByRasi(list: any[]): Record<number, PlacedPlanet[]> {
+  const map: Record<number, PlacedPlanet[]> = {};
+  if (!Array.isArray(list)) return map;
+  list.forEach((p: any) => {
+    // rasi_no is authoritative; fall back to a sign-string lookup only for
+    // older payloads that don't send it yet.
+    const rasiNo: number | undefined =
+      p.rasi_no ?? RASI_SIGN_TO_HOUSE[((p.sign || p.zodiac || '') as string).trim()];
+    if (!rasiNo) return;
+
+    const fullName = p.full_name || p.name;
+    const badge = RASI_BADGE[fullName] || RASI_BADGE[p.name] || {
+      abbr: (fullName || p.name || '').slice(0, 2),
+      bg: '#444',
+      fg: '#fff',
+    };
+
+    map[rasiNo] = map[rasiNo] || [];
+    map[rasiNo].push({
+      abbr: badge.abbr,
+      bg: badge.bg,
+      fg: badge.fg,
+      fullName,
+      retro: !!(p.retro ?? p.is_retrograde),
+    });
+  });
+  return map;
+}
+
+// ─── Dosha Nirnayam ─────────────────────────────────────────────────────────
+// Each planet already carries `house` — its position counted from the
+// lagna (1 = lagna's own house) — so the three rules below just read that
+// field directly, no sign-math needed.
+
+const DOSHA_PLANET_ALIASES: Record<'mars' | 'rahu' | 'ketu' | 'saturn' | 'moon', string[]> = {
+  mars:   ['Mars', 'செவ்வாய்', 'செ'],
+  rahu:   ['Rahu', 'ராகு', 'ரா'],
+  ketu:   ['Ketu', 'கேது', 'கே'],
+  saturn: ['Saturn', 'சனி'],
+  moon:   ['Moon', 'சந்திரன்', 'சந்'],
+};
+
+function findPlanetHouse(planets: any[], aliases: string[]): number | null {
+  const p = planets.find(
+    (pl) => aliases.includes((pl?.full_name || '').trim()) || aliases.includes((pl?.name || '').trim())
+  );
+  return typeof p?.house === 'number' ? p.house : null;
+}
+
+export interface DoshaResults {
+  chevvai: boolean;
+  rahuKetu: boolean;
+  punarppu: boolean;
+}
+
+// செவ்வாய் தோஷம்: லக்னத்தில் இருந்து 2, 4, 7, 8, 12ல் செவ்வாய் இருந்தால்
+// ராகு/கேது தோஷம்: லக்னத்தில் இருந்து 1, 2, 5ல் ராகு அல்லது கேது இருந்தால்
+// புணர்ப்பு தோஷம்: சனி-சந்திரன் ஒரே கட்டத்தில், அல்லது சனியில் இருந்து
+//                    சந்திரன் 3, 7, 10ல் இருந்தால்
+function computeDoshaResults(planets: any[] | undefined): DoshaResults | null {
+  if (!Array.isArray(planets)) return null;
+
+  const marsHouse   = findPlanetHouse(planets, DOSHA_PLANET_ALIASES.mars);
+  const rahuHouse   = findPlanetHouse(planets, DOSHA_PLANET_ALIASES.rahu);
+  const ketuHouse   = findPlanetHouse(planets, DOSHA_PLANET_ALIASES.ketu);
+  const saturnHouse = findPlanetHouse(planets, DOSHA_PLANET_ALIASES.saturn);
+  const moonHouse   = findPlanetHouse(planets, DOSHA_PLANET_ALIASES.moon);
+
+  if ([marsHouse, rahuHouse, ketuHouse, saturnHouse, moonHouse].some((v) => v == null)) {
+    return null;
+  }
+
+  const chevvai = [2, 4, 7, 8, 12].includes(marsHouse as number);
+  const rahuKetu = [1, 2, 5].includes(rahuHouse as number) || [1, 2, 5].includes(ketuHouse as number);
+
+  const sameKattam = saturnHouse === moonHouse;
+  const posFromSaturn = (((moonHouse as number) - (saturnHouse as number) + 12) % 12) + 1;
+  const punarppu = sameKattam || [3, 7, 10].includes(posFromSaturn);
+
+  return { chevvai, rahuKetu, punarppu };
+}
 
 export const RASI_BADGE: Record<string, { abbr: string; bg: string; fg: string }> = {
   'சூரியன்':  { abbr: 'சூரி',  bg: '#FFF176', fg: '#5D4037' },
@@ -491,29 +584,20 @@ export default function HoroscopeOutputScreen({
     dashaData,
     lucky,
     bhavaChakra,
+	d9Planets
   } = data;
-  console.log(dashaData)
-
+  
   const hasPlanets = planets && planets.length > 0;
   const hasDasha = !!dashaData;
-console.log('hasDasha', hasDasha)
   const hasLucky = !!lucky;
 
-  // Render Rasi Chart Builder helper
-  const rasiBySign: Record<number, string[]> = {};
-  if (Array.isArray(planets)) {
-    planets.forEach((p: any) => {
-      const signKey = (p.sign || '').trim();
-      const house = RASI_SIGN_TO_HOUSE[signKey];
-      if (house) {
-        rasiBySign[house] = rasiBySign[house] || [];
-        rasiBySign[house].push(p.name);
-      }
-    });
-  }
+  const doshaResults = React.useMemo(() => computeDoshaResults(planets), [planets]);
+
+  // Render Rasi Chart Builder helper — grouped directly by rasi_no
+  const rasiByRasiNo = React.useMemo(() => buildPlanetsByRasi(planets), [planets]);
 
   const renderRasiCell = (houseNum: number) => {
-    const matchedPlanets = rasiBySign[houseNum] || [];
+    const matchedPlanets = rasiByRasiNo[houseNum] || [];
     const signName = getRasiSignNames(isTamil)[houseNum] || '';
     return (
       <div
@@ -531,19 +615,55 @@ console.log('hasDasha', hasDasha)
           {signName}
         </span>
         <div className="flex flex-wrap gap-0.5 justify-center items-center mt-auto mb-auto max-w-full">
-          {matchedPlanets.map((pName, i) => {
-            const s = RASI_BADGE[pName] || { abbr: pName.slice(0, 2), bg: '#444', fg: '#fff' };
-            return (
-              <span
-                key={i}
-                style={{ backgroundColor: s.bg, color: s.fg }}
-                className="text-[9px] font-extrabold px-1 py-0.5 rounded leading-none whitespace-nowrap shadow-sm border border-black/10"
-                title={pName}
-              >
-                {s.abbr}
-              </span>
-            );
-          })}
+          {matchedPlanets.map((p, i) => (
+            <span
+              key={i}
+              style={{ backgroundColor: p.bg, color: p.fg }}
+              className="text-[9px] font-extrabold px-1 py-0.5 rounded leading-none whitespace-nowrap shadow-sm border border-black/10"
+              title={p.fullName}
+            >
+              {p.abbr}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Render Navamsa (D9) Chart Builder helper — same kattam format as Rasi,
+  // sourced from d9Planets and grouped by the same rasi_no-based helper.
+  const d9ByRasiNo = React.useMemo(() => buildPlanetsByRasi(d9Planets), [d9Planets]);
+  const hasD9 = Array.isArray(d9Planets) && d9Planets.length > 0;
+
+  const renderD9Cell = (houseNum: number) => {
+    const matchedPlanets = d9ByRasiNo[houseNum] || [];
+    const signName = getRasiSignNames(isTamil)[houseNum] || '';
+    return (
+      <div
+        className={`border p-1 flex flex-col justify-between items-center text-center h-full min-h-[65px] transition-all ${
+          isLight
+            ? 'border-teal-500/20 bg-white/90 hover:bg-teal-100/40'
+            : 'border-teal-500/20 bg-slate-950/80 hover:bg-teal-950/10'
+        }`}
+      >
+        <span
+          className={`text-[10px] font-bold font-sans tracking-wide leading-none ${
+            isLight ? 'text-teal-800' : 'text-teal-400/80'
+          }`}
+        >
+          {signName}
+        </span>
+        <div className="flex flex-wrap gap-0.5 justify-center items-center mt-auto mb-auto max-w-full">
+          {matchedPlanets.map((p, i) => (
+            <span
+              key={i}
+              style={{ backgroundColor: p.bg, color: p.fg }}
+              className="text-[9px] font-extrabold px-1 py-0.5 rounded leading-none whitespace-nowrap shadow-sm border border-black/10"
+              title={p.fullName}
+            >
+              {p.abbr}
+            </span>
+          ))}
         </div>
       </div>
     );
@@ -648,60 +768,122 @@ console.log('hasDasha', hasDasha)
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Avakahada details + Rasi Chart */}
         <div className="lg:col-span-5 space-y-6">
-          <div
-            className={`p-4 space-y-4 rounded-xl border transition-all ${
-              isLight
-                ? 'bg-white/90 border-amber-500/20 shadow-md text-[#2C241E]'
-                : 'bg-slate-900/40 border-gray-800 shadow-xl backdrop-blur-md text-white'
-            }`}
-          >
-            <h2
-              className={`text-xs font-semibold tracking-wider uppercase border-b pb-2 flex items-center gap-1.5 font-sans ${
-                isLight ? 'text-amber-700 border-amber-500/20' : 'text-amber-400 border-gray-800/60'
-              }`}
-            >
-              <Award className="w-4 h-4 text-amber-500" />
-              {isTamil ? 'ராசி கட்டம்' : 'Rasi Chart'}
-            </h2>
-
-            {/* South Indian 4x4 Grid Birth Chart */}
+          <div className="grid grid-cols-1 gap-4">
+            {/* Rasi Chart */}
             <div
-              className={`grid grid-cols-4 grid-rows-4 border rounded-lg overflow-hidden aspect-square w-full max-w-[340px] mx-auto ${
-                isLight ? 'border-amber-500/30 bg-amber-50/50 shadow-inner' : 'border-violet-500/30 bg-slate-950'
+              className={`p-4 space-y-4 rounded-xl border transition-all ${
+                isLight
+                  ? 'bg-white/90 border-amber-500/20 shadow-md text-[#2C241E]'
+                  : 'bg-slate-900/40 border-gray-800 shadow-xl backdrop-blur-md text-white'
               }`}
             >
-              {/* Row 0 */}
-              {renderRasiCell(12)}
-              {renderRasiCell(1)}
-              {renderRasiCell(2)}
-              {renderRasiCell(3)}
-
-              {/* Row 1 */}
-              {renderRasiCell(11)}
-              {/* Spans center col 1 & 2 */}
-              <div
-                className={`col-span-2 row-span-2 border flex flex-col items-center justify-center text-center p-2 ${
-                  isLight
-                    ? 'border-amber-500/30 bg-gradient-to-br from-amber-100/70 to-orange-100/50'
-                    : 'border-violet-500/20 bg-slate-950'
+              <h2
+                className={`text-xs font-semibold tracking-wider uppercase border-b pb-2 flex items-center gap-1.5 font-sans ${
+                  isLight ? 'text-amber-700 border-amber-500/20' : 'text-amber-400 border-gray-800/60'
                 }`}
               >
-                <p className={`font-serif text-sm font-extrabold tracking-wide ${isLight ? 'text-amber-900' : 'text-amber-400'}`}>
-                  {isTamil ? 'ராசி கட்டம்' : 'Rasi Chart'}
-                </p>
+                <Award className="w-4 h-4 text-amber-500" />
+                {isTamil ? 'ராசி கட்டம்' : 'Rasi Chart'}
+              </h2>
+
+              {/* South Indian 4x4 Grid Birth Chart */}
+              <div
+                className={`grid grid-cols-4 grid-rows-4 border rounded-lg overflow-hidden aspect-square w-full max-w-[340px] mx-auto ${
+                  isLight ? 'border-amber-500/30 bg-amber-50/50 shadow-inner' : 'border-violet-500/30 bg-slate-950'
+                }`}
+              >
+                {/* Row 0 */}
+                {renderRasiCell(12)}
+                {renderRasiCell(1)}
+                {renderRasiCell(2)}
+                {renderRasiCell(3)}
+
+                {/* Row 1 */}
+                {renderRasiCell(11)}
+                {/* Spans center col 1 & 2 */}
+                <div
+                  className={`col-span-2 row-span-2 border flex flex-col items-center justify-center text-center p-2 ${
+                    isLight
+                      ? 'border-amber-500/30 bg-gradient-to-br from-amber-100/70 to-orange-100/50'
+                      : 'border-violet-500/20 bg-slate-950'
+                  }`}
+                >
+                  <p className={`font-serif text-sm font-extrabold tracking-wide ${isLight ? 'text-amber-900' : 'text-amber-400'}`}>
+                    {isTamil ? 'ராசி கட்டம்' : 'Rasi Chart'}
+                  </p>
+                </div>
+                {renderRasiCell(4)}
+
+                {/* Row 2 */}
+                {renderRasiCell(10)}
+                {renderRasiCell(5)}
+
+                {/* Row 3 */}
+                {renderRasiCell(9)}
+                {renderRasiCell(8)}
+                {renderRasiCell(7)}
+                {renderRasiCell(6)}
               </div>
-              {renderRasiCell(4)}
-
-              {/* Row 2 */}
-              {renderRasiCell(10)}
-              {renderRasiCell(5)}
-
-              {/* Row 3 */}
-              {renderRasiCell(9)}
-              {renderRasiCell(8)}
-              {renderRasiCell(7)}
-              {renderRasiCell(6)}
             </div>
+
+            {/* Navamsa (D9) Chart */}
+            {hasD9 && (
+              <div
+                className={`p-4 space-y-4 rounded-xl border transition-all ${
+                  isLight
+                    ? 'bg-white/90 border-teal-500/20 shadow-md text-[#2C241E]'
+                    : 'bg-slate-900/40 border-gray-800 shadow-xl backdrop-blur-md text-white'
+                }`}
+              >
+                <h2
+                  className={`text-xs font-semibold tracking-wider uppercase border-b pb-2 flex items-center gap-1.5 font-sans ${
+                    isLight ? 'text-teal-700 border-teal-500/20' : 'text-teal-400 border-gray-800/60'
+                  }`}
+                >
+                  <Award className="w-4 h-4 text-teal-500" />
+                  {isTamil ? 'நவாம்ச கட்டம்' : 'Navamsa Chart'}
+                </h2>
+
+                {/* South Indian 4x4 Grid D9 Chart */}
+                <div
+                  className={`grid grid-cols-4 grid-rows-4 border rounded-lg overflow-hidden aspect-square w-full max-w-[340px] mx-auto ${
+                    isLight ? 'border-teal-500/30 bg-teal-50/50 shadow-inner' : 'border-teal-500/30 bg-slate-950'
+                  }`}
+                >
+                  {/* Row 0 */}
+                  {renderD9Cell(12)}
+                  {renderD9Cell(1)}
+                  {renderD9Cell(2)}
+                  {renderD9Cell(3)}
+
+                  {/* Row 1 */}
+                  {renderD9Cell(11)}
+                  {/* Spans center col 1 & 2 */}
+                  <div
+                    className={`col-span-2 row-span-2 border flex flex-col items-center justify-center text-center p-2 ${
+                      isLight
+                        ? 'border-teal-500/30 bg-gradient-to-br from-teal-100/70 to-emerald-100/50'
+                        : 'border-teal-500/20 bg-slate-950'
+                    }`}
+                  >
+                    <p className={`font-serif text-sm font-extrabold tracking-wide ${isLight ? 'text-teal-900' : 'text-teal-400'}`}>
+                      {isTamil ? 'நவாம்ச கட்டம்' : 'Navamsa Chart'}
+                    </p>
+                  </div>
+                  {renderD9Cell(4)}
+
+                  {/* Row 2 */}
+                  {renderD9Cell(10)}
+                  {renderD9Cell(5)}
+
+                  {/* Row 3 */}
+                  {renderD9Cell(9)}
+                  {renderD9Cell(8)}
+                  {renderD9Cell(7)}
+                  {renderD9Cell(6)}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── Bhava Chakram ── */}
@@ -776,6 +958,53 @@ console.log('hasDasha', hasDasha)
               </div>
             </div>
           )}
+
+          {/* Dosha Nirnayam */}
+          {doshaResults && (
+            <div
+              className={`p-4 space-y-3 rounded-xl border transition-all ${
+                isLight
+                  ? 'bg-white/90 border-amber-500/20 shadow-md'
+                  : 'bg-slate-900/40 border-gray-800 backdrop-blur-md'
+              }`}
+            >
+              <h2
+                className={`text-xs font-semibold tracking-wider uppercase border-b pb-2 flex items-center gap-1.5 font-sans ${
+                  isLight ? 'text-amber-700 border-amber-500/20' : 'text-amber-400 border-gray-800/60'
+                }`}
+              >
+                <HelpCircle className="w-4 h-4 text-amber-500" />
+                {isTamil ? 'தோஷ நிர்ணயம்' : 'Dosha Analysis'}
+              </h2>
+              <div className="space-y-2 text-xs">
+                {[
+                  { label: isTamil ? 'செவ்வாய் தோஷம்' : 'Chevvai Dosham', hit: doshaResults.chevvai },
+                  { label: isTamil ? 'ராகு/கேது தோஷம்' : 'Rahu/Ketu Dosham', hit: doshaResults.rahuKetu },
+                  { label: isTamil ? 'புணர்ப்பு தோஷம்' : 'Punarppu Dosham', hit: doshaResults.punarppu },
+                ].map((row) => (
+                  <div
+                    key={row.label}
+                    className={`flex items-center justify-between px-3 py-2 rounded border ${
+                      isLight ? 'bg-amber-50/60 border-amber-500/15' : 'bg-slate-950/60 border-gray-800/40'
+                    }`}
+                  >
+                    <span className={`font-semibold ${isLight ? 'text-[#2C241E]' : 'text-white'}`}>
+                      {row.label}
+                    </span>
+                    <span
+                      className={`font-bold ${
+                        row.hit
+                          ? isLight ? 'text-rose-700' : 'text-rose-400'
+                          : isLight ? 'text-emerald-700' : 'text-emerald-400'
+                      }`}
+                    >
+                      {isTamil ? (row.hit ? 'உண்டு' : 'இல்லை') : row.hit ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Planetary Positions Table + Predictions + Dasha */}
@@ -811,19 +1040,19 @@ console.log('hasDasha', hasDasha)
                   </tr>
                 </thead>
                 <tbody className={`divide-y ${isLight ? 'divide-amber-500/15' : 'divide-gray-800/30'}`}>
-                  {planets.map((p: any) => (
+                  {planets.map((p: any, i: number) => (
                     <tr
-                      key={p.name}
+                      key={p.full_name || p.name || i}
                       className={`transition-colors ${
                         isLight ? 'hover:bg-amber-50/60' : 'hover:bg-violet-950/5'
                       }`}
                     >
                       <td className={`py-2.5 font-semibold flex items-center gap-1.5 ${isLight ? 'text-[#2C241E]' : 'text-white'}`}>
                         <span className={`text-sm ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>
-                          {PLANET_GLYPHS[p.name] || '★'}
+                          {PLANET_GLYPHS[p.full_name] || PLANET_GLYPHS[p.name] || '★'}
                         </span>
                         <span>{p.name}</span>
-                        {p.is_retrograde && (
+                        {(p.is_retrograde || p.retro) && (
                           <span
                             className={`text-[9px] font-extrabold px-1 rounded uppercase tracking-wider leading-none border ${
                               isLight
@@ -835,13 +1064,13 @@ console.log('hasDasha', hasDasha)
                           </span>
                         )}
                       </td>
-                      <td className={`py-2.5 ${isLight ? 'text-[#5C4F43]' : 'text-gray-300'}`}>{p.sign || '—'}</td>
+                      <td className={`py-2.5 ${isLight ? 'text-[#5C4F43]' : 'text-gray-300'}`}>{p.sign || p.zodiac || '—'}</td>
                       <td className={`py-2.5 font-medium ${isLight ? 'text-amber-800' : 'text-amber-300/90'}`}>{p.nakshatra || '—'}</td>
                       <td className={`py-2.5 text-center font-bold ${isLight ? 'text-violet-700' : 'text-violet-300'}`}>
                         {p.nakshatra_pada ? `P${p.nakshatra_pada}` : '—'}
                       </td>
                       <td className={`py-2.5 text-right font-mono font-bold ${isLight ? 'text-amber-700' : 'text-amber-400'}`}>
-                        {normalizeDegree(p.global_degree) || '—'}
+                        {normalizeDegree(p.global_degree ?? p.local_degree) || '—'}
                       </td>
                     </tr>
                   ))}

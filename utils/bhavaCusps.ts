@@ -82,9 +82,26 @@ function trisect(fromDeg, toDeg) {
  * @param {number} params.tzone      numeric UTC offset, e.g. 5.5 for IST
  * @param {number} params.ayanamsa   Lahiri ayanamsa (deg) — from response.panchang.ayanamsa
  * @param {number} params.ascendantDegree  sidereal Ascendant longitude (deg) — from the "As" planet entry
- * @returns {number[]} 12 Bhava Madhya (cusp) longitudes, index 0 = house 1
+ * @returns {number[] | null} 12 Bhava Madhya (cusp) longitudes, index 0 = house 1,
+ *   or null if the inputs aren't ready yet (see guard below).
  */
 export function computeBhavaCusps({ year, month, day, hour, min, lon, tzone, ayanamsa, ascendantDegree }) {
+  // Guard: every one of these must be a real finite number before we anchor
+  // house 1 to it. If ascendantDegree (or anything else) comes in as
+  // undefined/NaN — e.g. the "As" planet entry hasn't loaded yet, or a
+  // caller does `asPlanet?.fullDegree || 0` — silently treating that as 0
+  // means house 1 gets anchored to 0° (Aries), not the real lagna. That is
+  // almost certainly the source of the "always starts at Mesham" bug:
+  // the chart renders once with defaults before the real Ascendant arrives,
+  // and nothing here used to stop it from doing so.
+  const inputs = { year, month, day, hour, min, lon, tzone, ayanamsa, ascendantDegree };
+  for (const [key, value] of Object.entries(inputs)) {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      console.warn(`computeBhavaCusps: missing/invalid "${key}" (${value}) — refusing to anchor to a default.`);
+      return null;
+    }
+  }
+
   const jd = toJulianDay({ year, month, day, hour, min, tzone });
   const gstHours = greenwichSiderealTimeHours(jd);
   const lstHours = normalize360(gstHours * 15 + lon) / 15;

@@ -4,12 +4,17 @@ import {
   RASI_BADGE,
   PLANET_ABBR_TA,
   PLANET_ABBR_EN,
+  RASI_SIGN_TO_HOUSE,
+  getRasiSignNames,
 } from './HoroscopeOutputScreen';
 import { getBhavaByHouse } from '../../utils/bhavaMath';
 
 interface Planet {
   name: string;
+  full_name?: string;
   sign?: string;
+  zodiac?: string;
+  rasi_no?: number;
   fullDegree: number | string;
 }
 
@@ -20,17 +25,51 @@ interface BhavaChakraProps {
   isTamil: boolean;
 }
 
+// ─── Lagna-relative box alignment ──────────────────────────────────────────
+// SOUTH_INDIAN_LAYOUT is a fixed-SIGN grid — the box that renders "1" always
+// sits in the same physical position (top row, 2nd cell), matching Aries in
+// the Rasi chart drawn right next to this one. A Bhava chart's house 1 must
+// instead sit in whichever box actually holds the lagna's own sign, so we
+// look up the ascendant's rasi_no and rotate every box's label by that
+// offset before reading `bhavaByHouse`.
+const ASCENDANT_ALIASES = ['Ascendant', 'லக்னம்', 'லக்'];
+
+function getLagnaSignIndex(planets: Planet[]): number | null {
+  const asc: any = planets.find(
+    (p: any) =>
+      ASCENDANT_ALIASES.includes((p.full_name || '').trim()) ||
+      ASCENDANT_ALIASES.includes((p.name || '').trim())
+  );
+  if (!asc) return null;
+  if (typeof asc.rasi_no === 'number') return asc.rasi_no;
+  const signKey = ((asc.sign || asc.zodiac || '') as string).trim();
+  return RASI_SIGN_TO_HOUSE[signKey] ?? null;
+}
+
+// Given a box's fixed sign (1 = Aries .. 12 = Pisces) and the lagna's sign,
+// returns which house (1 = lagna's own house) that box represents.
+const houseForBoxSign = (boxSignIndex: number, lagnaSignIndex: number): number =>
+  ((boxSignIndex - lagnaSignIndex + 12) % 12) + 1;
+
 export default function BhavaChakra({ planets, cusps, isLight, isTamil }: BhavaChakraProps) {
   const bhavaByHouse = React.useMemo(
     () => getBhavaByHouse(planets, cusps),
     [planets, cusps]
   );
 
+  const lagnaSignIndex = React.useMemo(() => getLagnaSignIndex(planets), [planets]);
+
   const abbr = isTamil ? PLANET_ABBR_TA : PLANET_ABBR_EN;
 
-  const renderCell = (houseNum: number | null) => {
-    if (houseNum === null) return null;
+  // `boxSignIndex` is the box's fixed position in the classic layout (1 =
+  // the slot that would be Aries in a Rasi chart). We translate that to the
+  // real house number using the lagna's sign, so the lagna's own box always
+  // shows "1" no matter which sign it actually falls in.
+  const renderCell = (boxSignIndex: number | null) => {
+    if (boxSignIndex === null) return null;
+    const houseNum = lagnaSignIndex ? houseForBoxSign(boxSignIndex, lagnaSignIndex) : boxSignIndex;
     const items = bhavaByHouse[houseNum] || [];
+    const signName = lagnaSignIndex ? getRasiSignNames(isTamil)[boxSignIndex] || '' : '';
     return (
       <div
         className={`border p-1 flex flex-col justify-between items-center text-center h-full min-h-[65px] transition-all ${
@@ -39,13 +78,24 @@ export default function BhavaChakra({ planets, cusps, isLight, isTamil }: BhavaC
             : 'border-teal-500/20 bg-slate-950/80 hover:bg-teal-950/10'
         }`}
       >
-        <span
-          className={`text-[9px] font-bold leading-none self-end ${
-            isLight ? 'text-gray-400' : 'text-gray-600'
-          }`}
-        >
-          {houseNum}
-        </span>
+        <div className="w-full flex items-center justify-between">
+          {signName && (
+            <span
+              className={`text-[8px] font-semibold leading-none ${
+                isLight ? 'text-teal-700/70' : 'text-teal-400/60'
+              }`}
+            >
+              {signName}
+            </span>
+          )}
+          <span
+            className={`text-[9px] font-bold leading-none ml-auto ${
+              isLight ? 'text-gray-400' : 'text-gray-600'
+            }`}
+          >
+            {houseNum}
+          </span>
+        </div>
         <div className="flex flex-wrap gap-0.5 justify-center items-center mt-auto mb-auto max-w-full">
           {items.map((p, i) => {
             const s = RASI_BADGE[p.name] || { abbr: p.name.slice(0, 2), bg: '#444', fg: '#fff' };
