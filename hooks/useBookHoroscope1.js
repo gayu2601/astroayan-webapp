@@ -224,7 +224,7 @@ export const useBookHoroscope1 = () => {
       });
 
       // ── Birth vs current dasha object ──
-      const dashaData = normalizeDasha(planets);
+      const dashaData = currentDasha.response;
 
       console.log('dashaData', dashaData);
 

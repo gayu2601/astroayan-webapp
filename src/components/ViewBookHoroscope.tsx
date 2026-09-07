@@ -308,107 +308,106 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
                   </div>
                   {!!reportData.dashaData && (() => {
 					  const dashaData = reportData.dashaData;
-					  return (
-						<div
-						  className={`p-4 space-y-4 rounded-xl border transition-all ${
-							isLight
-							  ? 'bg-white/90 border-amber-500/20 shadow-md'
-							  : 'bg-slate-900/40 border-gray-800 backdrop-blur-md'
-						  }`}
-						>
-						  <h4
-							className={`text-xs font-semibold tracking-wider uppercase border-b pb-2 flex items-center gap-1.5 font-sans ${
-							  isLight ? 'text-amber-700 border-amber-500/20' : 'text-amber-400 border-gray-800/60'
-							}`}
-						  >
-							{isTamil ? 'திசா காலங்கள்' : 'Dasha Periods'}
-						  </h4>
-						  <div
-							className={`grid grid-cols-3 border-b pb-2 text-[10px] uppercase font-semibold tracking-wider ${
-							  isLight ? 'border-amber-500/20 text-[#7A695A]' : 'border-gray-800/50 text-gray-500'
-							}`}
-						  >
-							<div>{isTamil ? 'காலம்' : 'Period'}</div>
-							<div>{isTamil ? 'பிறப்பின் போது' : 'At Birth'}</div>
-							<div>{isTamil ? 'தற்போது' : 'Current'}</div>
-						  </div>
-						  <div className="space-y-3.5">
-							{[
-							  {
-								label: isTamil ? 'தசா' : 'Dasha',
-								birth: dashaData.birth?.mahadasha,
-								current: dashaData.current?.mahadasha,
-							  },
-							  {
-								label: isTamil ? 'புக்தி' : 'Bhukthi',
-								birth: dashaData.birth?.antardasha,
-								current: dashaData.current?.antardasha,
-							  },
-							  {
-								label: isTamil ? 'அந்தரம்' : 'Antharam',
-								birth: dashaData.birth?.pratyantara,
-								current: dashaData.current?.pratyantara,
-							  },
-							].map((row, i) => {
-							  const birthEmpty = !row.birth || row.birth === '—';
-							  const currentEmpty = !row.current || row.current === '—';
-							  return (
-								<div key={i} className="grid grid-cols-3 items-center text-xs">
-								  <span className={`font-semibold ${isLight ? 'text-[#5C4F43]' : 'text-gray-400'}`}>{row.label}</span>
-								  <div className="flex items-center gap-1.5">
-									{!birthEmpty ? (
-									  <>
-										<span className={`text-sm leading-none ${isLight ? 'text-violet-700' : 'text-violet-400'}`}>
-										  {PLANET_GLYPHS[row.birth] || '★'}
-										</span>
-										<span className={`text-xs ${isLight ? 'text-[#2C241E] font-medium' : 'text-gray-300'}`}>
-										  {isTamil ? (PLANET_NAMES_TA[row.birth] || row.birth) : row.birth}
-										</span>
-									  </>
-									) : (
-									  <span className={isLight ? 'text-gray-400' : 'text-gray-600'}>—</span>
-									)}
-								  </div>
-								  <div className="flex items-center gap-1.5 font-bold">
-									{!currentEmpty ? (
-									  <>
-										<span className={`text-sm leading-none ${isLight ? 'text-amber-600' : 'text-amber-400'}`}>
-										  {PLANET_GLYPHS[row.current] || '★'}
-										</span>
-										<span className={`text-xs ${isLight ? 'text-amber-900' : 'text-amber-300'}`}>
-										  {isTamil ? (PLANET_NAMES_TA[row.current] || row.current) : row.current}
-										</span>
-									  </>
-									) : (
-									  <span className={isLight ? 'text-gray-400' : 'text-gray-600'}>—</span>
-									)}
-								  </div>
-								</div>
-							  );
-							})}
-						  </div>
+					  const fmtDate = (val: string | undefined) => {
+						  if (!val) return '—';
+						  const d = new Date(val);
+						  if (isNaN(d.getTime())) return val;
+						  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+						};
 
-						  {/* Dasha dates info */}
+						const DASHA_ROWS: { key: string; labelEn: string; labelTa: string; accent: string; bg: string; bgDark: string }[] = [
+						  { key: 'mahadasha',      labelEn: 'தசா',      labelTa: 'தசா',      accent: '#6366f1', bg: 'bg-indigo-50',  bgDark: 'bg-indigo-950/20' },
+						  { key: 'antardasha',     labelEn: 'புக்தி',   labelTa: 'புக்தி',   accent: '#6366f1', bg: 'bg-indigo-50',  bgDark: 'bg-indigo-950/20' },
+						  { key: 'paryantardasha', labelEn: 'அந்தரம்',  labelTa: 'அந்தரம்',  accent: '#10b981', bg: 'bg-emerald-50', bgDark: 'bg-emerald-950/20' },
+						  { key: 'Shookshamadasha',labelEn: 'சூட்சுமம்',labelTa: 'சூட்சுமம்',accent: '#f59e0b', bg: 'bg-amber-50',   bgDark: 'bg-amber-950/20' },
+						  { key: 'Pranadasha',     labelEn: 'பிராணம்',  labelTa: 'பிராணம்',  accent: '#ec4899', bg: 'bg-pink-50',    bgDark: 'bg-pink-950/20' },
+						];
+
+						const PLANET_NAME_TA: Record<string, string> = {
+						  Sun: 'சூரியன்', Moon: 'சந்திரன்', Mars: 'செவ்வாய்',
+						  Mercury: 'புதன்', Jupiter: 'குரு', Venus: 'சுக்கிரன்',
+						  Saturn: 'சனி', Rahu: 'ராகு', Ketu: 'கேது', Ascendant: 'லக்னம்',
+						};
+
+						return (
 						  <div
-							className={`text-[10px] flex flex-col gap-1 border-t pt-3 ${
-							  isLight ? 'border-amber-500/15 text-[#7A695A]' : 'border-gray-800/30 text-gray-500'
+							className={`p-4 space-y-3 rounded-xl border transition-all ${
+							  isLight
+								? 'bg-white/90 border-amber-500/20 shadow-md'
+								: 'bg-slate-900/40 border-gray-800 backdrop-blur-md'
 							}`}
 						  >
-							{dashaData.birth?.date && (
-							  <p>
-								{isTamil ? 'பிறப்பு தசா நிலவரம்:' : 'Birth dasha as of:'}{' '}
-								<span className={isLight ? 'text-[#2C241E] font-semibold' : 'text-gray-400'}>{dashaData.birth.date}</span>
-							  </p>
-							)}
-							{dashaData.current?.date && (
-							  <p>
-								{isTamil ? 'தற்போதைய தசா நிலவரம்:' : 'Current dasha as of:'}{' '}
-								<span className={isLight ? 'text-[#2C241E] font-semibold' : 'text-gray-400'}>{dashaData.current.date}</span>
-							  </p>
-							)}
+							<h2
+							  className={`text-xs font-semibold tracking-wider uppercase border-b pb-2 flex items-center gap-2 font-sans ${
+								isLight
+								  ? 'text-amber-700 border-amber-500/20'
+								  : 'text-amber-400 border-gray-800/60'
+							  }`}
+							>
+							  <span className="text-base leading-none">⏳</span>
+							  {isTamil ? 'தசா இருப்பு & நடப்பு தசா நிலைகள்' : 'Dasha Periods & Current Status'}
+							</h2>
+
+							<div className="space-y-2">
+							  {DASHA_ROWS.map(({ key, labelEn, labelTa, accent, bg, bgDark }) => {
+								const entry = dashaData[key as keyof typeof dashaData] as any;
+								if (!entry?.name) return null;
+								const planetKey = entry.key || entry.name;
+								const displayName = isTamil
+								  ? (PLANET_NAME_TA[planetKey] || PLANET_NAME_TA[entry.name] || entry.name)
+								  : entry.name;
+								const glyph = PLANET_GLYPHS[planetKey] || PLANET_GLYPHS[entry.name] || '★';
+								const start = fmtDate(entry.start);
+								const end   = fmtDate(entry.end);
+
+								return (
+								  <div
+									key={key}
+									className={`flex flex-col rounded-lg px-3 py-2.5 border ${
+									  isLight
+										? `${bg} border-transparent`
+										: `${bgDark} border-gray-800/40`
+									}`}
+									style={{ borderLeftWidth: 3, borderLeftColor: accent }}
+								  >
+									{/* Label + planet name */}
+									<div className="flex items-center gap-3 min-w-0">
+									  <span
+										className={`text-[10px] font-bold uppercase tracking-wide shrink-0 px-1.5 py-0.5 rounded ${
+										  isLight ? 'bg-white/70 text-[#5C4F43]' : 'bg-slate-800 text-gray-400'
+										}`}
+									  >
+										{isTamil ? labelTa : labelEn}
+									  </span>
+									  <div className="flex items-center gap-1.5">
+										<span className="text-base leading-none" style={{ color: accent }}>{glyph}</span>
+										<span
+										  className={`font-bold text-sm ${
+											isLight ? 'text-[#1a0a00]' : 'text-white'
+										  }`}
+										>
+										  {displayName}
+										</span>
+									  </div>
+									</div>
+
+									{/* Dates */}
+									<div className={`flex gap-4 mt-1.5 text-[10px] leading-snug ${isLight ? 'text-[#7A695A]' : 'text-gray-500'}`}>
+									  <div>
+										{isTamil ? 'ஆரம்பம்:' : 'Start:'}{' '}
+										<span className={`font-semibold ${isLight ? 'text-[#2C241E]' : 'text-gray-300'}`}>{start}</span>
+									  </div>
+									  <div>
+										{isTamil ? 'முடிவு:' : 'End:'}{' '}
+										<span className={`font-semibold ${isLight ? 'text-[#2C241E]' : 'text-gray-300'}`}>{end}</span>
+									  </div>
+									</div>
+								  </div>
+								);
+							  })}
+							</div>
 						  </div>
-						</div>
-					  );
+						);
 					})()}
                 </div>
               </div>

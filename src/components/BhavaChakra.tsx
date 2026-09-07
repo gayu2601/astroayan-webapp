@@ -7,7 +7,7 @@ import {
   RASI_SIGN_TO_HOUSE,
   getRasiSignNames,
 } from './HoroscopeOutputScreen';
-import { getBhavaByHouse } from '../../utils/bhavaMath';
+import { getBhavaByHouse, getBhavaBoundaries, degreeInRange } from '../../utils/bhavaMath';
 
 interface Planet {
   name: string;
@@ -23,6 +23,7 @@ interface BhavaChakraProps {
   cusps: number[]; // 12 Bhava Madhya longitudes (sidereal/Lahiri), from the API
   isLight: boolean;
   isTamil: boolean;
+  onCellClick?: (houseNum: number, signName: string, rawPlanets: any[]) => void;
 }
 
 // ─── Lagna-relative box alignment ──────────────────────────────────────────
@@ -51,28 +52,50 @@ function getLagnaSignIndex(planets: Planet[]): number | null {
 const houseForBoxSign = (boxSignIndex: number, lagnaSignIndex: number): number =>
   ((boxSignIndex - lagnaSignIndex + 12) % 12) + 1;
 
-export default function BhavaChakra({ planets, cusps, isLight, isTamil }: BhavaChakraProps) {
+export default function BhavaChakra({ planets, cusps, isLight, isTamil, onCellClick }: BhavaChakraProps) {
   const bhavaByHouse = React.useMemo(
     () => getBhavaByHouse(planets, cusps),
     [planets, cusps]
   );
 
+  // Raw planet lookup keyed by bhava house number (for click detail)
+  const rawByHouse = React.useMemo<Record<number, any[]>>(() => {
+    if (!Array.isArray(planets) || !cusps || cusps.length !== 12) return {};
+    const boundaries = getBhavaBoundaries(cusps);
+    const map: Record<number, any[]> = {};
+    planets.forEach((p: any) => {
+      const deg = typeof p.fullDegree === 'number' ? p.fullDegree : parseFloat(p.fullDegree);
+      if (isNaN(deg)) return;
+      const idx = boundaries.findIndex((b: any) => degreeInRange(deg, b.start, b.end));
+      if (idx === -1) return;
+      const house = idx + 1;
+      map[house] = map[house] || [];
+      map[house].push(p);
+    });
+    return map;
+  }, [planets, cusps]);
+
   const lagnaSignIndex = React.useMemo(() => getLagnaSignIndex(planets), [planets]);
 
   const abbr = isTamil ? PLANET_ABBR_TA : PLANET_ABBR_EN;
 
-  // `boxSignIndex` is the box's fixed position in the classic layout (1 =
-  // the slot that would be Aries in a Rasi chart). We translate that to the
-  // real house number using the lagna's sign, so the lagna's own box always
-  // shows "1" no matter which sign it actually falls in.
   const renderCell = (boxSignIndex: number | null) => {
     if (boxSignIndex === null) return null;
     const houseNum = lagnaSignIndex ? houseForBoxSign(boxSignIndex, lagnaSignIndex) : boxSignIndex;
     const items = bhavaByHouse[houseNum] || [];
+    const rawPlanets = rawByHouse[houseNum] || [];
     const signName = lagnaSignIndex ? getRasiSignNames(isTamil)[boxSignIndex] || '' : '';
+    const hasClickable = rawPlanets.length > 0;
     return (
       <div
+        onClick={() => {
+          if (hasClickable && onCellClick) {
+            onCellClick(houseNum, signName, rawPlanets);
+          }
+        }}
         className={`border p-1 flex flex-col justify-between items-center text-center h-full min-h-[65px] transition-all ${
+          hasClickable && onCellClick ? 'cursor-pointer' : ''
+        } ${
           isLight
             ? 'border-teal-500/20 bg-white/90 hover:bg-teal-100/40'
             : 'border-teal-500/20 bg-slate-950/80 hover:bg-teal-950/10'

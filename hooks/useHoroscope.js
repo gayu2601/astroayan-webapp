@@ -160,10 +160,10 @@ function normalizePlanets(raw) {
 
   }
 
-  console.log('arr', arr);
-  
   let a = arr.map((p) => ({
-    name: p.name ?? p.full_name ?? '',
+    name: p.name ?? '',
+	
+	full_name: p.full_name ?? '',
 
     sign: p.zodiac ?? '',
 
@@ -196,7 +196,6 @@ function normalizePlanets(raw) {
     basic_avastha:
       p.basic_avastha ?? '',
   }));
-  console.log('a', a)
 
   return a;
 }
@@ -406,7 +405,8 @@ export function useHoroscopeData() {
           charsRaw,
           chartRaw,
           gocharaRaw,
-		  d9Chart
+		  d9Chart,
+		  dashaRaw
         ] =
           await Promise.all([
             vGet(
@@ -435,9 +435,11 @@ export function useHoroscopeData() {
             ),
 			
 			vGet('/horoscope/divisional-charts', { ...params, div: 'D9' }),
+			
+			vGet('/dashas/current-mahadasha', { ...params, div: 'D9' }),
           ]);
 		  
-          console.log(planetsRaw, astroRaw, charsRaw, chartRaw, gocharaRaw, d9Chart);
+          console.log(planetsRaw, astroRaw, charsRaw, chartRaw, gocharaRaw, d9Chart, dashaRaw);
 
         setData({
           planets:
@@ -456,13 +458,13 @@ export function useHoroscopeData() {
             ),
 
           housePredictions: normalizeHousePredictions(charsRaw),
-          dashaData: normalizeDasha(planetsRaw),
           lucky: normalizeLucky(planetsRaw),
           bhavaChakra: buildBhavaChakra(planetsRaw, astroRaw, input),
 		  d9Planets:
             normalizePlanets(
               d9Chart
             ),
+		  dashaData: dashaRaw.response
         });
       } catch (err) {
         console.log(
@@ -479,7 +481,7 @@ export function useHoroscopeData() {
         setLoading(false);
       }
     }, []);
-console.log('dta', data)
+
   return {
     data,
     loading,
