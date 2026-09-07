@@ -1876,7 +1876,7 @@ export default function App() {
                 ) : (
                   <div className="space-y-4">
                     {vedicToolSub === 'manaiyadi' && <ManaiyadiShastram language={language} isLight={isLight} />}
-					{vedicToolSub === 'jamakkol' && <JamakkolCalculator language={language} isLight={isLight} />}
+					{vedicToolSub === 'jamakkol' && <JamakkolCalculator/>}
 					{vedicToolSub === 'prasannam' && <CholiPrasnamForm language={language} isLight={isLight} />}
 					{vedicToolSub === 'vetrilai-prasannam' && <VetrilaiPrasnamApp language={language} isLight={isLight} />}
                     {vedicToolSub === 'palli'     && <LizardOmens language={language} isLight={isLight} />}
