@@ -880,7 +880,7 @@ export default function HoroscopeOutputScreen({
 
       {/* ── Row 1: Rasi + Navamsa side by side ── */}
       <SectionLabel>{isTamil ? 'கட்டங்கள்' : 'Charts'}</SectionLabel>
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         {/* Rasi Chart */}
         <div className={panelCls}>
           <PanelTitle color={isLight ? '#B45309' : '#FBBF24'}>
@@ -981,7 +981,7 @@ export default function HoroscopeOutputScreen({
 
       {/* ── Row 3: Avakahada + Planet Details side by side ── */}
       <SectionLabel>{isTamil ? 'விவரங்கள்' : 'Details'}</SectionLabel>
-      <div className="grid grid-cols-2 gap-2.5 items-start">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-start">
         {/* Avakahada Chakra */}
         {astro && (
           <div className={panelCls}>

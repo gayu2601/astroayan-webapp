@@ -279,6 +279,8 @@ const saveToSupabase = async (entryName: string) => {
     setShowSaveModal(false);
     setNewEntryName('');
     fetchEntries();
+	
+    onSubmit(values, reportType);
   } catch (err) {
     console.error('Error saving entry:', err);
     alert(isTamil ? 'சேமிப்பு தோல்வியடைந்தது. மீண்டும் முயற்சி செய்யவும்.' : 'Save failed. Please try again.');
@@ -323,7 +325,12 @@ const saveToSupabase = async (entryName: string) => {
       alert(isTamil ? 'பிறந்த தேதியைத் தேர்ந்தெடுக்கவும்' : 'Please select birth date');
       return;
     }
-    onSubmit(values, reportType);
+	if (currentEntryId) {
+        saveExistingEntry();
+		onSubmit(values, reportType);
+    } else {
+        setShowSaveModal(true);
+    }
   };
 
   const sectionHeaderClass = "flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest text-violet-600 dark:text-violet-400 border-b border-gray-200 dark:border-gray-800 pb-2 mb-4 mt-6";

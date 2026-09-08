@@ -270,9 +270,11 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !birthDate || !birthTime || !place.trim()) return;
+	
+	await handleSaveProfile();
 
     // Build specific Date objects for dob/tob
     const [year, month, day] = birthDate.split('-').map(Number);

@@ -585,36 +585,73 @@ function ProfileSettingsModal({ user, visible, onClose, onSave, isLight, languag
   user: any; visible: boolean; onClose: () => void; onSave: (updates: any) => void;
   isLight: boolean; language: string;
 }) {
-  const [name,    setName]    = useState(user?.name    || '');
-  const [phone,   setPhone]   = useState(user?.phone   || '');
-  const [address, setAddress] = useState(user?.location || '');
-  const [notes,   setNotes]   = useState(user?.notes   || '');
-  const [loading, setLoading] = useState(false);
-  const [saved,   setSaved]   = useState(false);
+  const [name,     setName]     = useState(user?.name     || '');
+  const [phone,    setPhone]    = useState(user?.phone    || '');
+  const [address,  setAddress]  = useState(user?.location || '');
+  const [notes,    setNotes]    = useState(user?.notes    || '');
+  const [photoUrl, setPhotoUrl] = useState(user?.photo_url || '');
+  const [logoUrl,  setLogoUrl]  = useState(user?.logo_url  || '');
+  const [loading,  setLoading]  = useState(false);
+  const [saved,    setSaved]    = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingLogo,  setUploadingLogo]  = useState(false);
 
-  // Reset local state when user prop changes (e.g. after save)
   useEffect(() => {
     if (visible) {
-      setName(user?.name || '');
-      setPhone(user?.phone || '');
+      setName(user?.name     || '');
+      setPhone(user?.phone   || '');
       setAddress(user?.location || '');
-      setNotes(user?.notes || '');
+      setNotes(user?.notes   || '');
+      setPhotoUrl(user?.photo_url || '');
+      setLogoUrl(user?.logo_url   || '');
     }
   }, [visible, user]);
+
+  const uploadImage = async (
+    file: File,
+    folder: 'photo' | 'logo',
+    setUploading: (v: boolean) => void,
+    setUrl: (url: string) => void,
+  ) => {
+    try {
+      setUploading(true);
+      const ext = file.name.split('.').pop();
+      const filename = `${user.id}_${Date.now()}.${ext}`;
+      const path = `${folder}/${filename}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profile-images')
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('profile-images')
+        .getPublicUrl(path);
+
+      setUrl(data.publicUrl);
+    } catch (err: any) {
+      toast.error(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     try {
       setLoading(true);
       if (supabase) {
         const { error } = await supabase.from('profiles').update({
-          name: name || user.name,
-          phone: phone || user.phone,
-          location: address || user.location,
-          notes: notes || user.notes,
+          name:      name     || user.name,
+          phone:     phone    || user.phone,
+          location:  address  || user.location,
+          notes:     notes    || user.notes,
+          photo_url: photoUrl || user.photo_url,
+          logo_url:  logoUrl  || user.logo_url,
         }).eq('id', user.id);
         if (error) throw error;
       }
-      onSave({ name, phone, location: address, notes });
+      onSave({ name, phone, location: address, notes, photo_url: photoUrl, logo_url: logoUrl });
       setSaved(true);
       setTimeout(() => { setSaved(false); onClose(); }, 800);
     } catch (err: any) {
@@ -634,6 +671,50 @@ function ProfileSettingsModal({ user, visible, onClose, onSave, isLight, languag
     : "bg-white/5 border-white/10 text-white placeholder-gray-500 focus:border-amber-500/40";
   const labelCls = `text-[10px] font-bold tracking-[0.18em] uppercase mb-1.5 block ${isLight ? "text-[#9C8E84]" : "text-gray-400"}`;
 
+  // Reusable image upload field
+  const ImageUploadField = ({
+    label, previewUrl, folder, uploading, setUploading, setUrl, shape,
+  }: {
+    label: string; previewUrl: string; folder: 'photo' | 'logo';
+    uploading: boolean; setUploading: (v: boolean) => void;
+    setUrl: (url: string) => void; shape: 'circle' | 'square';
+  }) => (
+    <div>
+      <label className={labelCls}>{label}</label>
+      <div className="flex items-center gap-4">
+        {/* Preview */}
+        <div className={`flex-shrink-0 w-14 h-14 border-2 border-dashed overflow-hidden flex items-center justify-center
+          ${shape === 'circle' ? 'rounded-full' : 'rounded-xl'}
+          ${isLight ? 'border-amber-500/30 bg-amber-50' : 'border-amber-500/20 bg-white/5'}`}>
+          {previewUrl
+            ? <img src={previewUrl} alt={label} className="w-full h-full object-cover" />
+            : <span className="text-xl">{folder === 'photo' ? '👤' : '🏷️'}</span>
+          }
+        </div>
+        {/* Upload button */}
+        <label className={`flex-1 cursor-pointer py-2 px-3 rounded-xl border text-xs font-semibold text-center transition-all
+          ${uploading ? 'opacity-60 cursor-not-allowed' : ''}
+          ${isLight
+            ? 'bg-amber-50/60 border-amber-500/20 text-amber-700 hover:bg-amber-100'
+            : 'bg-white/5 border-white/10 text-amber-400 hover:bg-white/10'}`}>
+          {uploading
+            ? (language === 'ta' ? 'பதிவேற்றுகிறது...' : 'Uploading...')
+            : (language === 'ta' ? 'படம் தேர்ந்தெடு' : 'Choose Image')}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            disabled={uploading}
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) uploadImage(file, folder, setUploading, setUrl);
+            }}
+          />
+        </label>
+      </div>
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       {/* Backdrop */}
@@ -649,6 +730,28 @@ function ProfileSettingsModal({ user, visible, onClose, onSave, isLight, languag
           <h2 className="text-lg font-serif font-black text-amber-500">{language === 'ta' ? 'என் சுயவிவரம்' : 'My Profile'}</h2>
           <p className={`text-[10px] font-bold tracking-widest uppercase mt-0.5 ${isLight ? "text-[#9C8E84]" : "text-gray-400"}`}>PERSONAL DETAILS</p>
         </div>
+
+        {/* ── NEW: Profile Photo ── */}
+        <ImageUploadField
+          label={language === 'ta' ? 'சுயவிவர படம்' : 'PROFILE PHOTO'}
+          previewUrl={photoUrl}
+          folder="photo"
+          uploading={uploadingPhoto}
+          setUploading={setUploadingPhoto}
+          setUrl={setPhotoUrl}
+          shape="circle"
+        />
+
+        {/* ── NEW: Logo ── */}
+        <ImageUploadField
+          label={language === 'ta' ? 'லோகோ' : 'LOGO'}
+          previewUrl={logoUrl}
+          folder="logo"
+          uploading={uploadingLogo}
+          setUploading={setUploadingLogo}
+          setUrl={setLogoUrl}
+          shape="square"
+        />
 
         <div>
           <label className={labelCls}>FULL NAME</label>
@@ -680,7 +783,7 @@ function ProfileSettingsModal({ user, visible, onClose, onSave, isLight, languag
 
         <button
           onClick={handleSave}
-          disabled={loading}
+          disabled={loading || uploadingPhoto || uploadingLogo}
           className={`w-full py-2.5 rounded-xl text-sm font-bold tracking-wider border transition-all ${
             saved
               ? "bg-green-500/15 border-green-500 text-green-400"

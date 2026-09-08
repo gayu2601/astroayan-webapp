@@ -168,7 +168,9 @@ export default function PanchangamPdf({ isLight = true }: PanchangamPdfProps) {
                   {isTamil ? 'நேரம்' : 'Select Time'}
                 </label>
                 <div className="relative">
-                  <Clock className="absolute left-3.5 top-3.5 w-4.5 h-4.5 text-amber-500/70" />
+                  <span className="absolute inset-y-0 left-0 flex items-center text-amber-600 dark:text-amber-500">
+					<Clock className="w-4 h-4" />
+                  </span>
                   <TimeInput
 					  value={time}
 					  onChange={(e) => setTime(e.target.value)}
