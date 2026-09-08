@@ -9,6 +9,7 @@ import {
 import ScreenGuard from './ScreenGuard';
 import DateInput from './DateInput';
 import TimeInput from './TimeInput';
+import { useAuth} from '../../lib/AuthContext';
 
 const NAKSH_TAMIL = [
   'அஸ்வினி', 'பரணி', 'கார்த்திகை', 'ரோகிணி', 'மிருகசீரிடம்',
@@ -48,11 +49,19 @@ const MATCH_KEY_LABELS: Record<string, { ta: string; en: string }> = {
 
 interface MarriagePoruthamPdfProps {
   isLight?: boolean;
+  user?: {
+    name?: string;
+    phone?: string;
+    location?: string;
+    logo_url?: string;
+    right_logo_url?: string;
+  };
 }
 
 export default function MarriagePoruthamPdf({ isLight = true }: MarriagePoruthamPdfProps) {
   const { t, language, isTamil } = useTranslation();
   const [matchType, setMatchType] = useState<'star' | 'tob'>('star');
+  const { user } = useAuth();
   
   // Star Match State
   const [girlStar, setGirlStar] = useState<number>(0);
@@ -251,6 +260,13 @@ export default function MarriagePoruthamPdf({ isLight = true }: MarriagePorutham
 	};
 
 
+  // ── User / Astrologer letterhead info (mirrors reportLogic.js) ──
+  const astrologerName     = user?.name          || '';
+  const astrologerPhone    = user?.phone         || '';
+  const astrologerLocation = user?.location      || '';
+  const astrologerLogo     = user?.logo_url      || '';
+  const astrologerLogoRight = user?.right_logo_url || '';
+
   // Triggers PDF Printing inside new Window
   const handlePrint = () => {
     if (!activeResult) return;
@@ -287,6 +303,27 @@ export default function MarriagePoruthamPdf({ isLight = true }: MarriagePorutham
       `;
     });
 
+    const hasLetterhead = astrologerName || astrologerPhone || astrologerLocation;
+    const letterheadHTML = hasLetterhead ? `
+      <div class="letterhead">
+        <div class="lh-logo-left">
+          ${astrologerLogo ? `<img class="lh-photo" src="${astrologerLogo}" alt="logo" />` : ''}
+        </div>
+        <div class="lh-text">
+          <div class="lh-om">🕉</div>
+          ${astrologerName ? `<div class="lh-name">${astrologerName}</div>` : ''}
+          <div class="lh-divider"></div>
+          <div class="lh-meta">
+            ${astrologerPhone    ? `<span class="lh-meta-item"><span class="lh-meta-icon">📞</span>${astrologerPhone}</span>` : ''}
+            ${astrologerPhone && astrologerLocation ? `<span style="color:#993C1D;">|</span>` : ''}
+            ${astrologerLocation ? `<span class="lh-meta-item"><span class="lh-meta-icon">📍</span>${astrologerLocation}</span>` : ''}
+          </div>
+        </div>
+        <div class="lh-logo-right">
+          ${astrologerLogoRight ? `<img class="lh-photo" src="${astrologerLogoRight}" alt="logo" />` : ''}
+        </div>
+      </div>` : '';
+
     const reportHTML = `
       <html>
         <head>
@@ -299,11 +336,32 @@ export default function MarriagePoruthamPdf({ isLight = true }: MarriagePorutham
             th { background: #fef3c7; color: #92400e; font-weight: bold; padding: 12px; border: 1px solid #ddd; }
             .score { text-align: center; font-size: 24px; font-weight: bold; margin-top: 30px; color: #b45309; padding: 15px; background: #fef3c7; border-radius: 8px; }
             @media print { .no-print { display: none; } }
+
+            /* ── Letterhead (mirrors reportLogic.js) ── */
+            .letterhead {
+              width: 100%; display: flex; flex-direction: row;
+              align-items: center; justify-content: center;
+              padding-bottom: 10px; margin-bottom: 16px;
+              border-bottom: 2px solid #FAC775; gap: 12px;
+            }
+            .lh-photo {
+              width: 100px; height: 100px; border-radius: 4px;
+              object-fit: cover; border: 2px solid #993C1D;
+              flex-shrink: 0; margin-top: 15px;
+            }
+            .lh-text { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+            .lh-om { font-size: 28px; color: #c0392b; line-height: 1; margin-bottom: 2px; }
+            .lh-name { font-size: 22px; font-weight: 900; color: #1a237e; letter-spacing: 1.5px; text-transform: uppercase; }
+            .lh-divider { width: 60%; height: 1px; background: linear-gradient(to right, transparent, #c0392b, transparent); margin: 3px auto; }
+            .lh-meta { display: flex; gap: 16px; align-items: center; justify-content: center; flex-wrap: wrap; }
+            .lh-meta-item { display: flex; align-items: center; gap: 4px; font-size: 15px; color: #4a4a4a; }
+            .lh-meta-icon { color: #c0392b; font-size: 14px; }
           </style>
         </head>
         <body>
           <div class="card">
             <button class="no-print" onclick="window.print()" style="padding: 10px 20px; background: #b45309; color: white; border: none; border-radius: 6px; cursor: pointer; float: right;">Print</button>
+            ${letterheadHTML}
             <h1>💍 Marriage Porutham Match Report</h1>
             <h3 style="text-align: center;">${matchType === 'star' ? 'Star Matching Analysis' : 'Time of Birth Matching Analysis'}</h3>
             

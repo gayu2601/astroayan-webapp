@@ -222,8 +222,8 @@ export const generateReportHTML = (data, lang = 'ta', user = {}) => {
           gap: 12px;
         }
         .lh-photo {
-          width: clamp(54px, 12vw, 72px);
-          height: clamp(54px, 12vw, 72px);
+          width: clamp(70px, 12vw, 100px);
+          height: clamp(70px, 12vw, 100px);
           border-radius: 4px;
           object-fit: cover;
           border: 2px solid #993C1D;
