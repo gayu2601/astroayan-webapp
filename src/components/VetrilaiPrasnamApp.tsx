@@ -1,5 +1,6 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { Leaf, Sparkles, AlertCircle, RefreshCw, Check } from 'lucide-react';
+import ScreenGuard from './ScreenGuard';
 
 // ==========================================
 // 1. DATA DICTIONARIES & HELPER LOGIC
@@ -403,6 +404,7 @@ export const VetrilaiPrasnamApp: React.FC<VetrilaiPrasnamAppProps> = ({
   };
 
   return (
+  <ScreenGuard featureId="vetrilai_prasannam">
     <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
       {/* ---------------- INPUT FORM SECTION ---------------- */}
       <div
@@ -916,6 +918,7 @@ export const VetrilaiPrasnamApp: React.FC<VetrilaiPrasnamAppProps> = ({
         </div>
       )}
     </div>
+	</ScreenGuard>
   );
 };
 

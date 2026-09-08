@@ -43,6 +43,9 @@ const FEATURES = [
   { id: 'rutu_madha_palan', icon: '🌸', name: 'Rutu Madha Palangal', nameTA: 'ருது மாத பலன்கள்', desc: 'பெண்களின் முதல் ருது மாதத்தின் பலன்கள்' },
   { id: 'rutu_lagna_palan', icon: '🌙', name: 'Rutu Lagna Palangal', nameTA: 'ருது லக்ன பலன்கள்', desc: 'முதல் ருது நேர லக்னத்தின் பலன்கள்' },
   { id: 'star_gemstone', icon: '💎', name: 'Stars & Gemstones', nameTA: 'நட்சத்திர ரத்தினங்கள்', desc: 'ஒவ்வொரு நட்சத்திரத்திற்கான அதிர்ஷ்ட ரத்தினங்கள்' },
+    { id: 'jamakkol', icon: '🔮', name: 'Jamakkol', nameTA: 'ஜாமக்கோள் பிரசன்னம்', desc: 'ஜாமக்கோள் பிரசன்னம்' },
+  { id: 'prasannam', icon: '🐚', name: 'Choli Prasannam', nameTA: 'சோழி பிரசன்னம்', desc: 'சோழிகளைப் பயன்படுத்தி பிரசன்ன பலன்கள்' },
+  { id: 'vetrilai_prasannam', icon: '🍃', name: 'Vetrilai Prasannam', nameTA: 'வெற்றிலை பிரசன்னம்', desc: 'வெற்றிலையைப் பயன்படுத்தி பிரசன்ன பலன்கள்' },
 ];
 
 const DURATIONS = [
@@ -68,12 +71,30 @@ const AVATAR_COLORS = [
 ];
 
 const FEATURE_LABELS: Record<string, string> = {
-  panchang: 'Panchang', jadhagam: 'Jadhagam', horoscope_pdf: '1 Page Jadhagam',
-  book_pdf: 'Jadhagam Book', porutham_star: 'Matching Stars', porutham_mrg: 'Marriage Porutham',
-  porutham_pdf: 'Marriage Porutham PDF', biodata: 'Marriage Biodata PDF', hora: 'Hora Muhurtham',
-  gocharam: 'Gocharam', age_calc: 'Age Calculator', manaiyadi: 'Manaiyadi Sasthiram',
-  palli_palan: 'Palli Vizhum Palan', daily_rasi_palan: 'Daily Rasi Palan',
-  daily_nakshatra_palan: 'Daily Nakshatra Palan', weekly_rasi_palan: 'Weekly Rasi Palan', muhurtham: 'Subha Muhurtham Days', vastu: 'Vastu Days', rutu_madha_palan: 'Rutu Madha Palangal', rutu_lagna_palan: 'Rutu Lagna Palangal', star_gemstone: 'Stars & Gemstone'
+  panchang: 'Panchang',
+  jadhagam: 'Jadhagam',
+  horoscope_pdf: '1 Page Jadhagam',
+  book_pdf: 'Jadhagam Book',
+  porutham_star: 'Matching Stars',
+  porutham_mrg: 'Marriage Porutham',
+  porutham_pdf: 'Marriage Porutham PDF',
+  biodata: 'Marriage Biodata PDF',
+  hora: 'Hora Muhurtham',
+  gocharam: 'Gocharam',
+  age_calc: 'Age Calculator',
+  manaiyadi: 'Manaiyadi Sasthiram',
+  palli_palan: 'Palli Vizhum Palan',
+  daily_rasi_palan: 'Daily Rasi Palan',
+  daily_nakshatra_palan: 'Daily Nakshatra Palan',
+  weekly_rasi_palan: 'Weekly Rasi Palan',
+  muhurtham: 'Subha Muhurtham Days',
+  vastu: 'Vastu Days',
+  rutu_madha_palan: 'Rutu Madha Palangal',
+  rutu_lagna_palan: 'Rutu Lagna Palangal',
+  star_gemstone: 'Stars & Gemstone',
+  jamakkol: 'Jamakkol',
+  prasannam: 'Choli Prasannam',
+  vetrilai_prasannam: 'Vetrilai Prasannam',
 };
 
 const ADMIN_ID = 'f7191c3d-b329-49e3-965d-c5015663ebba';

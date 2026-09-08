@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import ScreenGuard from './ScreenGuard';
 
 // --- Astro Constants ---
 const TAMIL_SIGNS = [
@@ -610,6 +611,7 @@ export const JamakkolCalculator: React.FC = () => {
   }, [calculatedData]);
 
   return (
+  <ScreenGuard featureId="jamakkol">
     <div className="max-w-4xl mx-auto p-3 sm:p-5 bg-slate-50 dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 min-h-screen">
       
       {/* 1. Input Controls Header */}
@@ -956,6 +958,7 @@ export const JamakkolCalculator: React.FC = () => {
       )}
 
     </div>
+	</ScreenGuard>
   );
 };
 

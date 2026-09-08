@@ -1,5 +1,6 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { Compass, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
+import ScreenGuard from './ScreenGuard';
 
 // ==========================================
 // 1. ASTROLOGY DICTIONARIES (BILINGUAL)
@@ -322,6 +323,7 @@ export const CholiPrasnamForm: React.FC<CholiPrasnamFormProps> = ({
   };
 
   return (
+  <ScreenGuard featureId="prasannam">
     <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
       {/* ---------------- SECTION 1: INPUT FORM ---------------- */}
       <div
@@ -731,6 +733,7 @@ export const CholiPrasnamForm: React.FC<CholiPrasnamFormProps> = ({
         </div>
       )}
     </div>
+	</ScreenGuard>
   );
 };
 
