@@ -477,13 +477,14 @@ function JananaGocharaOppeedu({
 
       {/* 4×4 South Indian grid */}
       <div
-        className="grid grid-cols-4 grid-rows-4 rounded-lg overflow-hidden aspect-square w-full max-w-[340px] mx-auto shadow-inner"
-        style={{
-          gap: 1,
-          background: isLight ? '#0D9488' : 'rgba(20,184,166,0.25)',
-          border: `1px solid ${isLight ? '#0D9488' : 'rgba(20,184,166,0.25)'}`,
-        }}
-      >
+  className="grid grid-cols-4 rounded-lg overflow-hidden w-full max-w-[340px] mx-auto shadow-inner"
+  style={{
+    gridTemplateRows: 'repeat(4, auto)',  // ← replaces fixed aspect-square rows
+    gap: 1,
+    background: isLight ? '#0D9488' : 'rgba(20,184,166,0.25)',
+    border: `1px solid ${isLight ? '#0D9488' : 'rgba(20,184,166,0.25)'}`,
+  }}
+>
         {SOUTH_INDIAN_LAYOUT.map((houseNum, idx) => {
           // Center block: indices 5, 6, 9, 10 form the 2×2 centre
           const centerIndices = [5, 6, 9, 10];
@@ -512,7 +513,7 @@ function JananaGocharaOppeedu({
           }
 
           return (
-            <div key={idx} className="relative">
+            <div key={idx}>
               {renderCell(houseNum)}
             </div>
           );

@@ -98,7 +98,8 @@ export const generateReportHTML = (data, lang = 'ta', user = {}) => {
   const astrologerName     = user?.name     || '';
   const astrologerPhone    = user?.phone    || '';
   const astrologerLocation = user?.location || '';
-  const astrologerLogo    = user?.logo_url    || ''; 
+  const astrologerLogo    = user?.logo_url    || '';
+  const astrologerLogoRight    = user?.right_logo_url    || '';  
 
   const LAGNA_NAMES = ['லக்', 'லக்னம்', 'lak', 'ascendant', 'lagna'];
 
@@ -363,7 +364,9 @@ export const generateReportHTML = (data, lang = 'ta', user = {}) => {
     <!-- ══════════════ LETTERHEAD ══════════════ -->
     ${(astrologerName || astrologerPhone || astrologerLocation) ? `
         <div class="letterhead">
-          ${astrologerLogo ? `<img class="lh-photo" src="${astrologerLogo}" alt="photo" />` : ''}
+          <div class="lh-logo-left">
+            ${astrologerLogo ? `<img class="lh-photo" src="${astrologerLogo}" alt="photo" />` : ''}
+          </div>
           <div class="lh-text">
             <div class="lh-om">🕉</div>
             ${astrologerName ? `<div class="lh-name">${astrologerName}</div>` : ''}
@@ -373,6 +376,9 @@ export const generateReportHTML = (data, lang = 'ta', user = {}) => {
               ${astrologerPhone && astrologerLocation ? `<span style="color:#993C1D;">|</span>` : ''}
               ${astrologerLocation ? `<span class="lh-meta-item"><span class="lh-meta-icon">📍</span>${astrologerLocation}</span>` : ''}
             </div>
+          </div>
+          <div class="lh-logo-right">
+            ${astrologerLogoRight ? `<img class="lh-photo" src="${astrologerLogoRight}" alt="photo" />` : ''}
           </div>
         </div>
         ` : ''}

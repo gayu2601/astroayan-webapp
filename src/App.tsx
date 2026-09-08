@@ -591,10 +591,12 @@ function ProfileSettingsModal({ user, visible, onClose, onSave, isLight, languag
   const [notes,    setNotes]    = useState(user?.notes    || '');
   const [photoUrl, setPhotoUrl] = useState(user?.photo_url || '');
   const [logoUrl,  setLogoUrl]  = useState(user?.logo_url  || '');
+  const [rightLogoUrl,  setRightLogoUrl]  = useState(user?.right_logo_url  || '');
   const [loading,  setLoading]  = useState(false);
   const [saved,    setSaved]    = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingLogo,  setUploadingLogo]  = useState(false);
+  const [uploadingRightLogo, setUploadingRightLogo] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -604,6 +606,7 @@ function ProfileSettingsModal({ user, visible, onClose, onSave, isLight, languag
       setNotes(user?.notes   || '');
       setPhotoUrl(user?.photo_url || '');
       setLogoUrl(user?.logo_url   || '');
+	  setRightLogoUrl(user?.right_logo_url  || '');
     }
   }, [visible, user]);
 
@@ -648,10 +651,11 @@ function ProfileSettingsModal({ user, visible, onClose, onSave, isLight, languag
           notes:     notes    || user.notes,
           photo_url: photoUrl || user.photo_url,
           logo_url:  logoUrl  || user.logo_url,
+		  right_logo_url: rightLogoUrl  || user.right_logo_url,
         }).eq('id', user.id);
         if (error) throw error;
       }
-      onSave({ name, phone, location: address, notes, photo_url: photoUrl, logo_url: logoUrl });
+      onSave({ name, phone, location: address, notes, photo_url: photoUrl, logo_url: logoUrl, right_logo_url: rightLogoUrl });
       setSaved(true);
       setTimeout(() => { setSaved(false); onClose(); }, 800);
     } catch (err: any) {
@@ -743,15 +747,64 @@ function ProfileSettingsModal({ user, visible, onClose, onSave, isLight, languag
         />
 
         {/* ── NEW: Logo ── */}
-        <ImageUploadField
-          label={language === 'ta' ? 'லோகோ' : 'LOGO'}
-          previewUrl={logoUrl}
-          folder="logo"
-          uploading={uploadingLogo}
-          setUploading={setUploadingLogo}
-          setUrl={setLogoUrl}
-          shape="square"
-        />
+		<div>
+		  <label className={labelCls}>{language === 'ta' ? 'லோகோ' : 'LOGO'}</label>
+		  <div className="grid grid-cols-2 gap-3">
+			{/* Left Logo */}
+			<div className="flex flex-col items-center gap-2">
+			  <span className={`text-[9px] font-bold tracking-widest uppercase ${isLight ? 'text-[#9C8E84]' : 'text-gray-500'}`}>
+				{language === 'ta' ? 'இடது' : 'LEFT'}
+			  </span>
+			  <div className={`w-14 h-14 rounded-xl border-2 border-dashed overflow-hidden flex items-center justify-center
+				${isLight ? 'border-amber-500/30 bg-amber-50' : 'border-amber-500/20 bg-white/5'}`}>
+				{logoUrl
+				  ? <img src={logoUrl} alt="Left logo" className="w-full h-full object-contain" />
+				  : <span className="text-xl">🏷️</span>}
+			  </div>
+			  <label className={`w-full cursor-pointer py-1.5 px-2 rounded-xl border text-[10px] font-semibold text-center transition-all
+				${uploadingLogo ? 'opacity-60 cursor-not-allowed' : ''}
+				${isLight
+				  ? 'bg-amber-50/60 border-amber-500/20 text-amber-700 hover:bg-amber-100'
+				  : 'bg-white/5 border-white/10 text-amber-400 hover:bg-white/10'}`}>
+				{uploadingLogo
+				  ? (language === 'ta' ? 'பதிவேற்றுகிறது...' : 'Uploading...')
+				  : (language === 'ta' ? 'தேர்ந்தெடு' : 'Choose')}
+				<input type="file" accept="image/*" className="hidden" disabled={uploadingLogo}
+				  onChange={e => {
+					const file = e.target.files?.[0];
+					if (file) uploadImage(file, 'logo', setUploadingLogo, setLogoUrl);
+				  }} />
+			  </label>
+			</div>
+
+			{/* Right Logo */}
+			<div className="flex flex-col items-center gap-2">
+			  <span className={`text-[9px] font-bold tracking-widest uppercase ${isLight ? 'text-[#9C8E84]' : 'text-gray-500'}`}>
+				{language === 'ta' ? 'வலது' : 'RIGHT'}
+			  </span>
+			  <div className={`w-14 h-14 rounded-xl border-2 border-dashed overflow-hidden flex items-center justify-center
+				${isLight ? 'border-amber-500/30 bg-amber-50' : 'border-amber-500/20 bg-white/5'}`}>
+				{rightLogoUrl
+				  ? <img src={rightLogoUrl} alt="Right logo" className="w-full h-full object-contain" />
+				  : <span className="text-xl">🏷️</span>}
+			  </div>
+			  <label className={`w-full cursor-pointer py-1.5 px-2 rounded-xl border text-[10px] font-semibold text-center transition-all
+				${uploadingRightLogo ? 'opacity-60 cursor-not-allowed' : ''}
+				${isLight
+				  ? 'bg-amber-50/60 border-amber-500/20 text-amber-700 hover:bg-amber-100'
+				  : 'bg-white/5 border-white/10 text-amber-400 hover:bg-white/10'}`}>
+				{uploadingRightLogo
+				  ? (language === 'ta' ? 'பதிவேற்றுகிறது...' : 'Uploading...')
+				  : (language === 'ta' ? 'தேர்ந்தெடு' : 'Choose')}
+				<input type="file" accept="image/*" className="hidden" disabled={uploadingRightLogo}
+				  onChange={e => {
+					const file = e.target.files?.[0];
+					if (file) uploadImage(file, 'logo', setUploadingRightLogo, setRightLogoUrl);
+				  }} />
+			  </label>
+			</div>
+		  </div>
+		</div>
 
         <div>
           <label className={labelCls}>FULL NAME</label>
