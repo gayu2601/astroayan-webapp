@@ -54,6 +54,7 @@ const DURATIONS = [
   { id: '2y', label: '2 Years', sub: '730 days', days: 730 },
   { id: '3y', label: '3 Years', sub: '1095 days', days: 1095 },
   { id: '5y', label: '5 Years', sub: '1825 days', days: 1825 },
+  { id: '10y', label: '10 Years', sub: '3650 days', days: 3650 },
   { id: 'life', label: 'Lifetime', sub: 'Forever', days: null as number | null },
 ];
 

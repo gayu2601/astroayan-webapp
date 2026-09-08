@@ -887,7 +887,6 @@ export const generatePanchangHTML = (jsonobj, lang, user) => {
         <div class="almanac">
 
           <div class="almanac-caption">
-            <h1>${L.title}</h1>
             <div class="date">${dateStr}</div>
           </div>
 

@@ -28,7 +28,7 @@ const TEXT = {
 	  planetLabel: "Planet",
 	  totalLabel: "Total"
 	},
-    sectionTitles: { bhavaPredictions: "House Predictions", dashaPredictions: "Dasha Predictions", house: "House", dashaEnd: "Dasha Period End", planet: "Planet" },
+    sectionTitles: { bhavaPredictions: "House Predictions", dashaPredictions: "Dasha Predictions", house: "House", dashaEnd: "Dasha Period End", planet: "Planet", bhukthi: "Bhukthi", dashaStart: "Start", dashaEnded: "End", subham: "Subham" },
     intro: {
       title1: "Invocation to Lord Ganesha",
       sloka1: ["Vakratunda Mahakaya", "Suryakoti Samaprabha", "Nirvighnam Kuru Me Deva", "Sarva Karyeshu Sarvada"],
@@ -59,7 +59,7 @@ const TEXT = {
 	  planetLabel: "கிரகம்",
 	  totalLabel: "மொத்தம்"
 	},
-    sectionTitles: { bhavaPredictions: "பாவ பலன்கள்", dashaPredictions: "தசா பலன்கள்", house: "பாவம்", dashaEnd: "தசா முடிவு தேதி", planet: "கிரகம்" },
+    sectionTitles: { bhavaPredictions: "பாவ பலன்கள்", dashaPredictions: "தசா பலன்கள்", house: "பாவம்", dashaEnd: "தசா முடிவு தேதி", planet: "கிரகம்", bhukthi: "புக்தி", dashaStart: "ஆரம்பம்", dashaEnded: "முடிவு", subham: "சுபம்" },
     intro: {
       title1: "விநாயகர் வணக்கம்",
       sloka1: ["வக்ரதுண்ட மஹாகாய", "சூர்யகோடி சமப்ரப", "நிர்விக்னம் குரு மே தேவ", "சர்வ காரியேஷு சர்வதா"],
@@ -610,9 +610,9 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 			  <table class="bhukthi-table">
 				  <thead>
 					  <tr>
-						  <th>புக்தி</th>
-						  <th>ஆரம்பம்</th>
-						  <th>முடிவு</th>
+						  <th>${t.sectionTitles.bhukthi}</th>
+						  <th>${t.sectionTitles.dashaStart}</th>
+						  <th>${t.sectionTitles.dashaEnded}</th>
 					  </tr>
 				  </thead>
 				  <tbody>
@@ -669,34 +669,34 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 
       /* ── Letterhead ── */
 	.letterhead {
-          width: 100%;
-          display: flex;
-          flex-direction: row;
-          align-items: center;
-          justify-content: center;
-          padding-bottom: 10px;
-          margin-bottom: 12px;
-          border-bottom: 2px solid #1a6b2a;
-          gap: 12px;
-        }
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 10px 16px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #1a6b2a;
+  gap: 22px;
+}
         .lh-photo {
-          width: clamp(64px, 13.8vw, 85px);
-          height: clamp(64px, 13.8vw, 85px);
-          border-radius: 4px;
-          object-fit: cover;
-          border: 2px solid #993C1D;
-          flex-shrink: 0;
-		  margin-top: 15px;
-        }
+  width: clamp(90px, 18vw, 120px);
+  height: clamp(90px, 18vw, 120px);
+  border-radius: 6px;
+  object-fit: cover;
+  border: 2px solid #993C1D;
+  flex-shrink: 0;
+  margin-top: 0;
+}
         .lh-text { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 	.lh-om {
-	  font-size: clamp(24px, 6.1vw, 35px);
+	    font-size: clamp(30px, 7vw, 42px);
 	  color: #c0392b;
 	  line-height: 1;
 	  margin-bottom: 2px;
 	}
 	.lh-name {
-	  font-size: clamp(19px, 4.8vw, 28px);
+	    font-size: clamp(22px, 5.5vw, 32px);
 	  font-family: 'Arima Madurai', 'Noto Serif Tamil', 'Poppins', serif;
 	  font-weight: 900;
 	  color: #1a237e;
@@ -717,12 +717,12 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 	  flex-wrap: wrap;
 	}
 	.lh-meta-item {
-	  display: flex;
-	  align-items: center;
-	  gap: 4px;
-	  font-size: clamp(18px, 2.8vw, 20px);
-	  color: #4a4a4a;
-	}
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: clamp(19px, 3.2vw, 22px);
+  color: #4a4a4a;
+}
 	.lh-meta-icon {
 	  color: #c0392b;
 	  font-size: clamp(17px, 3.0vw, 19px);
@@ -1264,7 +1264,7 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
       <div class="intro-om">ௐ</div>
       <div class="subam-line-row">
         <div class="subam-line"></div>
-        <div class="subam-text">சுபம்</div>
+        <div class="subam-text">${t.sectionTitles.subham}</div>
         <div class="subam-line"></div>
       </div>
       <div class="subam-bottom-line"></div>
