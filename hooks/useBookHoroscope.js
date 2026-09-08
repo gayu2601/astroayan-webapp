@@ -3390,8 +3390,8 @@ export const useBookHoroscope = () => {
 				  try {
 					await navigator.share({
 					  files: [file],
-					  title: 'பஞ்சாங்கம்',
-					  text: 'இன்றைய பஞ்சாங்கம்'
+					  title: 'ஜாதகம்',
+					  text: 'விரிவான ஜாதகம்'
 					});
 				  } catch (e) {
 					// user cancelled
@@ -3407,7 +3407,7 @@ export const useBookHoroscope = () => {
 			</script>
 			<body>
 			    <div id="toolbar">
-				  <span class="tb-title">📅 பஞ்சாங்கம்</span>
+				  <span class="tb-title">📅 ஜாதகம்</span>
 				  <button class="btn-print" onclick="window.print()">🖨️ Print / PDF</button>
 				  <button class="btn-share" onclick="shareReport()">📤 Share</button>
 				  <button class="btn-close" onclick="window.close()">✕ Close</button>
