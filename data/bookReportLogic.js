@@ -364,8 +364,9 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 	  const heading = lang === 'ta' ? 'எண்கணித அதிர்ஷ்டங்கள் & வாஸ்து வழிகாட்டி' : 'Numerology Luck & Vastu Guide';
 
 	  let html = `
-		<div class="section-break"></div>
-		<div class="section-heading">${heading}</div>`;
+		  <div class="numerology-vastu-section">
+			<div class="section-break"></div>
+			<div class="section-heading">${heading}</div>`;
 
 	  if (bn) {
 		const luckyPara = lang === 'ta'
@@ -399,7 +400,7 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 		  </div>`;
 	  }
 
-	  return html;
+	  return html + `</div>`;
 	})();
   
   const renderAshtakavargaGrid = (ashtakData, planetIndex, centerLabel, lang) => {
@@ -696,14 +697,25 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 	  const allTexts = [...grahaPalans, ...bhavaPalans].filter(Boolean);
 	  if (!allTexts.length) return '';
 
-	  // Split into 3 roughly equal paragraphs
-	  const chunkSize = Math.ceil(allTexts.length / 3);
-	  const paragraphs = [0, 1, 2]
-		.map(i => allTexts.slice(i * chunkSize, (i + 1) * chunkSize).join(' '))
-		.filter(Boolean);
+	  // Group individual prediction texts into paragraphs capped at ~600 chars
+	  // so each <p> is a readable, comfortably-sized block rather than a wall of text.
+	  const MAX_PARA_CHARS = 600;
+	  const paragraphs = [];
+	  let current = '';
+	  for (const text of allTexts) {
+		const sentence = text.trim();
+		if (!sentence) continue;
+		if (current && (current.length + 1 + sentence.length) > MAX_PARA_CHARS) {
+		  paragraphs.push(current);
+		  current = sentence;
+		} else {
+		  current = current ? current + ' ' + sentence : sentence;
+		}
+	  }
+	  if (current) paragraphs.push(current);
 
 	  const parasHTML = paragraphs
-		.map(para => `<p class="pred-text" style="text-align:left; margin-bottom:10px;">${para}</p>`)
+		.map(para => `<p class="pred-text" style="text-align:left; margin-bottom:16px;">${para}</p>`)
 		.join('');
 
 	  return `
@@ -774,33 +786,61 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 
 	  if (!mergedDashas?.length) return '';
 
-	  const renderDashaCard = (md, idx) => `
-		  <div class="pred-card dasha-card${idx > 0 ? ' page-break-row' : ''}">
+	  const renderDashaCard = (md, idx) => {
+		  const predictionText = (md.prediction?.prediction || '').trim();
+
+		  // Split the dasha prediction into 2 balanced paragraphs
+		  const sentences = predictionText
+			.split(/(?<=[.!?।])\s+/)
+			.filter(Boolean);
+
+		  let para1 = '';
+		  let para2 = '';
+
+		  if (sentences.length > 1) {
+			const mid = Math.ceil(sentences.length / 2);
+			para1 = sentences.slice(0, mid).join(' ');
+			para2 = sentences.slice(mid).join(' ');
+		  } else {
+			const words = predictionText.split(/\s+/);
+			const mid = Math.ceil(words.length / 2);
+			para1 = words.slice(0, mid).join(' ');
+			para2 = words.slice(mid).join(' ');
+		  }
+
+		  return `
+			<div class="dasha-card-page">
+				<div class="pred-card dasha-card${idx > 0 ? ' page-break-row' : ''}">
 			  <div class="pred-house-header">
-				  <span class="pred-house-num dasha-planet">${md.name} மகா தசை</span>
-				  <span class="pred-verbal">${md.start} → ${md.end}</span>
+				<span class="pred-house-num dasha-planet">${md.name} மகா தசை</span>
+				<span class="pred-verbal">${md.start} → ${md.end}</span>
 			  </div>
+
 			  <table class="bhukthi-table">
-				  <thead>
-					  <tr>
-						  <th>${t.sectionTitles.bhukthi}</th>
-						  <th>${t.sectionTitles.dashaStart}</th>
-						  <th>${t.sectionTitles.dashaEnded}</th>
-					  </tr>
-				  </thead>
-				  <tbody>
-					  ${md.bhukthis.map(b => `
-					  <tr>
-						  <td>${b.name}</td>
-						  <td>${b.start}</td>
-						  <td>${b.end}</td>
-					  </tr>
-					  `).join('')}
-				  </tbody>
+				<thead>
+				  <tr>
+					<th>${t.sectionTitles.bhukthi}</th>
+					<th>${t.sectionTitles.dashaStart}</th>
+					<th>${t.sectionTitles.dashaEnded}</th>
+				  </tr>
+				</thead>
+				<tbody>
+				  ${md.bhukthis.map(b => `
+					<tr>
+					  <td>${b.name}</td>
+					  <td>${b.start}</td>
+					  <td>${b.end}</td>
+					</tr>
+				  `).join('')}
+				</tbody>
 			  </table>
-			  <p class="pred-text" style="text-align:left;">${md.prediction?.prediction || ''}</p>
-		  </div>
-	  `;
+
+			  ${para1 ? `<p class="pred-text dasha-pred-para" style="text-align:left;">${para1}</p>` : ''}
+			  ${para2 ? `<p class="pred-text dasha-pred-para" style="text-align:left;">${para2}</p>` : ''}
+			  </div>
+			</div>
+			`;
+		};
 
 	  return `
 	  <div class="section-break"></div>
@@ -1456,19 +1496,105 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 
         /* Virivana palangal: add top breathing room below the section heading */
         .content-padded--detailed { padding-top: 14px; }
-        .content-padded--detailed .pred-text { padding-inline: 16mm; }
+        .content-padded--detailed .pred-text {
+			padding-inline: 16mm;
+			padding-top: 20px;
+			-webkit-box-decoration-break: clone;
+			box-decoration-break: clone;
+		  }
+		  
+		  .planets-wrapper {
+			width: calc(100% - 28mm) !important;
+			margin: 15mm auto !important;
+			display: block !important;
+			overflow: visible !important;
+		  }
 
-        /* Dasha prediction cards: override width:100% so margin-inline works,
-           and ensure the card sits with consistent side margins every page */
-        .pred-card { margin-inline: 14mm; }
-        .dasha-card {
-          width: calc(100% - 28mm);
-          margin-inline: 14mm;
-          box-sizing: border-box;
-        }
-        /* pred-text inside dasha-card already has the card's own padding —
-           the global 16mm padding-inline doesn't apply here */
-        .dasha-card .pred-text { padding-inline: 0; }
+		  table.planets {
+			width: 100% !important;
+			margin: 0 auto !important;
+			table-layout: fixed;
+			border-collapse: collapse;
+		  }
+
+		  table.planets th {
+			padding: 10px 5px !important;
+			font-size: 17px !important;
+			line-height: 1.4 !important;
+			text-align: center !important;
+		  }
+
+		  table.planets td {
+			padding: 11px 5px !important;
+			font-size: 17px !important;
+			line-height: 1.5 !important;
+			text-align: center !important;
+			white-space: nowrap;
+		  }
+
+
+
+        .pred-card {
+		  margin-inline: 14mm;
+		}
+
+		/* Outer wrapper controls spacing around the blue box,
+		   including repeated spacing on continuation pages */
+		.dasha-card-page {
+		  padding-top: 10mm;
+		  padding-bottom: 10mm;
+
+		  -webkit-box-decoration-break: clone;
+		  box-decoration-break: clone;
+		}
+
+		/* Dasha blue content box */
+		.dasha-card {
+		  display: block;
+		  width: calc(100% - 28mm) !important;
+		  max-width: calc(100% - 28mm) !important;
+
+		  margin-left: 14mm !important;
+		  margin-right: 14mm !important;
+		  margin-top: 0 !important;
+		  margin-bottom: 0 !important;
+
+		  padding: 14px 24px;
+		  box-sizing: border-box;
+
+		  break-inside: auto;
+		  page-break-inside: auto;
+		}
+
+		/* Keep prediction text aligned with the card content */
+		.dasha-card .pred-text {
+		  padding-inline: 0 !important;
+		  margin-left: 0;
+		  margin-right: 0;
+		}
+
+		/* Keep each of the two prediction paragraphs together */
+		.dasha-card .dasha-pred-para {
+		  padding: 14px 0 0 !important;
+		  margin: 0 0 14px !important;
+
+		  break-inside: avoid !important;
+		  page-break-inside: avoid !important;
+		}
+
+		/* Give the second paragraph its own top spacing */
+		.dasha-card .dasha-pred-para + .dasha-pred-para {
+		  padding-top: 14px !important;
+		}
+		
+		.numerology-vastu-section {
+		  break-before: page;
+		  page-break-before: always;
+		}
+		
+		.numerology-vastu-section .pred-text {
+			padding-inline: 0;
+		  }
 
         .dbt-wrapper { width: calc(100% - 28mm); margin-inline: 14mm; }
       }
@@ -1533,7 +1659,6 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
       </tr>
     </table>
 
-    <div class="info-row">
       <div class="info-box left">
         <div style="text-align:center;">
           <span class="info-label">${t.labels.dashaBalanceLabel}: </span>
@@ -1548,7 +1673,7 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
           <span class="info-value">${ascendantDegree}°</span>
         </div>
       </div>
-      <div class="info-box right">
+      <div class="info-box right" style="margin-top:10px; margin-bottom:20px">
         <div class="info-title">${t.labels.currentDashaTitle}</div>
         <div class="info-value" style="color:#1a237e; font-size:clamp(15px, 3.7vw, 19px);">${nadappuDasa ? nadappuDasa.text : ''}</div>
         <div style="font-size:clamp(12px, 2.5vw, 15px); color:#d32f2f;">${t.labels.bhukthiEndLabel}</div>
@@ -1556,7 +1681,6 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
           <b>${nadappuDasa ? (nadappuDasa.endDate || '') : ''}</b>
         </div>
       </div>
-    </div>
 
     <div class="planets-wrapper page-break-row">
       <table class="planets">
