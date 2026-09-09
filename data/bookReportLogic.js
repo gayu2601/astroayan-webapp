@@ -4,6 +4,12 @@
 import { getGrahaPalans } from '../data/graha-palan'; 
 import { getVaaraPalan } from '../data/vaara-palan'; 
 import { getNakshatraPalan } from '../data/nakshatra-palan';
+import { getRasiPalan } from '../data/rasi-palan';
+import { getThithiPalan } from '../data/thithi-palan';
+import { getKaranamPalan } from '../data/karanam-palan';
+import { getBirthdayNumberPalan } from '../data/birthday-number-palan';
+import { getRasiVastuDirection } from '../data/rasi-vastu-direction';
+import { getNamaYogamPalan } from '../data/nama-yogam';
 import { formatTo12Hour } from '../utils/formatTime'
 import { getLagnaPalan } from '../data/lagna-palan'; 
 
@@ -29,6 +35,7 @@ const TEXT = {
 	  totalLabel: "Total"
 	},
     sectionTitles: { bhavaPredictions: "House Predictions", dashaPredictions: "Dasha Predictions", house: "House", dashaEnd: "Dasha Period End", planet: "Planet", bhukthi: "Bhukthi", dashaStart: "Start", dashaEnded: "End", subham: "Subham" },
+    dashaBhuktiTable: { title: "Dasha Bhukthi Start & End Date Table", dasha: "Dasha", bhukthi: "Bhukthi", startDate: "Start Date", endDate: "End Date", part: "Part" },
     intro: {
       title1: "Invocation to Lord Ganesha",
       sloka1: ["Vakratunda Mahakaya", "Suryakoti Samaprabha", "Nirvighnam Kuru Me Deva", "Sarva Karyeshu Sarvada"],
@@ -60,6 +67,7 @@ const TEXT = {
 	  totalLabel: "மொத்தம்"
 	},
     sectionTitles: { bhavaPredictions: "பாவ பலன்கள்", dashaPredictions: "தசா பலன்கள்", house: "பாவம்", dashaEnd: "தசா முடிவு தேதி", planet: "கிரகம்", bhukthi: "புக்தி", dashaStart: "ஆரம்பம்", dashaEnded: "முடிவு", subham: "சுபம்" },
+    dashaBhuktiTable: { title: "தசா புக்தி ஆரம்பம் & முடிவு அட்டவணை", dasha: "தசை", bhukthi: "புக்தி", startDate: "ஆரம்ப தேதி", endDate: "முடிவு தேதி", part: "பகுதி" },
     intro: {
       title1: "விநாயகர் வணக்கம்",
       sloka1: ["வக்ரதுண்ட மஹாகாய", "சூர்யகோடி சமப்ரப", "நிர்விக்னம் குரு மே தேவ", "சர்வ காரியேஷு சர்வதா"],
@@ -160,6 +168,7 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
     dashaBalance, dashaPlanet, nadappuDasa,
     predictions: predictionsRaw,
     mergedDashas,
+    dashaBhuktiData,
     d2Chart, d3Chart, d3sChart, d4Chart, d5Chart, d7Chart, d8Chart,
     d10Chart, d10RChart, d12Chart, d16Chart, d20Chart, d24Chart, d24RChart,
     d27Chart, d30Chart, d40Chart, d45Chart, d60Chart, ashtakvargaChart
@@ -174,22 +183,7 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 	  return `
 		<div class="section-break"></div>
 		<div class="section-heading">${heading}</div>
-		<p class="pred-text" style="text-align: center;">${merged}</p>`;
-	})();
-	
-	const vaaraPalanHTML = (() => {
-	  const dob = birthParams.date || birthParams.dob || '';
-	  if (!dob) return '';
-	  const vaara = getVaaraPalan(dob);
-	  if (!vaara) return '';
-	  const heading = lang === 'ta' ? 'வார பலன்கள்' : 'Day of Birth';
-	  const merged = `${vaara.palan} ${vaara.vazhipaadu}`;
-	  return `
-		<div class="section-break"></div>
-		<div class="section-heading">${heading}</div>
-		<div class="content-padded">
-		  <p class="pred-text" style="text-align: center;">${merged}</p>
-		</div>`;
+		<p class="pred-text" style="text-align: left;">${merged}</p>`;
 	})();
 	
   const toArray = (raw) => {
@@ -261,6 +255,9 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
   const tithiVal     = astro.tithi            || '';
   const yogVal       = astro.yoga             || '';
   const karanVal     = astro.karana           || '';
+  const birthNum = [...`${day}${month}${year}`].reduce((sum, d) => sum + +d, 0);
+	const birthNumVal = birthNum % 9 || 9;;
+  console.log('birthNumVal', birthNumVal, tithiVal, yogVal, karanVal)
 
   const LAGNA_NAMES = ['லக்', 'லக்னம்', 'lak', 'ascendant', 'lagna'];
 
@@ -291,26 +288,118 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
     return map;
   };
   
-  const nakshatraPalanHTML = (() => {
-	  const nakshatra = getNakshatraPalan(nakshatraVal);
-	  console.log('in nakshatraPalanHTML', nakshatra, nakshatraVal)
-	  if (!nakshatra) return '';
-	  const heading = lang === 'ta' ? 'நட்சத்திர பலன்கள்' : 'Birth Star Predictions';
-	  return `
-		<div class="section-break"></div>
-		<div class="section-heading">${heading}</div>
-		<p class="pred-text" style="text-align: center;">${nakshatra.palan}</p>`;
-	})();
+  const palangalHTML = (() => {
+	  const rasi       = getRasiPalan(rasiVal);
+	  const nakshatra  = getNakshatraPalan(astro.nakshatra);
+	  const lagna      = getLagnaPalan(lagnaVal);
+	  const yogam      = getNamaYogamPalan(yogVal);
+	  const thithi     = getThithiPalan(tithiVal);
+	  const karanam    = getKaranamPalan(karanVal);
+	  const dob = birthParams.date || birthParams.dob || '';
+	  const vaaram = getVaaraPalan(dob);
+	  
+	  console.log(nakshatra, lagna, yogam, thithi, karanam)
 
-	const lagnaPalanHTML = (() => {
-	  const lagna = getLagnaPalan(lagnaVal);
-	  console.log('in lagnaPalanHTML', lagna, lagnaVal)
-	  if (!lagna) return '';
-	  const heading = lang === 'ta' ? 'லக்ன பலன்கள்' : 'Lagna Predictions';
+	  if (!rasi && !nakshatra && !lagna && !yogam && !thithi && !karanam && !vaaram) return '';
+
+	  const sectionHeading = lang === 'ta' ? 'ஜாதக பலன்கள்' : 'Horoscope Predictions';
+
+	  const subItems = [
+		{
+		  label : lang === 'ta' ? 'ராசி பலன்கள்'      : 'Rasi Predictions',
+		  data  : rasi,
+		  align : 'left',
+		},
+		{
+		  label : lang === 'ta' ? 'நட்சத்திர பலன்கள்' : 'Birth Star Predictions',
+		  data  : nakshatra,
+		  align : 'left',
+		},
+		{
+		  label : lang === 'ta' ? 'லக்ன பலன்கள்'      : 'Lagna Predictions',
+		  data  : lagna,
+		  align : 'left',
+		},
+		{
+		  label : lang === 'ta' ? 'நாம யோக பலன்கள்'   : 'Nama Yogam Predictions',
+		  data  : yogam,
+		  align : 'left',
+		},
+		{
+		  label : lang === 'ta' ? 'திதி பலன்கள்'      : 'Thithi Predictions',
+		  data  : thithi,
+		  align : 'left',
+		},
+		{
+		  label : lang === 'ta' ? 'கரணம் பலன்கள்'     : 'Karanam Predictions',
+		  data  : karanam,
+		  align : 'left',
+		},
+		{
+		  label : lang === 'ta' ? 'வார பலன்கள்'     : 'Week Predictions',
+		  data  : vaaram,
+		  align : 'left',
+		},
+	  ];
+
+	  const subHTML = subItems
+		  .filter(item => !!item.data)
+		  .map(item => `
+			<p class="pred-text" style="text-align: ${item.align};">
+			  <strong>${item.label}:</strong> ${item.data.palan}
+			</p>`)
+		  .join('');
+
 	  return `
 		<div class="section-break"></div>
-		<div class="section-heading">${heading}</div>
-		<p class="pred-text" style="text-align: left;">${lagna.palan}</p>`;
+		<div class="section-heading">${sectionHeading}</div>
+		${subHTML}`;
+	})();
+	
+	const numerologyVastuHTML = (() => {
+	  const bn = getBirthdayNumberPalan(birthNumVal);
+	  const rd = getRasiVastuDirection(rasiVal);
+	  if (!bn && !rd) return '';
+
+	  const heading = lang === 'ta' ? 'எண்கணித அதிர்ஷ்டங்கள் & வாஸ்து வழிகாட்டி' : 'Numerology Luck & Vastu Guide';
+
+	  let html = `
+		<div class="section-break"></div>
+		<div class="section-heading">${heading}</div>`;
+
+	  if (bn) {
+		const luckyPara = lang === 'ta'
+		  ? `உங்கள் பிறவி எண் ${bn.number} ஆகும் (ஆதிக்கக் கிரகம்: ${bn.planet}). ${bn.luckyColors.join(', ')} நிறங்களும், ${bn.luckyDays.join(', ')} கிழமைகளும் உங்களுக்கு அதிர்ஷ்டத்தைத் தரும். ${bn.spouseNumbers.join(', ')} ஆகிய எண்களுடன் நல்ல பொருத்தம் இருக்கும். ${bn.avoidNumbers.join(', ')} ஆகிய எண்களைத் தவிர்ப்பது நல்லது.`
+		  : `Your birth number is ${bn.number} (ruling planet: ${bn.planet}). ${bn.luckyColors.join(', ')} are your lucky colors, and ${bn.luckyDays.join(', ')} are your lucky days. You share good compatibility with numbers ${bn.spouseNumbers.join(', ')}, and it's best to avoid ${bn.avoidNumbers.join(', ')}.`;
+
+		const naturePara = lang === 'ta'
+		  ? `${bn.nature} ${bn.specialty} ${bn.fields.join(', ')} ஆகிய துறைகளில் இவர்கள் சிறந்து விளங்குவார்கள்.`
+		  : `${bn.nature} ${bn.specialty} They tend to excel in fields such as ${bn.fields.join(', ')}.`;
+
+		html += `
+		  <div class="highlight-box highlight-green">
+			<p class="pred-text" style="text-align: left;">${luckyPara}</p>
+		  
+		  <p class="pred-text" style="text-align: left;">${naturePara}</p>
+		  </div>`;
+	  }
+
+	  if (rd) {
+		const directionPara = lang === 'ta'
+		  ? `உங்கள் ராசி மற்றும் நட்சத்திர பாதத்தின் (${rd.nakshatraPadam}) அடிப்படையில், ${rd.direction}`
+		  : `Based on your rasi and nakshatra pādam (${rd.nakshatraPadam}), ${rd.direction}`;
+
+		const directionHeading = lang === 'ta' ? 'அதிர்ஷ்ட வாஸ்து திசை' : 'Lucky Vastu Direction';
+
+		html += `
+		  <div class="highlight-box highlight-orange">
+			<p class="pred-text" style="text-align: left;">
+			  <strong>${directionHeading}:</strong> ${directionPara}
+			</p>
+		  </div>`;
+	  }
+
+	  return html;
 	})();
   
   const renderAshtakavargaGrid = (ashtakData, planetIndex, centerLabel, lang) => {
@@ -378,10 +467,94 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 		</div>
 	  `).join('');
 
+	  // ── Full matrix table (all planets × 12 signs) ──
+	  const planetRows = ASHTAK_PLANETS
+	    .filter(p => p.index !== 'total')
+	    .map(p => {
+	      const bindus = (ashtakvargaChart.ashtakvarga_points?.[p.index] || []).slice(0, 12);
+	      return { key: p.index, label: lang === 'ta' ? p.ta : p.en, bindus };
+	    });
+
+	  const total = ashtakvargaChart.ashtakvarga_total || [];
+
+	  const signNamesForTable = lang === 'ta' ? SIGN_NAMES_TA : SIGN_NAMES_EN;
+
+	  const matrixTableHTML = `
+	    <div class="page-break-row" style="width:100%;overflow-x:auto;margin-top:18px;">
+	      <div style="padding:8px 16px 6px;font-weight:900;font-size:15px;color:#fff;background:linear-gradient(135deg,#cc3300 0%,#e65c00 100%);border-radius:8px 8px 0 0;text-align:center;">
+	        ${lang === 'ta' ? 'அஷ்டகவர்க்க முழு அட்டவணை' : 'Full Ashtakavarga Table'}
+	      </div>
+	      <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:monospace;text-align:center;">
+	        <thead>
+	          <tr style="background:#f0f8f0;">
+	            <th style="padding:4px 6px;border:1px solid #c8e6c9;text-align:left;min-width:54px;">${lang === 'ta' ? 'கிரகம்' : 'Planet'}</th>
+	            ${signNamesForTable.map((s, j) => `<th style="padding:4px 3px;border:1px solid #c8e6c9;min-width:28px;">${lang === 'ta' ? s.slice(0,3) : s.slice(0,3)}</th>`).join('')}
+	            <th style="padding:4px 3px;border:1px solid #c8e6c9;min-width:28px;background:#fff8e8;color:#c0392b;">${lang === 'ta' ? 'மொத்' : 'Sum'}</th>
+	          </tr>
+	        </thead>
+	        <tbody>
+	          ${planetRows.map(({ key, label, bindus }) => {
+	            const rowSum = bindus.reduce((a, b) => a + b, 0);
+	            return `<tr>
+	              <td style="padding:4px 6px;border:1px solid #c8e6c9;text-align:left;font-weight:700;background:#fdf8ee;">${label}</td>
+	              ${bindus.map(val => {
+	                const color = val >= 5 ? '#2e7d32' : val <= 2 ? '#c0392b' : '#333';
+	                return `<td style="padding:4px 3px;border:1px solid #c8e6c9;font-weight:700;color:${color};background:#fdf8ee;">${val}</td>`;
+	              }).join('')}
+	              <td style="padding:4px 3px;border:1px solid #c8e6c9;font-weight:900;color:#1a237e;background:#f0f4ff;">${rowSum}</td>
+	            </tr>`;
+	          }).join('')}
+	          ${total.length === 12 ? `<tr style="background:#fff8e8;">
+	            <td style="padding:4px 6px;border:1px solid #c8e6c9;text-align:left;font-weight:900;color:#c0392b;">${lang === 'ta' ? 'மொத்தம்' : 'Total'}</td>
+	            ${total.map(val => {
+	              const color = val >= 30 ? '#2e7d32' : val <= 24 ? '#c0392b' : '#333';
+	              return `<td style="padding:4px 3px;border:1px solid #c8e6c9;font-weight:900;font-size:12px;color:${color};">${val}</td>`;
+	            }).join('')}
+	            <td style="padding:4px 3px;border:1px solid #c8e6c9;font-weight:900;color:#c0392b;background:#ffe8d8;">${total.reduce((a, b) => a + b, 0)}</td>
+	          </tr>` : ''}
+	        </tbody>
+	      </table>
+	    </div>`;
+
+	  // ── Sarvashtaka sign-wise summary ──
+	  const sarvashtakaHTML = total.length === 12 ? `
+	    <div style="width:100%;overflow-x:auto;margin-top:16px;">
+	      <div style="padding:8px 16px 6px;font-weight:900;font-size:15px;color:#fff;background:linear-gradient(135deg,#cc3300 0%,#e65c00 100%);border-radius:8px 8px 0 0;text-align:center;">
+	        ${lang === 'ta' ? 'இராசி வாரியாக மொத்த பரல்கள் (சர்வாஷ்டகம்)' : 'Sarvashtaka — Total Bindus by Sign'}
+	      </div>
+	      <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:left;">
+	        <thead>
+	          <tr style="background:#f0f8f0;">
+	            <th style="padding:5px 8px;border:1px solid #c8e6c9;">${lang === 'ta' ? 'ராசி எண்' : 'Sign'}</th>
+	            <th style="padding:5px 8px;border:1px solid #c8e6c9;">${lang === 'ta' ? 'ராசி பெயர்' : 'Sign Name'}</th>
+	            <th style="padding:5px 8px;border:1px solid #c8e6c9;text-align:center;">${lang === 'ta' ? 'மொத்த பரல்கள்' : 'Total Bindus'}</th>
+	            <th style="padding:5px 8px;border:1px solid #c8e6c9;">${lang === 'ta' ? 'பலம்' : 'Strength'}</th>
+	          </tr>
+	        </thead>
+	        <tbody>
+	          ${total.map((val, j) => {
+	            let strLabel = lang === 'ta' ? 'நடுத்தரம்' : 'Average';
+	            let strColor = '#555';
+	            if (val >= 30) { strLabel = lang === 'ta' ? 'மிக்க பலம்' : 'Strong'; strColor = '#2e7d32'; }
+	            else if (val <= 24) { strLabel = lang === 'ta' ? 'குறைந்த பலம்' : 'Weak'; strColor = '#c0392b'; }
+	            const bg = j % 2 === 0 ? '#fdf8ee' : '#f9f5e8';
+	            return `<tr style="background:${bg};">
+	              <td style="padding:5px 8px;border:1px solid #e0d0a0;font-weight:600;">${j + 1}</td>
+	              <td style="padding:5px 8px;border:1px solid #e0d0a0;font-weight:700;">${signNamesForTable[j]}</td>
+	              <td style="padding:5px 8px;border:1px solid #e0d0a0;text-align:center;color:#1a237e;font-weight:900;font-size:14px;">${val}</td>
+	              <td style="padding:5px 8px;border:1px solid #e0d0a0;font-weight:700;color:${strColor};">${strLabel}</td>
+	            </tr>`;
+	          }).join('')}
+	        </tbody>
+	      </table>
+	    </div>` : '';
+
 	  return `
 		<div class="section-break"></div>
 		<div class="section-heading">${heading}</div>
-		${rowsHTML}`;
+		${rowsHTML}
+		${matrixTableHTML}
+		${sarvashtakaHTML}`;
 	})();
 	
   const renderChartGrid = (title, arr, isD1 = false) => {
@@ -530,7 +703,7 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 		.filter(Boolean);
 
 	  const parasHTML = paragraphs
-		.map(para => `<p class="pred-text" style="text-align:center; margin-bottom:10px;">${para}</p>`)
+		.map(para => `<p class="pred-text" style="text-align:left; margin-bottom:10px;">${para}</p>`)
 		.join('');
 
 	  return `
@@ -553,7 +726,7 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
     return `
       <div class="section-break"></div>
       <div class="section-heading">${t.sectionTitles.bhavaPredictions}</div>
-      <p class="pred-text" style="text-align: center;">${merged}</p>`;
+      <p class="pred-text" style="text-align: left;">${merged}</p>`;
   })();
   
   
@@ -625,7 +798,7 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 					  `).join('')}
 				  </tbody>
 			  </table>
-			  <p class="pred-text">${md.prediction?.prediction || ''}</p>
+			  <p class="pred-text" style="text-align:left;">${md.prediction?.prediction || ''}</p>
 		  </div>
 	  `;
 
@@ -638,6 +811,83 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 	  `;
 
 	})();
+
+  // ── Dasha Bhukthi Start & End Date Table (full mahadasha/bhukthi ledger) ──
+  const dashaBhuktiTableHTML = (() => {
+	  const src = dashaBhuktiData || {};
+	  const { mahadasha, mahadasha_order, antardashas, antardasha_order, dasha_start_date } = src;
+	  if (!mahadasha || !mahadasha_order || !antardashas || !antardasha_order || !dasha_start_date) return '';
+
+	  const pad2 = (n) => String(n).padStart(2, '0');
+	  const formatDMY = (dateStr) => {
+		const d = parseTamilDate(dateStr);
+		if (!d || isNaN(d)) return (dateStr || '').trim();
+		return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`;
+	  };
+
+	  // Build one group per mahadasha, each holding its 9 bhukthi rows with
+	  // resolved start/end dates (a bhukthi's end date is simply the next
+	  // bhukthi's start date; the last bhukthi ends when the mahadasha ends).
+	  const groups = mahadasha.map((dName, i) => {
+		const mahaStart = i === 0 ? dasha_start_date : mahadasha_order[i - 1];
+		const mahaEnd   = mahadasha_order[i];
+		const bhuktiNames  = antardashas[i] || [];
+		const bhuktiStarts = antardasha_order[i] || [];
+
+		const rows = bhuktiNames.map((full, j) => {
+		  const parts = String(full).split('/');
+		  const bhuktiPlanet = (parts[1] || parts[0] || full).trim();
+		  const start = bhuktiStarts[j] || (j === 0 ? mahaStart : '');
+		  const end   = j < bhuktiNames.length - 1 ? (bhuktiStarts[j + 1] || '') : mahaEnd;
+		  return { bhukti: bhuktiPlanet, start, end };
+		});
+
+		return { name: dName, rows };
+	  });
+
+	  if (!groups.length) return '';
+
+	  const GROUPS_PER_PAGE = 3;
+	  const pages = [];
+	  for (let i = 0; i < groups.length; i += GROUPS_PER_PAGE) {
+		pages.push(groups.slice(i, i + GROUPS_PER_PAGE));
+	  }
+
+	  const renderPage = (pageGroups, pageIdx) => {
+		const partLabel = pages.length > 1 ? ` (${t.dashaBhuktiTable.part} ${pageIdx + 1})` : '';
+
+		const rowsHTML = pageGroups.map((g) => g.rows.map((r, rIdx) => `
+		  <tr class="${rIdx % 2 === 0 ? 'dbt-row-a' : 'dbt-row-b'}">
+			${rIdx === 0 ? `<td class="dbt-dasha-cell" rowspan="${g.rows.length}"><span class="dbt-dasha-name">${g.name}</span><span class="dbt-dasha-label">${t.dashaBhuktiTable.dasha}</span></td>` : ''}
+			<td class="dbt-bhukti-cell">${r.bhukti}</td>
+			<td class="dbt-start-cell">${formatDMY(r.start)}</td>
+			<td class="dbt-end-cell">${formatDMY(r.end)}</td>
+		  </tr>`).join('')).join('');
+
+		return `
+		  <div class="dbt-wrapper${pageIdx > 0 ? ' page-break-row' : ''}">
+			<div class="dbt-title">${t.dashaBhuktiTable.title}${partLabel}</div>
+			<table class="dbt-table">
+			  <thead>
+				<tr>
+				  <th>${t.dashaBhuktiTable.dasha}</th>
+				  <th>${t.dashaBhuktiTable.bhukthi}</th>
+				  <th>${t.dashaBhuktiTable.startDate}</th>
+				  <th>${t.dashaBhuktiTable.endDate}</th>
+				</tr>
+			  </thead>
+			  <tbody>
+				${rowsHTML}
+			  </tbody>
+			</table>
+		  </div>`;
+	  };
+
+	  return `
+		<div class="section-break"></div>
+		${pages.map(renderPage).join('')}
+	  `;
+  })();
 
   return `
   <html>
@@ -813,6 +1063,44 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 
 		}
 
+	  /* ── Dasha Bhukthi start/end ledger table ── */
+	  /* Horizontal margin on the wrapper itself so it applies on every
+	     print page — a parent container's padding only covers the first page */
+	  .dbt-wrapper { width: calc(100% - 40px); margin: 10px 20px 18px; }
+	  .dbt-title {
+		padding: 8px 16px;
+		font-weight: 900;
+		font-size: clamp(14px, 3.4vw, 17px);
+		color: #fff;
+		background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+		border-radius: 8px 8px 0 0;
+		text-align: center;
+	  }
+	  table.dbt-table { width: 100%; border-collapse: collapse; font-size: clamp(11px, 2.6vw, 13px); }
+	  table.dbt-table thead th {
+		background: #cfd8fc;
+		color: #1a237e;
+		font-weight: 900;
+		padding: 6px 4px;
+		border: 1px solid #b3c0f0;
+		text-align: center;
+	  }
+	  table.dbt-table td { border: 1px solid #ded4f0; padding: 5px 4px; text-align: center; }
+	  .dbt-dasha-cell {
+		background: #ede7f6;
+		font-weight: 900;
+		color: #1a237e;
+		vertical-align: middle;
+		width: 16%;
+	  }
+	  .dbt-dasha-cell .dbt-dasha-name { display: block; font-size: clamp(12px, 2.9vw, 14px); }
+	  .dbt-dasha-cell .dbt-dasha-label { display: block; font-size: clamp(9px, 2.2vw, 11px); font-weight: 700; color: #5c6bc0; }
+	  .dbt-bhukti-cell { font-weight: 700; color: #333; }
+	  .dbt-start-cell { color: #2e7d32; font-weight: 700; }
+	  .dbt-end-cell { color: #c0392b; font-weight: 700; }
+	  tr.dbt-row-b td:not(.dbt-dasha-cell) { background: #faf8ff; }
+	  .dbt-wrapper { break-inside: avoid; page-break-inside: avoid; }
+
       .charts-outer { position: relative; width: 100%; }
 
       /* Legacy row layout (kept for any external callers) */
@@ -921,19 +1209,31 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
              Predictions pages ── */
       .content-padded {
         width: 100%;
+		box-sizing: border-box;
         padding: 0 20px;
-        text-align: center;
       }
 	  
+	  /* Dasha wrapper: padding removed from container — carried per-element
+	     so margins survive across print page breaks */
 	  .content-padded--dasha {
-		  padding: 0 40px;
+		  padding: 0;
 		}
 
-      /* ── Detailed Predictions needs breathing room on every side, not just
-             left/right ── */
+      /* Detailed predictions: top padding kept on the wrapper for first-page
+         breathing room; left/right moved onto .pred-text so it repeats on
+         every continued print page */
       .content-padded--detailed {
-        padding: 28px 28px;
+        padding: 28px 0 0;
       }
+	  
+	  .content-padded--detailed .pred-text {
+		  padding: 0 28px;
+		  text-align: left;
+		}
+
+		.dasha-card .pred-text {
+		  text-align: left;
+		}
 
       /* ── Forces exactly one row (2 charts / 2 dasha cards) per printed page ── */
       .page-break-row {
@@ -1012,13 +1312,14 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
         border-radius: 6px;
         padding: clamp(7px, 2.3vw, 12px) clamp(9px, 2.9vw, 17px);
         text-align: center;
+        box-sizing: border-box;
       }
 
       .dasha-card {
 		  border-left-color: #1a237e;
 		  background: #f4f6ff;
 		  border-color: #c5cae9;
-		  margin-bottom: 10px;
+		  margin: 0 10px 10px;
 		  padding: 14px 24px;
 		}
 
@@ -1062,6 +1363,12 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
         font-size: clamp(15px, 2.8vw, 19px);
         color: #333;
         line-height: 1.5;
+      }
+
+      /* Padding on each paragraph so margins are preserved on every print
+         page — the wrapper div's padding only applies to the first page */
+      .content-padded--detailed .pred-text {
+        padding: 0 28px;
       }
 
       .pred-zodiac-info {
@@ -1140,7 +1447,30 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 
       @media print {
         html, body { width: 210mm; }
-        .page-container { width: 210mm; padding: 6mm 3mm; }
+        /* .page-container padding only applies on page 1 where the div starts.
+           Every flowing element carries its own side padding/margin so it is
+           honoured on ALL continuation pages. */
+        .page-container { width: 210mm; padding: 6mm 0; }
+        .pred-text { padding-inline: 16mm; }
+        .highlight-box { margin-inline: 14mm; }
+
+        /* Virivana palangal: add top breathing room below the section heading */
+        .content-padded--detailed { padding-top: 14px; }
+        .content-padded--detailed .pred-text { padding-inline: 16mm; }
+
+        /* Dasha prediction cards: override width:100% so margin-inline works,
+           and ensure the card sits with consistent side margins every page */
+        .pred-card { margin-inline: 14mm; }
+        .dasha-card {
+          width: calc(100% - 28mm);
+          margin-inline: 14mm;
+          box-sizing: border-box;
+        }
+        /* pred-text inside dasha-card already has the card's own padding —
+           the global 16mm padding-inline doesn't apply here */
+        .dasha-card .pred-text { padding-inline: 0; }
+
+        .dbt-wrapper { width: calc(100% - 28mm); margin-inline: 14mm; }
       }
     </style>
   </head>
@@ -1246,16 +1576,16 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
     <!-- D1, D9 and every divisional chart — 2 per page, stacked one below the other -->
     ${allChartsHTML}
 
+	${dashaBhuktiTableHTML}
+
 	${ashtakavargaHTML}
 
 	${virivaanaPalangalHTML}
 	
-	${nakshatraPalanHTML}
+	${palangalHTML}
 	
-	${lagnaPalanHTML}
+	${numerologyVastuHTML}
 	
-	${vaaraPalanHTML}
-
     <!-- தசா பலன்கள் -->
     ${dashaPredictionsHTML}
 
