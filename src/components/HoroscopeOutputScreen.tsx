@@ -638,6 +638,7 @@ export default function HoroscopeOutputScreen({
   const tithiParts  = tithiRaw.split('/').map((s: string) => s.trim());
   const pakshaRaw   = tithiParts[1] ?? '';
   const tithi       = tithiParts[2] ?? tithiRaw.trim();
+  console.log('tithi', tithi)
 
   // சுக்ல பக்ஷ (Sukla/Shukla) → வளர்பிறை, கிருஷ்ண பக்ஷ (Krishna) → தேய்பிறை
   const lunarPhase: 'வளர்பிறை' | 'தேய்பிறை' =
@@ -651,9 +652,15 @@ export default function HoroscopeOutputScreen({
   const yogaData        = yoga ? getYogaPalan(yoga) : null;
   const badhakamData    = lagna ? getLagnaBadhakam(lagna) : null;
   const marakamData     = lagna ? getLagnaMarakam(lagna) : null;
-  const mudakkuData     = suryanNatchathiram ? getSuryanMudakku(suryanNatchathiram) : null;
-  const ezhuthukalData  = nakshatra ? getNatchathiraEzhuthukal(nakshatra) : null;
+  const suryanRasi = planets?.find(p => p.name === 'சூ')?.nakshatra;
 
+  const mudakkuData = suryanRasi
+	  ? getSuryanMudakku(suryanRasi)
+	  : null;
+	  console.log('tithiSoonamData', tithiSoonamData)
+  
+  const ezhuthukalData  = nakshatra ? getNatchathiraEzhuthukal(nakshatra) : null;
+  
   const doshaResults = React.useMemo(() => computeDoshaResults(planets), [planets]);
 
   // Render Rasi Chart Builder helper — grouped directly by rasi_no
@@ -1003,7 +1010,7 @@ export default function HoroscopeOutputScreen({
 				  <p className={`text-[13px] font-bold leading-tight ${
 					isLight ? 'text-rose-900' : 'text-rose-300'
 				  }`}>
-					{tithiSoonamData.soonam?.join(', ')}
+					{tithiSoonamData.soonyam?.join(', ')}
 				  </p>
 				</div>
 			  )}
