@@ -5,6 +5,13 @@ import { useAuth } from '../../lib/AuthContext';
 import { Sparkles, Calendar, Clock, MapPin, ChevronLeft, Award, HelpCircle } from 'lucide-react';
 import { formatTo12Hour } from '../../utils/formatTime';
 import BhavaChakra from './BhavaChakra';
+import { getNatchathiraPakshi } from '../../data/natchathira-pakshi';
+import { getTithiSoonyam } from '../../data/tithi-soonyam';
+import { getYogaPalan } from '../../data/yogi-avayogi';
+import { getLagnaBadhakam } from '../../data/lagna-badhakam';
+import { getLagnaMarakam } from '../../data/lagna-marakam';
+import { getSuryanMudakku } from '../../data/suryan-mudakku';
+import { getNatchathiraEzhuthukal } from '../../data/natchathira-nama-ezhuthukal';
 
 const PLANET_GLYPHS: Record<string, string> = {
   Sun: '☉', Moon: '☽', Mars: '♂', Mercury: '☿',
@@ -620,6 +627,33 @@ export default function HoroscopeOutputScreen({
   const hasDasha = !!dashaData;
   const hasLucky = !!lucky;
 
+  // ── Derived lookups from local astrology data files ──────────────────────
+  const nakshatra        = astro?.nakshatra?.trim();
+  const yoga             = astro?.yoga?.trim();
+  const lagna            = astro?.ascendant_sign?.trim();
+
+  // Parse tithi string e.g. "13/சுக்ல பக்ஷ/திரயோதசி/இட நாடி"
+  // segment[1] → paksha, segment[2] → tithi name
+  const tithiRaw    = astro?.tithi ?? '';
+  const tithiParts  = tithiRaw.split('/').map((s: string) => s.trim());
+  const pakshaRaw   = tithiParts[1] ?? '';
+  const tithi       = tithiParts[2] ?? tithiRaw.trim();
+
+  // சுக்ல பக்ஷ (Sukla/Shukla) → வளர்பிறை, கிருஷ்ண பக்ஷ (Krishna) → தேய்பிறை
+  const lunarPhase: 'வளர்பிறை' | 'தேய்பிறை' =
+    /சுக்ல|shukla|sukla|waxing/i.test(pakshaRaw) ? 'வளர்பிறை' : 'தேய்பிறை';
+
+  // Sun's nakshatra for mudakku (API field: suryan_natchathiram or sun_nakshatra)
+  const suryanNatchathiram = astro?.suryan_natchathiram?.trim() ?? astro?.sun_nakshatra?.trim();
+
+  const pakshiData      = nakshatra && lunarPhase ? getNatchathiraPakshi(nakshatra, lunarPhase) : null;
+  const tithiSoonamData = tithi ? getTithiSoonyam(tithi) : null;
+  const yogaData        = yoga ? getYogaPalan(yoga) : null;
+  const badhakamData    = lagna ? getLagnaBadhakam(lagna) : null;
+  const marakamData     = lagna ? getLagnaMarakam(lagna) : null;
+  const mudakkuData     = suryanNatchathiram ? getSuryanMudakku(suryanNatchathiram) : null;
+  const ezhuthukalData  = nakshatra ? getNatchathiraEzhuthukal(nakshatra) : null;
+
   const doshaResults = React.useMemo(() => computeDoshaResults(planets), [planets]);
 
   // Render Rasi Chart Builder helper — grouped directly by rasi_no
@@ -832,20 +866,13 @@ export default function HoroscopeOutputScreen({
             : 'bg-slate-900/40 border-gray-800 backdrop-blur-md'
         }`}
       >
-        <div
-          className={`w-[38px] h-[38px] rounded-full flex items-center justify-center font-serif text-lg flex-shrink-0 ${
-            isLight
-              ? 'bg-amber-100 text-amber-700'
-              : 'bg-slate-950 text-amber-400'
-          }`}
-        >
-          {SIGN_GLYPHS[astro?.ascendant_sign] || '✦'}
-        </div>
+        
         <div className="flex-1 min-w-0">
           <p className={`text-[15px] font-medium leading-tight ${isLight ? 'text-[#2C241E]' : 'text-white'}`}>
             {name}
           </p>
-          <div className="flex flex-wrap gap-1 mt-1">
+          {/* DOB / TOB row */}
+          <div className="flex flex-wrap gap-1 mt-0.5">
             <span
               className={`inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full border ${
                 isLight ? 'bg-white border-[rgba(0,0,0,0.1)] text-[#5C4F43]' : 'bg-slate-950 border-gray-800 text-gray-400'
@@ -854,28 +881,259 @@ export default function HoroscopeOutputScreen({
               <Calendar className="w-2.5 h-2.5" />
               {formattedDateString}
             </span>
-            {astro?.ascendant_sign && (
-              <span className={`inline-flex items-center text-[9px] px-1.5 py-0.5 rounded-full border ${
-                isLight ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-              }`}>
-                {astro.ascendant_sign} {isTamil ? 'லக்னம்' : 'Lagna'}
-              </span>
-            )}
-            {astro?.rasi && (
-              <span className={`inline-flex items-center text-[9px] px-1.5 py-0.5 rounded-full border ${
-                isLight ? 'bg-violet-50 border-violet-300 text-violet-800' : 'bg-violet-500/10 border-violet-500/20 text-violet-400'
-              }`}>
-                {astro.rasi} {isTamil ? 'ராசி' : 'Rasi'}
-              </span>
-            )}
-            {astro?.nakshatra && (
-              <span className={`inline-flex items-center text-[9px] px-1.5 py-0.5 rounded-full border ${
-                isLight ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-              }`}>
-                {astro.nakshatra}-{astro.nakshatra_pada} {isTamil ? 'நட்சத்திரம்' : 'Star'}
-              </span>
-            )}
           </div>
+
+          {/* ── Astro info mini-cards ── */}
+          <div className="grid grid-cols-2 gap-2 mt-2">
+
+			  {/* Lagnam */}
+			  {astro?.ascendant_sign && (
+				<div className={`rounded-lg px-2.5 py-2 border ${
+				  isLight ? 'bg-amber-50 border-amber-200' : 'bg-amber-500/10 border-amber-500/20'
+				}`}>
+				  <p className={`text-[10px] uppercase tracking-wider font-semibold mb-0.5 ${
+					isLight ? 'text-amber-600' : 'text-amber-500'
+				  }`}>
+					{isTamil ? 'லக்னம்' : 'Lagna'}
+				  </p>
+				  <p className={`text-[13px] font-bold leading-tight ${
+					isLight ? 'text-amber-900' : 'text-amber-300'
+				  }`}>
+					{astro.ascendant_sign}
+				  </p>
+				</div>
+			  )}
+
+			  {/* Rasi */}
+			  {astro?.rasi && (
+				<div className={`rounded-lg px-2.5 py-2 border ${
+				  isLight ? 'bg-violet-50 border-violet-200' : 'bg-violet-500/10 border-violet-500/20'
+				}`}>
+				  <p className={`text-[10px] uppercase tracking-wider font-semibold mb-0.5 ${
+					isLight ? 'text-violet-600' : 'text-violet-400'
+				  }`}>
+					{isTamil ? 'ராசி' : 'Rasi'}
+				  </p>
+				  <p className={`text-[13px] font-bold leading-tight ${
+					isLight ? 'text-violet-900' : 'text-violet-300'
+				  }`}>
+					{astro.rasi}
+				  </p>
+				</div>
+			  )}
+
+			  {/* Nakshatra */}
+			  {astro?.nakshatra && (
+				<div className={`rounded-lg px-2.5 py-2 border ${
+				  isLight ? 'bg-emerald-50 border-emerald-200' : 'bg-emerald-500/10 border-emerald-500/20'
+				}`}>
+				  <p className={`text-[10px] uppercase tracking-wider font-semibold mb-0.5 ${
+					isLight ? 'text-emerald-600' : 'text-emerald-500'
+				  }`}>
+					{isTamil ? 'நட்சத்திரம்' : 'Nakshatra'}
+				  </p>
+				  <p className={`text-[13px] font-bold leading-tight ${
+					isLight ? 'text-emerald-900' : 'text-emerald-300'
+				  }`}>
+					{astro.nakshatra}
+					{astro.nakshatra_pada ? `-${astro.nakshatra_pada}` : ''}
+				  </p>
+				</div>
+			  )}
+
+			  {/* Nakshatra Pakshi */}
+			  {pakshiData && (
+				<div className={`rounded-lg px-2.5 py-2 border ${
+				  isLight ? 'bg-sky-50 border-sky-200' : 'bg-sky-500/10 border-sky-500/20'
+				}`}>
+				  <p className={`text-[10px] uppercase tracking-wider font-semibold mb-0.5 ${
+					isLight ? 'text-sky-600' : 'text-sky-400'
+				  }`}>
+					{isTamil ? 'பஞ்சபட்சி' : 'Pancha Pakshi'}
+				  </p>
+				  <p className={`text-[13px] font-bold leading-tight ${
+					isLight ? 'text-sky-900' : 'text-sky-300'
+				  }`}>
+					{pakshiData.pakshi}
+				  </p>
+				</div>
+			  )}
+
+			  {/* Tithi */}
+			  {tithi && (
+				<div className={`rounded-lg px-2.5 py-2 border ${
+				  isLight ? 'bg-yellow-50 border-yellow-200' : 'bg-yellow-500/10 border-yellow-500/20'
+				}`}>
+				  <p className={`text-[10px] uppercase tracking-wider font-semibold mb-0.5 ${
+					isLight ? 'text-yellow-600' : 'text-yellow-500'
+				  }`}>
+					{isTamil ? 'திதி' : 'Tithi'}
+				  </p>
+				  <p className={`text-[13px] font-bold leading-tight ${
+					isLight ? 'text-yellow-900' : 'text-yellow-300'
+				  }`}>
+					{tithi}
+					<span className={`text-[10px] font-medium ml-1.5 px-1 py-0.5 rounded ${
+					  lunarPhase === 'வளர்பிறை'
+						? isLight
+						  ? 'bg-yellow-100 text-yellow-700'
+						  : 'bg-yellow-500/20 text-yellow-400'
+						: isLight
+						  ? 'bg-slate-200 text-slate-600'
+						  : 'bg-slate-700/50 text-slate-300'
+					}`}>
+					  {lunarPhase === 'வளர்பிறை'
+						? '☽ வளர்பிறை'
+						: '🌑 தேய்பிறை'}
+					</span>
+				  </p>
+				</div>
+			  )}
+
+			  {/* Tithi Soonam */}
+			  {tithiSoonamData && (
+				<div className={`rounded-lg px-2.5 py-2 border ${
+				  isLight ? 'bg-rose-50 border-rose-200' : 'bg-rose-500/10 border-rose-500/20'
+				}`}>
+				  <p className={`text-[10px] uppercase tracking-wider font-semibold mb-0.5 ${
+					isLight ? 'text-rose-600' : 'text-rose-400'
+				  }`}>
+					{isTamil ? 'திதி சூனியம்' : 'Tithi Soonam'}
+				  </p>
+				  <p className={`text-[13px] font-bold leading-tight ${
+					isLight ? 'text-rose-900' : 'text-rose-300'
+				  }`}>
+					{tithiSoonamData.soonam?.join(', ')}
+				  </p>
+				</div>
+			  )}
+
+			  {/* Yogi */}
+			  {yogaData && (
+				<div className={`rounded-lg px-2.5 py-2 border ${
+				  isLight ? 'bg-teal-50 border-teal-200' : 'bg-teal-500/10 border-teal-500/20'
+				}`}>
+				  <p className={`text-[10px] uppercase tracking-wider font-semibold mb-0.5 ${
+					isLight ? 'text-teal-600' : 'text-teal-400'
+				  }`}>
+					{isTamil ? 'யோகி' : 'Yogi'}
+				  </p>
+				  <p className={`text-[13px] font-bold leading-tight ${
+					isLight ? 'text-teal-900' : 'text-teal-300'
+				  }`}>
+					{yogaData.yogi.natchathiram}
+					<span className={`text-[10px] font-medium ml-1 ${
+					  isLight ? 'text-teal-600' : 'text-teal-500'
+					}`}>
+					  ({yogaData.yogi.graha})
+					</span>
+				  </p>
+				</div>
+			  )}
+
+			  {/* Avayogi */}
+			  {yogaData && (
+				<div className={`rounded-lg px-2.5 py-2 border ${
+				  isLight ? 'bg-orange-50 border-orange-200' : 'bg-orange-500/10 border-orange-500/20'
+				}`}>
+				  <p className={`text-[10px] uppercase tracking-wider font-semibold mb-0.5 ${
+					isLight ? 'text-orange-600' : 'text-orange-400'
+				  }`}>
+					{isTamil ? 'அவயோகி' : 'Avayogi'}
+				  </p>
+				  <p className={`text-[13px] font-bold leading-tight ${
+					isLight ? 'text-orange-900' : 'text-orange-300'
+				  }`}>
+					{yogaData.avayogi.natchathiram}
+					<span className={`text-[10px] font-medium ml-1 ${
+					  isLight ? 'text-orange-600' : 'text-orange-500'
+					}`}>
+					  ({yogaData.avayogi.graha})
+					</span>
+				  </p>
+				</div>
+			  )}
+
+			  {/* Lagna Badhakam */}
+			  {badhakamData && (
+				<div className={`rounded-lg px-2.5 py-2 border ${
+				  isLight ? 'bg-red-50 border-red-200' : 'bg-red-500/10 border-red-500/20'
+				}`}>
+				  <p className={`text-[10px] uppercase tracking-wider font-semibold mb-0.5 ${
+					isLight ? 'text-red-600' : 'text-red-400'
+				  }`}>
+					{isTamil ? 'பாதகம்' : 'Badhakam'}
+				  </p>
+				  <p className={`text-[13px] font-bold leading-tight ${
+					isLight ? 'text-red-900' : 'text-red-300'
+				  }`}>
+					{badhakamData.badhakam}
+				  </p>
+				</div>
+			  )}
+
+			  {/* Lagna Marakam */}
+			  {marakamData && (
+				<div className={`rounded-lg px-2.5 py-2 border ${
+				  isLight ? 'bg-pink-50 border-pink-200' : 'bg-pink-500/10 border-pink-500/20'
+				}`}>
+				  <p className={`text-[10px] uppercase tracking-wider font-semibold mb-0.5 ${
+					isLight ? 'text-pink-600' : 'text-pink-400'
+				  }`}>
+					{isTamil ? 'மாரகம்' : 'Marakam'}
+				  </p>
+				  <p className={`text-[13px] font-bold leading-tight ${
+					isLight ? 'text-pink-900' : 'text-pink-300'
+				  }`}>
+					{marakamData.marakam?.join(', ')}
+				  </p>
+				</div>
+			  )}
+
+			  {/* Mudakku Rasi */}
+			  {mudakkuData && (
+				<div className={`rounded-lg px-2.5 py-2 border ${
+				  isLight ? 'bg-slate-100 border-slate-300' : 'bg-slate-700/30 border-slate-600/30'
+				}`}>
+				  <p className={`text-[10px] uppercase tracking-wider font-semibold mb-0.5 ${
+					isLight ? 'text-slate-500' : 'text-slate-400'
+				  }`}>
+					{isTamil ? 'முடக்கு ராசி' : 'Mudakku Rasi'}
+				  </p>
+				  <p className={`text-[13px] font-bold leading-tight ${
+					isLight ? 'text-slate-800' : 'text-slate-200'
+				  }`}>
+					{mudakkuData.mudakku_veedu}
+					<span className={`text-[10px] font-medium ml-1 ${
+					  isLight ? 'text-slate-500' : 'text-slate-400'
+					}`}>
+					  ({mudakkuData.mudakku_natchathiram})
+					</span>
+				  </p>
+				</div>
+			  )}
+
+			  {/* Nama Ezhuthukal */}
+			  {ezhuthukalData && (
+				<div className={`rounded-lg px-2.5 py-2 border ${
+				  mudakkuData ? '' : 'col-span-2'
+				} ${
+				  isLight ? 'bg-indigo-50 border-indigo-200' : 'bg-indigo-500/10 border-indigo-500/20'
+				}`}>
+				  <p className={`text-[10px] uppercase tracking-wider font-semibold mb-0.5 ${
+					isLight ? 'text-indigo-600' : 'text-indigo-400'
+				  }`}>
+					{isTamil ? 'நாம எழுத்துக்கள்' : 'Name Letters'}
+				  </p>
+				  <p className={`text-[13px] font-bold leading-tight ${
+					isLight ? 'text-indigo-900' : 'text-indigo-300'
+				  }`}>
+					{ezhuthukalData.ezhuthukal?.join(' · ')}
+				  </p>
+				</div>
+			  )}
+
+			</div>
         </div>
       </div>
 
