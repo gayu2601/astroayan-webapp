@@ -113,42 +113,112 @@ export default function MarriagePoruthamPdf({ isLight = true }: MarriagePorutham
   
   // ── Location Autocomplete ──
   async function fetchSuggestions(queryStr: string) {
-    if (!queryStr || queryStr.length < 2) return [];
-    try {
-      // 1. Try Ola Maps API if key exists
-      const olaKey = '0tHplupDAorsTgwAvRu9tiM2VI8u93PtaJ02wBf9' //process.env.EXPO_PUBLIC_OLA_MAPS_API_KEY;
-      if (olaKey) {
-        const url = `https://api.olamaps.io/places/v1/autocomplete?input=${encodeURIComponent(queryStr)}&api_key=${olaKey}`;
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          return (data.predictions || []).map((p: any) => ({
-            description: p.description,
-            place_id: p.place_id,
-            source: 'olamaps'
-          }));
-        }
-      }
+	  if (!queryStr || queryStr.length < 2) return [];
 
-      // 2. Fallback to Nominatim OSM Search API
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(queryStr)}&format=json&limit=5&addressdetails=1`;
-      const res = await fetch(url, {
-        headers: { 'User-Agent': 'VedicAstroWeb/1.0' },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.map((item: any) => ({
-          description: item.display_name,
-          place_id: item.place_id?.toString() || Math.random().toString(),
-          source: 'nominatim'
-        }));
-      }
-      return [];
-    } catch (e) {
-      console.error('Location suggestion error:', e);
-      return [];
-    }
-  }
+	  const olaKey = '0tHplupDAorsTgwAvRu9tiM2VI8u93PtaJ02wBf9';
+
+	  const olaPromise = (async () => {
+		try {
+		  const url = `https://api.olamaps.io/places/v1/autocomplete?input=${encodeURIComponent(queryStr)}&api_key=${olaKey}`;
+		  const res = await fetch(url);
+		  if (!res.ok) {
+			console.warn('Ola Maps autocomplete failed:', res.status, await res.text().catch(() => ''));
+			return [];
+		  }
+		  const data = await res.json();
+		  const predictions = data.predictions || [];
+
+		  // Ola Maps' fuzzy matching can return loosely-related Indian places
+		  // for queries that have no real presence in its (India-focused) index
+		  // — e.g. "University of Texas, Austin" matching on stray tokens.
+		  // Keep a result only if a meaningful chunk of the query actually
+		  // appears in it, so junk matches don't crowd out the real (usually
+		  // Nominatim) result.
+		  const queryTokens = queryStr
+			.toLowerCase()
+			.split(/[\s,]+/)
+			.filter((t) => t.length > 2);
+
+		  const relevant = predictions.filter((p: any) => {
+			const desc = (p.description || '').toLowerCase();
+			const matchCount = queryTokens.filter((t) => desc.includes(t)).length;
+			return queryTokens.length === 0 || matchCount / queryTokens.length >= 0.5;
+		  });
+
+		  return relevant.map((p: any) => ({
+			description: p.description,
+			place_id: p.place_id,
+			source: 'olamaps',
+		  }));
+		} catch (e) {
+		  console.error('Ola Maps request error:', e);
+		  return [];
+		}
+	  })();
+
+	  const nominatimPromise = (async () => {
+		try {
+		  // Nominatim reads comma-separated segments as an address hierarchy.
+		  // A query like "University of Texas, Austin, Texas, USA" has a
+		  // redundant/ambiguous intermediate segment ("Texas" appears both in
+		  // the POI name and as the state) which makes Nominatim return zero
+		  // results for the whole string, rather than falling back to a fuzzy
+		  // match. So: try the full query first, and if that comes back empty,
+		  // progressively drop trailing segments (keeping the POI name plus
+		  // fewer locality qualifiers) until something matches.
+		  const segments = queryStr.split(',').map((s) => s.trim()).filter(Boolean);
+		  const attempts =
+			segments.length > 1
+			  ? [
+				  queryStr, // full string as typed
+				  segments.slice(0, 2).join(', '), // POI + immediate locality
+				  segments[0], // just the POI/name itself
+				]
+			  : [queryStr];
+
+		  for (const attempt of attempts) {
+			const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(attempt)}&format=json&limit=5&addressdetails=1`;
+			const res = await fetch(url, {
+			  headers: { 'Accept-Language': 'en' },
+			});
+			if (!res.ok) {
+			  console.warn('Nominatim search failed:', attempt, res.status);
+			  continue;
+			}
+			const data = await res.json();
+			if (data && data.length > 0) {
+			  return data.map((item: any) => ({
+				description: item.display_name,
+				place_id: item.place_id?.toString() || `nom-${item.lat}-${item.lon}`,
+				source: 'nominatim',
+			  }));
+			}
+		  }
+		  return [];
+		} catch (e) {
+		  console.error('Nominatim request error:', e);
+		  return [];
+		}
+	  })();
+
+	  const [olaResults, nominatimResults] = await Promise.all([olaPromise, nominatimPromise]);
+
+	  // Merge, de-duplicating by normalized description so the same place
+	  // returned by both providers doesn't show twice. Ola results first
+	  // (usually better for Indian addresses), Nominatim fills in everything
+	  // else (including all foreign places, which Ola doesn't cover well).
+	  const seen = new Set<string>();
+	  const merged: any[] = [];
+	  for (const item of [...olaResults, ...nominatimResults]) {
+		const key = item.description.trim().toLowerCase();
+		if (!seen.has(key)) {
+		  seen.add(key);
+		  merged.push(item);
+		}
+	  }
+
+	  return merged.slice(0, 8);
+	}
 
   const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>, gender: 'girl' | 'boy') => {
     const text = e.target.value;
