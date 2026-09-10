@@ -40,6 +40,8 @@ import { useHoroscopeData } from '../hooks/useHoroscope';
 import { useAuth } from '../lib/AuthContext';
 import SignupScreen from './components/SignupScreen';
 import VastuDays from './components/VastuDays';
+import Numerology from './components/Numerology';
+import NumerologyCalc from './components/NumerologyCalc';
 import SubhaMuhurthamDays from './components/SubhaMuhurthamDays';
 
 // ── Premium PDF & Interactive Viewers ────────────────────────────────────────
@@ -990,6 +992,8 @@ export default function App() {
   const marriageSubTab = (activeTab === 'marriage' && pathParts[2]) ? pathParts[2] : 'porutham';
   // Keep vedic-tools for other tools (palli, manaiyadi, age)
   const vedicToolSub = (activeTab === 'vedic-tools' && pathParts[2]) ? pathParts[2] : null;
+  // NEW: advanced enkanidham sub-tabs (enkanidham, jadhagam-enkanidham)
+  const advancedEnkanidhamSubTab = (activeTab === 'advanced-enkanidham' && pathParts[2]) ? pathParts[2] : 'enkanidham';
   // NEW: prasannam sub-tabs
   const prasannamSubTab = (activeTab === 'prasannam' && pathParts[2]) ? pathParts[2] : 'jamakkol';
 
@@ -1539,7 +1543,8 @@ export default function App() {
               { id: 'horoscope',   labelEn: 'Horoscope',    labelTa: 'ஜாதகம்',           path: '/horoscope' },
               { id: 'marriage',    labelEn: 'Marriage',     labelTa: 'திருமணம்',          path: '/marriage' },
               { id: 'prasannam',   labelEn: 'Prasannam',    labelTa: 'பிரசன்னம்',         path: '/prasannam' },
-              { id: 'vedic-tools', labelEn: 'Other Tools',  labelTa: 'வைதீகக் கருவிகள்', path: '/vedic-tools' }
+              { id: 'advanced-enkanidham', labelEn: 'Advanced Enkanidham', labelTa: 'மேம்பட்ட எண்கணிதம்', path: '/advanced-enkanidham' },
+              { id: 'vedic-tools', labelEn: 'Other Tools',  labelTa: 'பிற கருவிகள்', path: '/vedic-tools' }
             ].map((tab) => (
               <Link
                 key={tab.id}
@@ -1796,6 +1801,31 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* GROUP 4B: ADVANCED ENKANIDHAM */}
+                <div className="gradient-group-panchangam p-6 rounded-3xl space-y-5 animate-fade-in border">
+                  <div className="border-b border-gray-700/10 pb-4">
+                    <h2 className="text-xl font-serif font-black tracking-tight text-amber-500 flex items-center gap-2"><Sliders className="h-5 w-5" />{language === 'ta' ? "மேம்பட்ட எண்கணிதம்" : "Advanced Enkanidham"}</h2>
+                    <p className={`text-xs mt-1 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{language === 'ta' ? "எண் கணிதம் மற்றும் ஜாதக எண் கணிதம் கருவிகள்." : "Numerology and horoscope-based numerology tools."}</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {[
+                      { path: '/advanced-enkanidham/enkanidham', icon: <House className="h-5 w-5" />, titleTa: "எண்கணிதம்", titleEn: "Enkanidham", descTa: "உங்கள் பிறந்த தேதியின் அடிப்படையில் எண் கணித பலன்கள்.", descEn: "Numerology insights based on your date of birth.", ctaTa: "பலன் காண்க", ctaEn: "Explore Numerology" },
+                      { path: '/advanced-enkanidham/jadhagam-enkanidham', icon: <House className="h-5 w-5" />, titleTa: "ஜாதக எண்கணிதம்", titleEn: "Jadhagam Enkanidham", descTa: "உங்கள் ஜாதகத்தின் அடிப்படையில் எண் கணித பலன்கள்.", descEn: "Numerology insights derived from your horoscope (Jadhagam).", ctaTa: "பலன் காண்க", ctaEn: "Explore Numerology" },
+                    ].map((item) => (
+                      <div key={item.path} onClick={() => navigate(item.path)} className={`p-5 rounded-2xl border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer flex flex-col justify-between ${isLight ? "bg-white border-amber-500/15 hover:bg-amber-50/75 hover:border-amber-500/40 shadow-sm" : "bg-black/35 border-white/5 hover:bg-black/55 hover:border-amber-500/30"}`}>
+                        <div className="space-y-3">
+                          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">{item.icon}</div>
+                          <div>
+                            <h3 className={`text-sm font-bold font-serif ${isLight ? "text-[#1E120A]" : "text-white"}`}>{language === 'ta' ? item.titleTa : item.titleEn}</h3>
+                            <p className={`text-[11px] leading-relaxed mt-1 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{language === 'ta' ? item.descTa : item.descEn}</p>
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-center justify-between text-[11px] font-bold text-amber-500"><span>{language === 'ta' ? item.ctaTa : item.ctaEn}</span><ChevronRight className="h-4 w-4" /></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {/* GROUP 5: PRASANNAM */}
                 <div className="gradient-group-tools p-6 rounded-3xl space-y-5 animate-fade-in border">
                   <div className="border-b border-gray-700/10 pb-4">
@@ -1923,7 +1953,7 @@ export default function App() {
                     </button>
                   ))}
                 </div>
-                {prasannamSubTab === 'jamakkol' && <JamakkolCalculator />}
+                {prasannamSubTab === 'jamakkol' && <JamakkolCalculator language={language} isLight={isLight}/>}
                 {prasannamSubTab === 'choli'    && <CholiPrasnamForm language={language} isLight={isLight} />}
                 {prasannamSubTab === 'vetrilai' && <VetrilaiPrasnamApp language={language} isLight={isLight} />}
               </div>
@@ -1954,6 +1984,26 @@ export default function App() {
             } />
 
             {/* ── VEDIC TOOLS (palli, manaiyadi, age only) ───────────────────────── */}
+            {/* ── ADVANCED ENKANIDHAM (enkanidham, jadhagam-enkanidham) ──────────── */}
+            <Route path="/advanced-enkanidham/*" element={
+              <div className="space-y-6 animate-fade-in">
+                <BackButton />
+                <div className="flex flex-wrap gap-2 border-b border-gray-700/25 pb-3">
+                  {[
+                    { id: 'enkanidham',           labelEn: 'Enkanidham',           labelTa: 'எண்கணிதம்' },
+                    { id: 'jadhagam-enkanidham',   labelEn: 'Jadhagam Enkanidham',  labelTa: 'ஜாதக எண்கணிதம்' },
+                  ].map((sub) => (
+                    <button key={sub.id} onClick={() => navigate(`/advanced-enkanidham/${sub.id}`)} className={subPillClass(advancedEnkanidhamSubTab === sub.id)}>
+                      {language === 'ta' ? sub.labelTa : sub.labelEn}
+                    </button>
+                  ))}
+                </div>
+
+                {advancedEnkanidhamSubTab === 'enkanidham'         && <Numerology language={language} isLight={isLight}/>}
+                {advancedEnkanidhamSubTab === 'jadhagam-enkanidham' && <NumerologyCalc language={language} isLight={isLight}/>}
+              </div>
+            } />
+
             <Route path="/vedic-tools/*" element={
               <div className="space-y-6 animate-fade-in">
                 <BackButton />
