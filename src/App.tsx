@@ -1755,37 +1755,7 @@ export default function App() {
                       { path: '/predictions/nakshatra', icon: <Star className="h-5 w-5" />, titleTa: "தினசரி நட்சத்திர பலன்", titleEn: "Daily Nakshatra Palan", descTa: "27 நட்சத்திரங்களுக்கான பிரத்யேக தினசரி பலன்கள்.", descEn: "Star-specific daily forecasts for all 27 nakshatras.", ctaTa: "நட்சத்திர பலன்", ctaEn: "View Nakshatra" },
                       { path: '/panchangam/gocharam', icon: <Globe className="h-5 w-5" />, titleTa: "நேரடி கோச்சாரம்", titleEn: "Live Gocharam", descTa: "தற்போதைய கோள்களின் நிகழ்நேர இராசி கட்டப் பெயர்ச்சி பலன்கள்.", descEn: "Real-time planetary transit positions across the zodiac.", ctaTa: "கோச்சாரம் காண்க", ctaEn: "View Transit" },
                       { path: '/panchangam/hora', icon: <Clock className="h-5 w-5" />, titleTa: "ஹோரா முகூர்த்தம்", titleEn: "Hora Muhurtham", descTa: "சுப காரியங்களுக்கு சிறந்த ஹோரா கால அட்டவணை.", descEn: "Planetary hour table to pick the ideal time for important tasks.", ctaTa: "ஹோரா காண்க", ctaEn: "View Horas" },
-                    ].map((item) => (
-                      <div key={item.path} onClick={() => navigate(item.path)} className={`p-5 rounded-2xl border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer flex flex-col justify-between ${isLight ? "bg-white border-amber-500/15 hover:bg-amber-50/75 hover:border-amber-500/40 shadow-sm" : "bg-black/35 border-white/5 hover:bg-black/55 hover:border-amber-500/30"}`}>
-                        <div className="space-y-3">
-                          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">{item.icon}</div>
-                          <div>
-                            <h3 className={`text-sm font-bold font-serif ${isLight ? "text-[#1E120A]" : "text-white"}`}>{language === 'ta' ? item.titleTa : item.titleEn}</h3>
-                            <p className={`text-[11px] leading-relaxed mt-1 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{language === 'ta' ? item.descTa : item.descEn}</p>
-                          </div>
-                        </div>
-                        <div className="mt-4 flex items-center justify-between text-[11px] font-bold text-amber-500"><span>{language === 'ta' ? item.ctaTa : item.ctaEn}</span><ChevronRight className="h-4 w-4" /></div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* GROUP 4: OTHER TOOLS */}
-                <div className="gradient-group-panchangam p-6 rounded-3xl space-y-5 animate-fade-in border">
-                  <div className="border-b border-gray-700/10 pb-4">
-                    <h2 className="text-xl font-serif font-black tracking-tight text-amber-500 flex items-center gap-2"><Sliders className="h-5 w-5" />{language === 'ta' ? "பிற கருவிகள்" : "Other Tools"}</h2>
-                    <p className={`text-xs mt-1 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{language === 'ta' ? "பல்லி சாஸ்திரம், மனையடி சாஸ்திரம், சுபமுகூர்த்தங்கள், வாஸ்து நாட்கள் மற்றும் வயது கணிப்பான்." : "Lizard omen guide, vastu house measurement calculator, rutu palangal, gemstone recommendations and age calculator."}</p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {[
-                      { path: '/vedic-tools/palli', icon: <Info className="h-5 w-5" />, titleTa: "பல்லி விழும் பலன்", titleEn: "Lizard Omen Guide", descTa: "உடலின் எந்த பகுதியில் பல்லி விழுகிறது என்பதற்கான சுப/அசுப பலன்கள்.", descEn: "Traditional body-part lizard falling omen outcomes.", ctaTa: "பலன் காண்க", ctaEn: "Explore Omens" },
-                      { path: '/vedic-tools/manaiyadi', icon: <Landmark className="h-5 w-5" />, titleTa: "மனையடி சாஸ்திரம்", titleEn: "Manaiyadi Shastram", descTa: "வீட்டு அறை அடி கணக்கின் சுப/அசுப பலன்கள்.", descEn: "House vastu room measurement auspiciousness guide.", ctaTa: "அடி சாஸ்திரம் காண்க", ctaEn: "Verify Vastu" },
-                      { path: '/vedic-tools/muhurtham', icon: <CalendarCheck className="h-5 w-5" />, titleTa: "சுபமுகூர்த்தம்", titleEn: "Subha Muhurtham Days", descTa: "2026-ன் சுப முகூர்த்தங்கள்.", descEn: "Pick Auspicious Marriage Muhurtham days in 2026.", ctaTa: "நாட்கள் காண்க", ctaEn: "View Days" },
-                      { path: '/vedic-tools/vastu', icon: <House className="h-5 w-5" />, titleTa: "வாஸ்து", titleEn: "Vastu Days", descTa: "2026-ன் வாஸ்து செய்ய உகந்த நேரங்கள்.", descEn: "Pick Auspicious Vastu building days in 2026.", ctaTa: "நாட்கள் காண்க", ctaEn: "View Days" },
-                      { path: '/vedic-tools/rutu-madha', icon: <Clock className="h-5 w-5" />, titleTa: "ருது மாத பலன்கள்", titleEn: "Rutu Month Predictions", descTa: "ருது ஆரம்பமான தமிழ் மாதத்தின் அடிப்படையில் பாரம்பரிய ஜோதிட பலன்களையும் பரிகாரங்களையும் அறியுங்கள்.", descEn: "Discover traditional astrological predictions and remedies based on the Tamil month in which Rutu (menarche) began.", ctaTa: "பலன்களைப் பார்க்க", ctaEn: "View Predictions" },
-                      { path: '/vedic-tools/rutu-lagna', icon: <Clock className="h-5 w-5" />, titleTa: "ருது லக்ன பலன்கள்", titleEn: "Rutu Lagna Predictions", descTa: "ருது நேரத்தில் இருந்த லக்னத்தின் அடிப்படையில் பாரம்பரிய பலன்களையும் பரிகாரங்களையும் அறியுங்கள்.", descEn: "Explore traditional astrological predictions and remedies based on the ascendant (Lagna) at the time of Rutu.", ctaTa: "பலன்களைப் பார்க்க", ctaEn: "View Predictions" },
-                      { path: '/vedic-tools/gemstone-mapping', icon: <Gem className="h-5 w-5" />, titleTa: "நட்சத்திர கல் வழிகாட்டி", titleEn: "Nakshatra Gemstone Guide", descTa: "உங்கள் நட்சத்திரத்திற்கான அதிபதி கிரகத்தையும் அணிய ஏற்ற ரத்தினக் கல்லையும் அறியுங்கள்.", descEn: "Find the ruling planet and the recommended gemstone for your birth star (Nakshatra).", ctaTa: "நட்சத்திர கல்லை அறிய", ctaEn: "Find Gemstone" },
-                      { path: '/vedic-tools/age', icon: <Clock className="h-5 w-5" />, titleTa: "வயது கணிப்பான்", titleEn: "Age Calculator", descTa: "துல்லியமான வயது, மாதங்கள் மற்றும் நாட்கள் கணக்கீடு.", descEn: "Calculate your precise chronological age in years, months, and days.", ctaTa: "வயதை கணக்கிடு", ctaEn: "Calculate Age" },
+                      { path: '/panchangam/muhurtham', icon: <CalendarCheck className="h-5 w-5" />, titleTa: "சுபமுகூர்த்தம்", titleEn: "Subha Muhurtham Days", descTa: "2026-ன் சுப முகூர்த்தங்கள்.", descEn: "Pick Auspicious Marriage Muhurtham days in 2026.", ctaTa: "நாட்கள் காண்க", ctaEn: "View Days" },
                     ].map((item) => (
                       <div key={item.path} onClick={() => navigate(item.path)} className={`p-5 rounded-2xl border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer flex flex-col justify-between ${isLight ? "bg-white border-amber-500/15 hover:bg-amber-50/75 hover:border-amber-500/40 shadow-sm" : "bg-black/35 border-white/5 hover:bg-black/55 hover:border-amber-500/30"}`}>
                         <div className="space-y-3">
@@ -1851,6 +1821,36 @@ export default function App() {
                     ))}
                   </div>
                 </div>
+				
+				{/* GROUP 4: OTHER TOOLS */}
+                <div className="gradient-group-panchangam p-6 rounded-3xl space-y-5 animate-fade-in border">
+                  <div className="border-b border-gray-700/10 pb-4">
+                    <h2 className="text-xl font-serif font-black tracking-tight text-amber-500 flex items-center gap-2"><Sliders className="h-5 w-5" />{language === 'ta' ? "பிற கருவிகள்" : "Other Tools"}</h2>
+                    <p className={`text-xs mt-1 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{language === 'ta' ? "பல்லி சாஸ்திரம், மனையடி சாஸ்திரம், சுபமுகூர்த்தங்கள், வாஸ்து நாட்கள் மற்றும் வயது கணிப்பான்." : "Lizard omen guide, vastu house measurement calculator, rutu palangal, gemstone recommendations and age calculator."}</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { path: '/vedic-tools/palli', icon: <Info className="h-5 w-5" />, titleTa: "பல்லி விழும் பலன்", titleEn: "Lizard Omen Guide", descTa: "உடலின் எந்த பகுதியில் பல்லி விழுகிறது என்பதற்கான சுப/அசுப பலன்கள்.", descEn: "Traditional body-part lizard falling omen outcomes.", ctaTa: "பலன் காண்க", ctaEn: "Explore Omens" },
+                      { path: '/vedic-tools/manaiyadi', icon: <Landmark className="h-5 w-5" />, titleTa: "மனையடி சாஸ்திரம்", titleEn: "Manaiyadi Shastram", descTa: "வீட்டு அறை அடி கணக்கின் சுப/அசுப பலன்கள்.", descEn: "House vastu room measurement auspiciousness guide.", ctaTa: "அடி சாஸ்திரம் காண்க", ctaEn: "Verify Vastu" },
+                      { path: '/vedic-tools/vastu', icon: <House className="h-5 w-5" />, titleTa: "வாஸ்து", titleEn: "Vastu Days", descTa: "2026-ன் வாஸ்து செய்ய உகந்த நேரங்கள்.", descEn: "Pick Auspicious Vastu building days in 2026.", ctaTa: "நாட்கள் காண்க", ctaEn: "View Days" },
+                      { path: '/vedic-tools/rutu-madha', icon: <Clock className="h-5 w-5" />, titleTa: "ருது மாத பலன்கள்", titleEn: "Rutu Month Predictions", descTa: "ருது ஆரம்பமான தமிழ் மாதத்தின் அடிப்படையில் பாரம்பரிய ஜோதிட பலன்களையும் பரிகாரங்களையும் அறியுங்கள்.", descEn: "Discover traditional astrological predictions and remedies based on the Tamil month in which Rutu (menarche) began.", ctaTa: "பலன்களைப் பார்க்க", ctaEn: "View Predictions" },
+                      { path: '/vedic-tools/rutu-lagna', icon: <Clock className="h-5 w-5" />, titleTa: "ருது லக்ன பலன்கள்", titleEn: "Rutu Lagna Predictions", descTa: "ருது நேரத்தில் இருந்த லக்னத்தின் அடிப்படையில் பாரம்பரிய பலன்களையும் பரிகாரங்களையும் அறியுங்கள்.", descEn: "Explore traditional astrological predictions and remedies based on the ascendant (Lagna) at the time of Rutu.", ctaTa: "பலன்களைப் பார்க்க", ctaEn: "View Predictions" },
+                      { path: '/vedic-tools/gemstone-mapping', icon: <Gem className="h-5 w-5" />, titleTa: "நட்சத்திர கல் வழிகாட்டி", titleEn: "Nakshatra Gemstone Guide", descTa: "உங்கள் நட்சத்திரத்திற்கான அதிபதி கிரகத்தையும் அணிய ஏற்ற ரத்தினக் கல்லையும் அறியுங்கள்.", descEn: "Find the ruling planet and the recommended gemstone for your birth star (Nakshatra).", ctaTa: "நட்சத்திர கல்லை அறிய", ctaEn: "Find Gemstone" },
+                      { path: '/vedic-tools/age', icon: <Clock className="h-5 w-5" />, titleTa: "வயது கணிப்பான்", titleEn: "Age Calculator", descTa: "துல்லியமான வயது, மாதங்கள் மற்றும் நாட்கள் கணக்கீடு.", descEn: "Calculate your precise chronological age in years, months, and days.", ctaTa: "வயதை கணக்கிடு", ctaEn: "Calculate Age" },
+                    ].map((item) => (
+                      <div key={item.path} onClick={() => navigate(item.path)} className={`p-5 rounded-2xl border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer flex flex-col justify-between ${isLight ? "bg-white border-amber-500/15 hover:bg-amber-50/75 hover:border-amber-500/40 shadow-sm" : "bg-black/35 border-white/5 hover:bg-black/55 hover:border-amber-500/30"}`}>
+                        <div className="space-y-3">
+                          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">{item.icon}</div>
+                          <div>
+                            <h3 className={`text-sm font-bold font-serif ${isLight ? "text-[#1E120A]" : "text-white"}`}>{language === 'ta' ? item.titleTa : item.titleEn}</h3>
+                            <p className={`text-[11px] leading-relaxed mt-1 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{language === 'ta' ? item.descTa : item.descEn}</p>
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-center justify-between text-[11px] font-bold text-amber-500"><span>{language === 'ta' ? item.ctaTa : item.ctaEn}</span><ChevronRight className="h-4 w-4" /></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
               </div>
             } />
@@ -1886,6 +1886,7 @@ export default function App() {
                     { id: 'panchangam-pdf', labelEn: 'Panchangam PDF',      labelTa: 'பஞ்சாங்கம் PDF' },
                     { id: 'hora',           labelEn: 'Hora Muhurtham',      labelTa: 'ஹோரா முகூர்த்தம்' },
                     { id: 'gocharam',       labelEn: 'Live Gocharam Transit', labelTa: 'நேரடி கோச்சாரம்' },
+                    { id: 'muhurtham',      labelEn: 'Muhurtham Days',      labelTa: 'சுபமுகூர்த்தம்' },
                   ].map((sub) => (
                     <button key={sub.id} onClick={() => navigate(`/panchangam/${sub.id}`)} className={subPillClass(panchangamSubTab === sub.id)}>
                       {language === 'ta' ? sub.labelTa : sub.labelEn}
@@ -1896,6 +1897,7 @@ export default function App() {
                 {panchangamSubTab === 'panchangam-pdf' && <PanchangamPdf isLight={isLight}/>}
                 {panchangamSubTab === 'hora'           && <HoraSection isLight={isLight} />}
                 {panchangamSubTab === 'gocharam'       && <GocharamTransit isLight={isLight} />}
+                {panchangamSubTab === 'muhurtham'      && <SubhaMuhurthamDays isLight={isLight} />}
               </div>
             } />
 
@@ -2017,7 +2019,6 @@ export default function App() {
                       {[
                         { id: 'palli',      title: language === 'ta' ? 'பல்லி விழும் பலன்'  : 'Lizard Omen Guide',    desc: language === 'ta' ? 'உடலின் எந்த பகுதியில் பல்லி விழுகிறது என்பதற்கான சுப/அசுப பலன்கள்.' : 'Traditional body-part lizard falling omen outcomes.' },
                         { id: 'manaiyadi', title: language === 'ta' ? 'மனையடி சாஸ்திரம்'  : 'Manaiyadi Shastram',   desc: language === 'ta' ? 'வீட்டு அறை அடி கணக்கின் சுப/அசுப பலன்கள்.' : 'Verify your structural layout measurements for optimal house prosperity.' },
-						{ id: 'muhurtham',  title: language === 'ta' ? 'சுபமுகூர்த்தம்' : 'Muhurtham', desc: language === 'ta' ? '2026 ஆம் ஆண்டிற்கான சுப முகூர்த்தங்கள்.' : 'View Auspicious Wedding Muhurtham dates in 2026.' },
 						{ id: 'vastu',  title: language === 'ta' ? 'வாஸ்து' : 'Vastu', desc: language === 'ta' ? '2026 ஆம் ஆண்டிற்கான வாஸ்து செய்ய உகந்த நேரங்கள்.' : 'View Auspicious house-building Vastu hours in 2026.' },
                         {
 						  id: 'rutu-madha',
@@ -2054,7 +2055,6 @@ export default function App() {
                   <div className="space-y-4">
                     {vedicToolSub === 'manaiyadi' && <ManaiyadiShastram language={language} isLight={isLight} />}
                     {vedicToolSub === 'palli'     && <LizardOmens language={language} isLight={isLight} />}
-					{vedicToolSub === 'muhurtham' && <SubhaMuhurthamDays isLight={isLight} />}
 					{vedicToolSub === 'vastu' && <VastuDays isLight={isLight} />}
                     {vedicToolSub === 'rutu-madha'       && <RutuMaadhaPalangal language={language} />}
 					{vedicToolSub === 'rutu-lagna'       && <RutuLagnaPalangal language={language} />}
