@@ -104,7 +104,7 @@ export default function BhavaChakra({ planets, cusps, isLight, isTamil, onCellCl
         <div className="w-full flex items-center justify-between">
           {signName && (
             <span
-              className={`text-[8px] font-semibold leading-none ${
+              className={`text-[10px] font-semibold leading-none ${
                 isLight ? 'text-teal-700/70' : 'text-teal-400/60'
               }`}
             >
@@ -126,7 +126,7 @@ export default function BhavaChakra({ planets, cusps, isLight, isTamil, onCellCl
               <span
                 key={i}
                 style={{ backgroundColor: s.bg, color: s.fg }}
-                className="text-[9px] font-extrabold px-1 py-0.5 rounded leading-none whitespace-nowrap shadow-sm border border-black/10"
+                className="text-[10px] font-extrabold px-1 py-0.5 rounded leading-none whitespace-nowrap shadow-sm border border-black/10"
                 title={`${p.name} ${p.degree}°`}
               >
                 {abbr[p.name] || s.abbr}
