@@ -256,7 +256,10 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
   const yogVal       = astro.yoga             || '';
   const karanVal     = astro.karana           || '';
   const birthNum = [...`${day}${month}${year}`].reduce((sum, d) => sum + +d, 0);
-	const birthNumVal = birthNum % 9 || 9;;
+	const birthNumVal = birthNum % 9 || 9;
+	
+	const bNum = [...`${day}`].reduce((sum, d) => sum + +d, 0);
+	const bNumVal = bNum % 9 || 9;
   console.log('birthNumVal', birthNumVal, tithiVal, yogVal, karanVal)
 
   const LAGNA_NAMES = ['லக்', 'லக்னம்', 'lak', 'ascendant', 'lagna'];
@@ -345,8 +348,15 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 	  const subHTML = subItems
 		  .filter(item => !!item.data)
 		  .map(item => `
-			<p class="pred-text" style="text-align: ${item.align};">
-			  <strong>${item.label}:</strong> ${item.data.palan}
+			<p class="pred-text" style="
+			  text-align: ${item.align};
+			  border: 1.5px solid #C89B3C;
+			  border-radius: 6px;
+			  padding: 10px 14px;
+			  margin: 10px 0;
+			">
+			  <strong style="color: #9A6B00;">${item.label}:</strong>
+			  ${item.data.palan}
 			</p>`)
 		  .join('');
 
@@ -357,7 +367,7 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 	})();
 	
 	const numerologyVastuHTML = (() => {
-	  const bn = getBirthdayNumberPalan(birthNumVal);
+	  const bn = getBirthdayNumberPalan(bNumVal);
 	  const rd = getRasiVastuDirection(rasiVal);
 	  if (!bn && !rd) return '';
 
@@ -370,7 +380,7 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 
 	  if (bn) {
 		const luckyPara = lang === 'ta'
-		  ? `உங்கள் பிறவி எண் ${bn.number} ஆகும் (ஆதிக்கக் கிரகம்: ${bn.planet}). ${bn.luckyColors.join(', ')} நிறங்களும், ${bn.luckyDays.join(', ')} கிழமைகளும் உங்களுக்கு அதிர்ஷ்டத்தைத் தரும். ${bn.spouseNumbers.join(', ')} ஆகிய எண்களுடன் நல்ல பொருத்தம் இருக்கும். ${bn.avoidNumbers.join(', ')} ஆகிய எண்களைத் தவிர்ப்பது நல்லது.`
+		  ? `உங்கள் பிறவி எண் ${bn.number} ஆகும் (ஆதிக்கக் கிரகம்: ${bn.planet}). உங்கள் விதி எண் ${birthNumVal} ஆகும். ${bn.luckyColors.join(', ')} நிறங்களும், ${bn.luckyDays.join(', ')} கிழமைகளும் உங்களுக்கு அதிர்ஷ்டத்தைத் தரும். ${bn.spouseNumbers.join(', ')} ஆகிய எண்களுடன் நல்ல பொருத்தம் இருக்கும். ${bn.avoidNumbers.join(', ')} ஆகிய எண்களைத் தவிர்ப்பது நல்லது.`
 		  : `Your birth number is ${bn.number} (ruling planet: ${bn.planet}). ${bn.luckyColors.join(', ')} are your lucky colors, and ${bn.luckyDays.join(', ')} are your lucky days. You share good compatibility with numbers ${bn.spouseNumbers.join(', ')}, and it's best to avoid ${bn.avoidNumbers.join(', ')}.`;
 
 		const naturePara = lang === 'ta'
@@ -481,8 +491,8 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 	  const signNamesForTable = lang === 'ta' ? SIGN_NAMES_TA : SIGN_NAMES_EN;
 
 	  const matrixTableHTML = `
-	    <div class="page-break-row" style="width:100%;overflow-x:auto;margin-top:18px;">
-	      <div style="padding:8px 16px 6px;font-weight:900;font-size:15px;color:#fff;background:linear-gradient(135deg,#cc3300 0%,#e65c00 100%);border-radius:8px 8px 0 0;text-align:center;">
+	    <div class="page-break-row ashtak-matrix-section" style="width:100%;overflow-x:auto;margin-top:18px;">
+	      <div class="ashtak-table-title" style="padding:8px 16px 6px;font-weight:900;font-size:15px;color:#fff;background:linear-gradient(135deg,#cc3300 0%,#e65c00 100%);border-radius:8px 8px 0 0;text-align:center;">
 	        ${lang === 'ta' ? 'அஷ்டகவர்க்க முழு அட்டவணை' : 'Full Ashtakavarga Table'}
 	      </div>
 	      <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:monospace;text-align:center;">
@@ -519,8 +529,8 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 
 	  // ── Sarvashtaka sign-wise summary ──
 	  const sarvashtakaHTML = total.length === 12 ? `
-	    <div style="width:100%;overflow-x:auto;margin-top:16px;">
-	      <div style="padding:8px 16px 6px;font-weight:900;font-size:15px;color:#fff;background:linear-gradient(135deg,#cc3300 0%,#e65c00 100%);border-radius:8px 8px 0 0;text-align:center;">
+	    <div class="sarvashtaka-section" style="width:100%;overflow-x:auto;margin-top:16px;">
+	      <div class="sarvashtaka-title" style="padding:8px 16px 6px;font-weight:900;font-size:15px;color:#fff;background:linear-gradient(135deg,#cc3300 0%,#e65c00 100%);border-radius:8px 8px 0 0;text-align:center;">
 	        ${lang === 'ta' ? 'இராசி வாரியாக மொத்த பரல்கள் (சர்வாஷ்டகம்)' : 'Sarvashtaka — Total Bindus by Sign'}
 	      </div>
 	      <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:left;">
@@ -1010,7 +1020,7 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: clamp(19px, 3.2vw, 22px);
+  font-size: clamp(21px, 3.6vw, 25px);
   color: #4a4a4a;
 }
 	.lh-meta-icon {
@@ -1040,25 +1050,25 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
         margin: 6px 0 2px;
       }
 
-      h2 { width: 100%; text-align: center; color: #1a6b2a; margin: 10px 0; font-size: clamp(17px, 4.4vw, 22px); font-family: 'Arima Madurai', 'Noto Serif Tamil', 'Poppins', serif; text-transform: uppercase; letter-spacing: 1px; }
+      h2 { width: 100%; text-align: center; color: #1a6b2a; margin: 12px 0; font-size: clamp(20px, 5vw, 26px); font-family: 'Arima Madurai', 'Noto Serif Tamil', 'Poppins', serif; text-transform: uppercase; letter-spacing: 1px; }
 
       .header-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; border-radius: 8px; overflow: hidden; border: 1.5px solid #d4a017; }
-      .header-table td { padding: clamp(4px, 1.1vw, 6px) clamp(5px, 1.7vw, 9px); border: 1px solid #e8d5a0; font-size: clamp(13px, 2.8vw, 17px); width: 50%; background: #fffdf4; text-align: center; }
+      .header-table td { padding: clamp(6px, 1.4vw, 9px) clamp(6px, 1.8vw, 11px); border: 1px solid #e8d5a0; font-size: clamp(15px, 3.1vw, 19px); width: 50%; background: #fffdf4; text-align: center; }
       .header-table tr:nth-child(even) td { background: #fdf3dc; }
 
       .info-row { display: flex; gap: 8px; margin: 4px 0 8px; flex-wrap: nowrap; width: 100%; justify-content: center; }
       .info-box { flex: 1; min-width: 0; border-radius: 6px; padding: clamp(5px, 1.7vw, 9px); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
       .info-box.left  { background: #e8f5e9; border: 1.5px solid #1a6b2a; border-radius: 8px; }
       .info-box.right { background: #fff8e8; border: 1.5px solid #d4a017; border-radius: 8px; }
-      .info-label { color: #1a237e; font-weight: bold; font-size: clamp(13px, 2.5vw, 15px); }
-      .info-value { color: #2e7d32; font-weight: 800; font-size: clamp(13px, 2.8vw, 17px); }
-      .info-title { color: #d32f2f; font-weight: bold; font-size: clamp(13px, 2.5vw, 15px); }
+      .info-label { color: #1a237e; font-weight: bold; font-size: clamp(15px, 2.8vw, 18px); }
+      .info-value { color: #2e7d32; font-weight: 800; font-size: clamp(15px, 3.1vw, 20px); }
+      .info-title { color: #d32f2f; font-weight: bold; font-size: clamp(15px, 2.8vw, 18px); }
 
       .planets-wrapper { position: relative; margin-bottom: 6px; width: 100%; overflow: hidden; display: flex; justify-content: center; }
       
       table.planets { width: 100%; margin: 0 auto; border-collapse: collapse; table-layout: fixed; }
-      table.planets th { background: #1a6b2a; border: 1px solid #1a6b2a; color: #fff; padding: clamp(4px, 1.1vw, 6px) 2px; font-size: clamp(12px, 2.5vw, 14px); text-align: center; }
-      table.planets td { border: 1px solid #c8e6c9; text-align: center; padding: clamp(4px, 1.1vw, 6px) 2px; font-size: clamp(12px, 2.8vw, 14px); font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; background: #fdf8ee; }
+      table.planets th { background: #1a6b2a; border: 1px solid #1a6b2a; color: #fff; padding: clamp(6px, 1.4vw, 8px) 4px; font-size: clamp(14px, 2.8vw, 16px); text-align: center; }
+      table.planets td { border: 1px solid #c8e6c9; text-align: center; padding: clamp(6px, 1.4vw, 8px) 4px; font-size: clamp(14px, 3.1vw, 16px); font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; background: #fdf8ee; }
       table.planets tr:nth-child(even) td { background: #f0f8f0; }
 	  
 	  .bhukthi-table{
@@ -1110,13 +1120,13 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 	  .dbt-title {
 		padding: 8px 16px;
 		font-weight: 900;
-		font-size: clamp(14px, 3.4vw, 17px);
+		font-size: clamp(16px, 3.8vw, 20px);
 		color: #fff;
 		background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
 		border-radius: 8px 8px 0 0;
 		text-align: center;
 	  }
-	  table.dbt-table { width: 100%; border-collapse: collapse; font-size: clamp(11px, 2.6vw, 13px); }
+	  table.dbt-table { width: 100%; border-collapse: collapse; font-size: clamp(13px, 3vw, 15px); }
 	  table.dbt-table thead th {
 		background: #cfd8fc;
 		color: #1a237e;
@@ -1133,8 +1143,8 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 		vertical-align: middle;
 		width: 16%;
 	  }
-	  .dbt-dasha-cell .dbt-dasha-name { display: block; font-size: clamp(12px, 2.9vw, 14px); }
-	  .dbt-dasha-cell .dbt-dasha-label { display: block; font-size: clamp(9px, 2.2vw, 11px); font-weight: 700; color: #5c6bc0; }
+	  .dbt-dasha-cell .dbt-dasha-name { display: block; font-size: clamp(14px, 3.3vw, 16px); }
+	  .dbt-dasha-cell .dbt-dasha-label { display: block; font-size: clamp(11px, 2.6vw, 13px); font-weight: 700; color: #5c6bc0; }
 	  .dbt-bhukti-cell { font-weight: 700; color: #333; }
 	  .dbt-start-cell { color: #2e7d32; font-weight: 700; }
 	  .dbt-end-cell { color: #c0392b; font-weight: 700; }
@@ -1204,9 +1214,9 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
       .box {
         border: 1px solid #1a6b2a;
         display: flex; align-items: center; justify-content: center;
-        font-size: clamp(13px, 2.8vw, 19px); font-weight: bold; color: #1a6b2a;
-        text-align: center; padding: 2px; overflow: hidden;
-        word-break: break-word; line-height: 1.2; min-height: 0; align-self: stretch;
+        font-size: clamp(14px, 3.1vw, 21px); font-weight: bold; color: #1a6b2a;
+        text-align: center; padding: 3px; overflow: hidden;
+        word-break: break-word; line-height: 1.35; min-height: 0; align-self: stretch;
         background: #fdf8ee;
       }
 
@@ -1214,7 +1224,7 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
         grid-column: 2/4; grid-row: 2/4;
         background: #fffdf4; color: #cc3300;
         border: 1px solid #d4a017;
-        font-size: clamp(13px, 2.8vw, 18px); font-weight: 900;
+        font-size: clamp(15px, 3.2vw, 21px); font-weight: 900;
         overflow: hidden; min-height: 0; align-self: stretch;
         display: flex; align-items: center; justify-content: center;
       }
@@ -1231,17 +1241,18 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
         display: inline-block;
         align-self: center;
         text-align: center;
-        font-size: clamp(17px, 3.8vw, 20px);
+        font-size: clamp(20px, 4.2vw, 24px);
         font-family: 'Arima Madurai', 'Noto Serif Tamil', 'Poppins', serif;
         font-weight: 900;
         color: #fff;
         letter-spacing: 0.5px;
-        margin-bottom: 16px;
+        margin-bottom: 20px;
         padding: 8px 32px;
         background: linear-gradient(135deg, #cc3300 0%, #e65c00 100%);
         border-radius: 8px;
         break-before: page;
         page-break-before: always;
+		margin: 10mm auto 1mm !important;
       }
 
       /* ── Extra breathing room between page content and the outer decorative
@@ -1302,17 +1313,17 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
       .intro-visual svg { display: block; margin: 0 auto; }
       .intro-god-img { max-width: 220px; max-height: 260px; object-fit: contain; }
       .intro-heading {
-        font-size: clamp(20px, 4.6vw, 27px);
+        font-size: clamp(23px, 5.2vw, 31px);
         font-family: 'Arima Madurai', 'Noto Serif Tamil', 'Poppins', serif;
         font-weight: 900;
         color: #1a6b2a;
         letter-spacing: 1px;
       }
       .intro-sloka {
-        font-size: clamp(18px, 3.7vw, 22px);
+        font-size: clamp(21px, 4.2vw, 26px);
         font-weight: 700;
         color: #1a237e;
-        line-height: 1.9;
+        line-height: 2.1;
       }
       .intro-divider {
         width: 42%;
@@ -1321,14 +1332,14 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
         margin: 6px auto;
       }
       .intro-meaning {
-        font-size: clamp(14px, 3.0vw, 18px);
+        font-size: clamp(16px, 3.4vw, 21px);
         color: #4a4a4a;
         font-style: italic;
         max-width: 85%;
-        line-height: 1.7;
+        line-height: 1.9;
       }
       .intro-blessing {
-        font-size: clamp(14px, 3.0vw, 17px);
+        font-size: clamp(16px, 3.4vw, 20px);
         color: #993C1D;
         font-weight: 700;
         margin-top: 8px;
@@ -1383,26 +1394,26 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
       }
 
       .pred-verbal {
-        font-size: clamp(15px, 2.5vw, 18px);
+        font-size: clamp(17px, 2.9vw, 21px);
         color: #000;
 		font-weight: 600;
         background: #e8f5e9;
         border-radius: 3px;
-        padding: 1px 5px;
+        padding: 2px 6px;
       }
 
       .pred-strength {
-        font-size: clamp(12px, 2.5vw, 14px);
+        font-size: clamp(14px, 2.8vw, 17px);
         font-weight: bold;
         background: #f3e5f5;
         border-radius: 3px;
-        padding: 1px 5px;
+        padding: 2px 6px;
       }
 
       .pred-text {
-        font-size: clamp(15px, 2.8vw, 19px);
+        font-size: clamp(17px, 3.2vw, 22px);
         color: #333;
-        line-height: 1.5;
+        line-height: 1.85;
       }
 
       /* Padding on each paragraph so margins are preserved on every print
@@ -1412,11 +1423,11 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
       }
 
       .pred-zodiac-info {
-        font-size: clamp(12px, 2.5vw, 14px);
+        font-size: clamp(14px, 2.8vw, 17px);
         color: #555;
         font-style: italic;
-        margin-bottom: 4px;
-        line-height: 1.4;
+        margin-bottom: 6px;
+        line-height: 1.6;
       }
 	  
 	.ashtak-grid {
@@ -1473,26 +1484,111 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
       @media (max-width: 349px) {
         .page-container { padding: 4mm 2mm; }
         .charts-container { gap: 2px; }
-        .box { font-size: 9px; padding: 1px; }
-        .center-box { font-size: 9px; }
-        table.planets th, table.planets td { font-size: 10px; padding: 2px 1px; }
-        .header-table td { font-size: 10px; padding: 2px 3px; }
-        .info-label, .info-value, .info-title { font-size: 11px; }
-        h2 { font-size: 12px; }
-        .lh-name { font-size: 13px; }
+        .box { font-size: 10px; padding: 1px; }
+        .center-box { font-size: 10px; }
+        table.planets th, table.planets td { font-size: 11px; padding: 2px 1px; }
+        .header-table td { font-size: 11px; padding: 2px 3px; }
+        .info-label, .info-value, .info-title { font-size: 12px; }
+        h2 { font-size: 14px; }
+        .lh-name { font-size: 14px; }
         .letterhead img { width: 28px; }
-        .pred-text, .pred-zodiac-info { font-size: 10px; }
-        .section-heading { font-size: 13px; }
+        .pred-text, .pred-zodiac-info { font-size: 12px; }
+        .section-heading { font-size: 15px; margin: 10mm auto 1mm !important;}
       }
 
       @media print {
         html, body { width: 210mm; }
+
+        /* ── Overall font size & line spacing bump for print/PDF ──
+           These override the clamp()-based sizes used on screen, which
+           already sit near their max at print width, so values below are
+           raised further (and line-heights opened up) for legibility on
+           the printed page. */
+        h2 { font-size: 30px !important; line-height: 1.4 !important; }
+        .section-heading { font-size: 27px !important; line-height: 1.4 !important; margin: 10mm auto 1mm !important;
+			display: block !important;
+			text-align: center !important;
+		}
+        .header-table td { font-size: 22px !important; line-height: 1.5 !important; }
+        .info-label, .info-title { font-size: 20px !important; line-height: 1.5 !important; }
+        .info-value { font-size: 22px !important; line-height: 1.5 !important; }
+        .lh-name { font-size: 34px !important; }
+        .lh-meta-item { font-size: 26px !important; line-height: 1.5 !important; }
+        .pred-text { font-size: 25px !important; line-height: 2.15 !important; }
+        .pred-zodiac-info { font-size: 19px !important; line-height: 1.85 !important; }
+        .pred-verbal { font-size: 24px !important; line-height: 1.6 !important; }
+        .pred-strength { font-size: 19px !important; line-height: 1.6 !important; }
+        .pred-house-num { font-size: 25px !important; }
+        .dbt-title { font-size: 22px !important; line-height: 1.4 !important; }
+        table.dbt-table { font-size: 17px !important; line-height: 1.5 !important; }
+        .dbt-dasha-cell .dbt-dasha-name { font-size: 18px !important; }
+        .dbt-dasha-cell .dbt-dasha-label { font-size: 15px !important; }
+        .bhukthi-table { font-size: 18px !important; line-height: 1.5 !important; }
+        .ashtak-score { font-size: 27px !important; }
+        .ashtak-sign { font-size: 16px !important; }
+        .intro-sloka { font-size: 28px !important; line-height: 2.3 !important; }
+        .intro-meaning { font-size: 22px !important; line-height: 2.05 !important; }
+        .intro-blessing { font-size: 21px !important; line-height: 1.7 !important; }
+        .subam-text { font-size: 50px !important; }
+        .copyright-text { font-size: 15px !important; line-height: 1.5 !important; }
+
         /* .page-container padding only applies on page 1 where the div starts.
            Every flowing element carries its own side padding/margin so it is
            honoured on ALL continuation pages. */
         .page-container { width: 210mm; padding: 6mm 0; }
         .pred-text { padding-inline: 16mm; }
         .highlight-box { margin-inline: 14mm; }
+		
+		.ashtak-matrix-section {
+			width: calc(100% - 28mm) !important;
+			margin: 10mm 14mm 0 !important;
+			overflow: visible !important;
+		  }
+
+		  .ashtak-table-title {
+			font-size: 22px !important;
+			line-height: 1.5 !important;
+			padding: 10px 16px !important;
+		  }
+
+		  .ashtak-matrix-section table {
+			width: 100% !important;
+			font-size: 18px !important;
+			line-height: 1.5 !important;
+		  }
+
+		  .ashtak-matrix-section th,
+		  .ashtak-matrix-section td {
+			font-size: 18px !important;
+			padding: 7px 6px !important;
+		  }
+
+
+		  /* ── Sarvashtaka Total Bindus ── */
+		  .sarvashtaka-section {
+			width: calc(100% - 28mm) !important;
+			margin: 14mm 14mm 0 !important;
+			overflow: visible !important;
+		  }
+
+		  .sarvashtaka-title {
+			font-size: 22px !important;
+			line-height: 1.5 !important;
+			padding: 10px 16px !important;
+		  }
+
+		  .sarvashtaka-section table {
+			width: 100% !important;
+			font-size: 18px !important;
+			line-height: 1.5 !important;
+		  }
+
+		  .sarvashtaka-section th,
+		  .sarvashtaka-section td {
+			font-size: 18px !important;
+			padding: 7px 8px !important;
+		  }
+
 
         /* Virivana palangal: add top breathing room below the section heading */
         .content-padded--detailed { padding-top: 14px; }
@@ -1518,21 +1614,64 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
 		  }
 
 		  table.planets th {
-			padding: 10px 5px !important;
-			font-size: 17px !important;
-			line-height: 1.4 !important;
+			padding: 12px 6px !important;
+			font-size: 21px !important;
+			line-height: 1.65 !important;
 			text-align: center !important;
 		  }
 
 		  table.planets td {
-			padding: 11px 5px !important;
-			font-size: 17px !important;
-			line-height: 1.5 !important;
+			padding: 13px 6px !important;
+			font-size: 21px !important;
+			line-height: 1.75 !important;
 			text-align: center !important;
 			white-space: nowrap;
 		  }
+		  
+		  .chart-pair-page {
+			padding-top: 15mm !important;
+			padding-bottom: 15mm !important;
+			box-sizing: border-box;
+		  }
 
+		  /* Keep the two charts clearly separated */
+		  .chart-pair-stack {
+			gap: 15mm !important;
+			width: 100% !important;
+		  }
 
+		  /* Larger Kattam */
+		  .chart-wrapper {
+			width: 90% !important;
+			max-width: 440px !important;
+			margin: 0 auto !important;
+			flex-shrink: 0 !important;
+		  }
+
+		  .kattam-grid {
+			width: 100% !important;
+			aspect-ratio: 1 !important;
+		  }
+
+		  /* Kattam text */
+		  .box {
+			font-size: 20px !important;
+			padding: 4px !important;
+			line-height: 1.25 !important;
+		  }
+
+		  .center-box {
+			font-size: 26px !important;
+		  }
+
+		  /* Ashtakavarga */
+		  .ashtak-score {
+			font-size: 30px !important;
+		  }
+
+		  .ashtak-sign {
+			font-size: 18px !important;
+		  }
 
         .pred-card {
 		  margin-inline: 14mm;
