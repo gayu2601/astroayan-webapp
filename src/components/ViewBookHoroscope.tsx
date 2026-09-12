@@ -80,6 +80,8 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
     dob: Date;
     tob: Date;
     place: string;
+    lat: number;
+    lon: number;
   }) => {
     setLoading(true);
     setError(null);
@@ -98,6 +100,8 @@ export default function ViewBookHoroscope({ isLight = false }: { isLight?: boole
         dob: dobStr,
         time: timeStr,
         place: values.place,
+        lat: values.lat,
+        lon: values.lon,
       }, language);
 
       if (data) {

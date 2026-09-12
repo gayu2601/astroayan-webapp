@@ -68,29 +68,13 @@ export const useBookHoroscope = () => {
 	  return res.json();
 	};
 
-  const geocodePlace = async (place) => {
-    const encoded = encodeURIComponent(place);
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1`,
-      { headers: { 'User-Agent': 'JathagamApp/1.0' } }
-    );
-    const data = await res.json();
-    if (!data || data.length === 0) throw new Error(`"${place}" என்ற இடத்தை கண்டுபிடிக்க முடியவில்லை.`);
-    return {
-      lat: parseFloat(data[0].lat),
-      lon: parseFloat(data[0].lon),
-    };
-  };
-  
   const generateAndPrint = async (formData, lang) => {
 	  console.log('in generateAndPrint', formData)
-    const { name, fatherName, motherName, dob, time, place } = formData;
+    const { name, fatherName, motherName, dob, time, place, lat, lon } = formData;
 	console.log('in generateAndPrint', formData)
     try {
       const [year, month, day] = dob.split('-').map(Number);
       const [hour, min] = time.split(':').map(Number);
-      
-      const { lat, lon } = await geocodePlace(place);
 
 	  const pad = (n) => String(n).padStart(2, '0');
 

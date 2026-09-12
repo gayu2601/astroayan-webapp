@@ -554,6 +554,7 @@ function JananaGocharaOppeedu({
 
 interface HoroscopeOutputScreenProps {
   name: string;
+  place: string;
   date: Date;
   data: any;
   loading: boolean;
@@ -564,6 +565,7 @@ interface HoroscopeOutputScreenProps {
 
 export default function HoroscopeOutputScreen({
   name,
+  place,
   date,
   data,
   loading,
@@ -881,6 +883,13 @@ export default function HoroscopeOutputScreen({
             >
               <Calendar className="w-2.5 h-2.5" />
               {formattedDateString}
+            </span>
+			<span
+              className={`inline-flex items-center gap-1 text-[17px] px-1.5 py-0.5 rounded-full border ${
+                isLight ? 'bg-white border-[rgba(0,0,0,0.1)] text-[#5C4F43]' : 'bg-slate-950 border-gray-800 text-gray-400'
+              }`}
+            >
+				{place}
             </span>
           </div>
 

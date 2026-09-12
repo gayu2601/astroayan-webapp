@@ -1162,6 +1162,7 @@ export default function App() {
 
   const [horoData, setHoroData] = useState<any>(null);
   const [horoInputName, setHoroInputName] = useState<string>('');
+  const [horoInputPlace, setHoroInputPlace] = useState<string>('');
   const [horoInputDate, setHoroInputDate] = useState<Date>(new Date());
   const { data: horoDetails, loading: horoDetailsLoading, error: horoDetailsError, fetch: fetchHoro, setData: setHoroDetails } = useHoroscopeData();
   
@@ -1923,6 +1924,7 @@ export default function App() {
                     {!horoData ? (
                       <HoroscopeInputForm onSubmit={(values) => {
                         setHoroInputName(values.name);
+						setHoroInputPlace(values.place);
                         setHoroInputDate(values.dob);
                         const dob = values.dob;
                         const input = { day: dob.getDate(), month: dob.getMonth() + 1, year: dob.getFullYear(), hour: dob.getHours(), min: dob.getMinutes(), lat: values.lat, lon: values.lon, tzone: values.tzone, lang: language };
@@ -1930,7 +1932,7 @@ export default function App() {
                         setHoroData(input);
                       }} />
                     ) : (
-                      <HoroscopeOutputScreen name={horoInputName} date={horoInputDate} data={horoDetails} loading={horoDetailsLoading} error={horoDetailsError} onBack={handleHoroBack} isLight={isLight}/>
+                      <HoroscopeOutputScreen name={horoInputName} place={horoInputPlace} date={horoInputDate} data={horoDetails} loading={horoDetailsLoading} error={horoDetailsError} onBack={handleHoroBack} isLight={isLight}/>
                     )}
                   </div>
                 )}

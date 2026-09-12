@@ -24,6 +24,9 @@ export default function BookHoroscopePdf({ isLight = true }: BookHoroscopePdfPro
     dob: Date;
     tob: Date;
     place: string;
+    lat: number;
+    lon: number;
+    tzone: number;
   }) => {
     setLoading(true);
     setError(null);
@@ -42,6 +45,9 @@ export default function BookHoroscopePdf({ isLight = true }: BookHoroscopePdfPro
         dob: dobStr,
         time: timeStr,
         place: values.place,
+        lat: values.lat,
+        lon: values.lon,
+        tzone: values.tzone,
       }, language);
 
       if (result) {
