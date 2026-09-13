@@ -301,6 +301,8 @@ export const translations = {
     'form.headerSub':           'Provide your birth details below to generate your precise Vedic birth chart and professional predictions.',
     'form.namePlaceholder':     'e.g. Arjun Sharma',
     'form.infoStrip':           'Vedic calculations require exact birth coordinates and time zone offsets for absolute accuracy.',
+	'form.coordinates':            'Latitude, Longitude',
+	'form.coordinatesHint':        'Coordinates are auto-filled from the selected place. You can manually adjust them if needed.',
 	
 	// ── Porutham (extended) ───────────────────────────────────────────
 	'porutham.girlDetails':         'Girl Details',
@@ -643,6 +645,8 @@ export const translations = {
     'form.headerSub':           'துல்லியமான ஜோதிடக் கணிப்புகள் மற்றும் ஜனன ஜாதகக் கட்டத்தைப் பெற உங்கள் பிறப்பு விவரங்களை கீழே உள்ளிடவும்.',
     'form.namePlaceholder':     'எ.கா. அர்ஜுன் சர்மா',
     'form.infoStrip':           'ஜோதிட கணிப்புகள் மிகத் துல்லியமாக இருக்க பிறந்த இடத்தின் தீர்க்கரேகை, அட்சரேகை மற்றும் நேர மண்டலக் குறியீடு அவசியம்.',
+	'form.coordinates':            'அட்சரேகை, தீர்க்கரேகை',
+	'form.coordinatesHint':        'தேர்ந்தெடுத்த இடத்தின் அடிப்படையில் அட்சரேகை, தீர்க்கரேகை தானாக நிரப்பப்படும். தேவையெனில், அவற்றை கைமுறையாக மாற்றலாம்.',
 	
 	// ── Porutham (extended) ───────────────────────────────────────────
 	'porutham.girlDetails':         'பெண் விவரம்',

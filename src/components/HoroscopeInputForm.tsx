@@ -37,6 +37,13 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
   const [lat, setLat] = useState<number>(13.0827); // default to Chennai
   const [lon, setLon] = useState<number>(80.2707); // default to Chennai
   const [tzone, setTzone] = useState<number>(5.5); // default to India
+  // Raw text for the optional manual lat/lon inputs, so the user can type
+  // freely (including "-", ".", empty) without number-parsing fighting them.
+  const [latInput, setLatInput] = useState<string>(String(13.0827));
+  const [lonInput, setLonInput] = useState<string>(String(80.2707));
+  // Once the user manually edits lat/lon, their values take precedence over
+  // whatever the place autocomplete/geocoding would otherwise set.
+  const [coordsManuallyEdited, setCoordsManuallyEdited] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [openLocation, setOpenLocation] = useState(false);
@@ -73,6 +80,8 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
             motherName: r.mother_name,
             dob: r.dob, // ISO string or Date string
             place: r.place,
+            lat: r.lat,
+            lon: r.lon,
             savedAt: r.saved_at,
           }))
         );
@@ -209,13 +218,15 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
     }, 400);
   };
 
-  const handleSelectLocation = async (item: any) => {
+  const handleSelectLocation = async (item: any, force: boolean = false) => {
     setPlace(item.description);
     setSuggestions([]);
     setOpenLocation(false);
     setLoadingLocation(true);
     try {
       const olaKey = process.env.EXPO_PUBLIC_OLA_MAPS_API_KEY;
+      let geocoded: { lat: number; lon: number } | null = null;
+
       if (item.source === 'olamaps' && olaKey) {
         const url = `https://api.olamaps.io/places/v1/details?place_id=${item.place_id}&api_key=${olaKey}`;
         const res = await fetch(url);
@@ -223,8 +234,7 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
           const data = await res.json();
           const location = data.result?.geometry?.location;
           if (location) {
-            setLat(location.lat);
-            setLon(location.lng);
+            geocoded = { lat: location.lat, lon: location.lng };
           }
         }
       } else {
@@ -233,15 +243,51 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
         if (res.ok) {
           const data = await res.json();
           if (data && data[0]) {
-            setLat(parseFloat(data[0].lat));
-            setLon(parseFloat(data[0].lon));
+            geocoded = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
           }
+        }
+      }
+
+      if (geocoded) {
+        // Once the user has manually typed their own lat/lon, respect that
+        // choice — don't let a new place selection silently override it.
+        if (force || !coordsManuallyEdited) {
+          setLat(geocoded.lat);
+          setLon(geocoded.lon);
+          setLatInput(String(geocoded.lat));
+          setLonInput(String(geocoded.lon));
         }
       }
     } catch (e) {
       console.error('Error fetching details for selected location:', e);
     } finally {
       setLoadingLocation(false);
+    }
+  };
+
+  // ── Manual lat/lon override ──
+  const handleLatChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLatInput(value);
+    setCoordsManuallyEdited(true);
+    const parsed = parseFloat(value);
+    if (!isNaN(parsed)) setLat(parsed);
+  };
+
+  const handleLonChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLonInput(value);
+    setCoordsManuallyEdited(true);
+    const parsed = parseFloat(value);
+    if (!isNaN(parsed)) setLon(parsed);
+  };
+
+  const handleResetCoords = () => {
+    setCoordsManuallyEdited(false);
+    // Re-run geocoding for the currently typed place, if any, so the
+    // fields snap back to the auto-derived coordinates.
+    if (place.trim()) {
+      handleSelectLocation({ description: place.trim(), source: 'reset' }, true);
     }
   };
 
@@ -253,41 +299,71 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
     // Combine date and time to construct ISO string
     const combinedDateStr = `${birthDate}T${birthTime}`;
 
-    const newProfile = {
-      id: Date.now().toString(),
+    // If we're editing a profile that was loaded from the dropdown, update
+    // that row instead of inserting a new one.
+    const isEditingExisting = !!selectedProfile?.id;
+
+    const profilePayload = {
       name: name.trim(),
       fatherName: fatherName.trim(),
       motherName: motherName.trim(),
       dob: combinedDateStr,
       place: place.trim(),
+      lat,
+      lon,
       savedAt: new Date().toISOString(),
     };
 
     try {
-      const { error } = await supabase
-        .from('horoscope_profiles')
-        .insert({
-          user_id: user.id,
-          name: newProfile.name,
-          father_name: newProfile.fatherName,
-          mother_name: newProfile.motherName,
-          dob: newProfile.dob,
-          place: newProfile.place,
-          saved_at: newProfile.savedAt,
-        });
+      if (isEditingExisting) {
+        const { error } = await supabase
+          .from('horoscope_profiles')
+          .update({
+            name: profilePayload.name,
+            father_name: profilePayload.fatherName,
+            mother_name: profilePayload.motherName,
+            dob: profilePayload.dob,
+            place: profilePayload.place,
+            lat: profilePayload.lat,
+            lon: profilePayload.lon,
+            saved_at: profilePayload.savedAt,
+          })
+          .eq('id', selectedProfile.id)
+          .eq('user_id', user.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // Update state local list
-      const existing = savedProfiles.findIndex(
-        (p) => p.name.toLowerCase() === newProfile.name.toLowerCase()
-      );
-      const updated =
-        existing >= 0
-          ? savedProfiles.map((p, i) => (i === existing ? newProfile : p))
-          : [newProfile, ...savedProfiles];
+        const updatedProfile = { ...profilePayload, id: selectedProfile.id };
 
-      setSavedProfiles(updated);
+        setSavedProfiles((prev) =>
+          prev.map((p) => (p.id === selectedProfile.id ? updatedProfile : p))
+        );
+        setSelectedProfile(updatedProfile);
+      } else {
+        const { data, error } = await supabase
+          .from('horoscope_profiles')
+          .insert({
+            user_id: user.id,
+            name: profilePayload.name,
+            father_name: profilePayload.fatherName,
+            mother_name: profilePayload.motherName,
+            dob: profilePayload.dob,
+            place: profilePayload.place,
+            lat: profilePayload.lat,
+            lon: profilePayload.lon,
+            saved_at: profilePayload.savedAt,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        const newProfile = { ...profilePayload, id: data?.id ?? Date.now().toString() };
+
+        setSavedProfiles((prev) => [newProfile, ...prev]);
+        setSelectedProfile(newProfile);
+      }
+
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus(null), 2000);
     } catch (err) {
@@ -302,6 +378,21 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
     setFatherName(profile.fatherName || '');
     setMotherName(profile.motherName || '');
     setPlace(profile.place || '');
+
+    if (typeof profile.lat === 'number' && typeof profile.lon === 'number') {
+      // The profile already has confirmed coordinates — use them as-is and
+      // treat them like a manual override so re-selecting the same place
+      // from autocomplete doesn't silently replace them.
+      setLat(profile.lat);
+      setLon(profile.lon);
+      setLatInput(String(profile.lat));
+      setLonInput(String(profile.lon));
+      setCoordsManuallyEdited(true);
+    } else {
+      // Older profiles saved before lat/lon existed — nothing to restore,
+      // so clear any leftover manual override from a previous edit session.
+      setCoordsManuallyEdited(false);
+    }
     
     if (profile.dob) {
       const d = new Date(profile.dob);
@@ -602,6 +693,53 @@ export default function HoroscopeInputForm({ onSubmit }: HoroscopeInputFormProps
                 ))}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Latitude / Longitude (optional manual override) */}
+        <div className="relative group">
+          <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l bg-emerald-500" />
+          <div className="pl-3 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase block">
+                {t('form.coordinates') || (isTamil ? 'அட்சரேகை / தீர்க்கரேகை' : 'Latitude / Longitude')}
+                <span className="ml-1 normal-case font-normal text-gray-500 dark:text-gray-500">
+                  ({isTamil ? 'விருப்பத்தேர்வு' : 'optional'})
+                </span>
+              </label>
+              {coordsManuallyEdited && (
+                <button
+                  type="button"
+                  onClick={handleResetCoords}
+                  className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 hover:underline uppercase tracking-wider"
+                >
+                  {t('form.resetCoords') || (isTamil ? 'மீட்டமை' : 'Reset to place')}
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="number"
+                step="any"
+                value={latInput}
+                onChange={handleLatChange}
+                placeholder={isTamil ? 'அட்சரேகை' : 'Latitude'}
+                className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white text-sm outline-none transition-all"
+              />
+              <input
+                type="number"
+                step="any"
+                value={lonInput}
+                onChange={handleLonChange}
+                placeholder={isTamil ? 'தீர்க்கரேகை' : 'Longitude'}
+                className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 rounded-lg px-4 py-2.5 text-gray-900 dark:text-white text-sm outline-none transition-all"
+              />
+            </div>
+            <p className="text-[10px] text-gray-500 dark:text-gray-500 leading-relaxed">
+              {t('form.coordinatesHint') || (isTamil
+                ? 'இயல்பாக இடத்தில் இருந்து கணக்கிடப்படும். நீங்கள் மாற்றினால், அந்த மதிப்புகளே பயன்படுத்தப்படும்.'
+                : "Auto-filled from the birth place above. Edit these and your values will be used instead.")}
+            </p>
           </div>
         </div>
 

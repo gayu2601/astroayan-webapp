@@ -765,153 +765,249 @@ export const JamakkolCalculator: React.FC<JamakkolCalculatorProps> = ({
 
         {/* 4. Chart Display View */}
         {activeTab === 'chart' && (
-          <div className="space-y-6">
-            <div className={`w-full max-w-[500px] sm:max-w-[560px] mx-auto border-2 rounded-2xl p-3 sm:p-4 shadow-xl transition-all ${
-              isLight
-                ? 'bg-amber-50/30 border-amber-800/80 shadow-amber-500/10'
-                : 'bg-slate-900/90 border-amber-700/80 shadow-2xl'
-            }`}>
-              
-              {/* 4x4 SOUTH INDIAN CHART GRID */}
-              <div className={`aspect-square grid grid-cols-4 grid-rows-4 border-2 rounded-xl overflow-hidden shadow-inner ${
-                isLight
-                  ? 'border-amber-800 bg-white'
-                  : 'border-amber-700 bg-slate-950'
-              }`}>
-                
-                {/* CENTER BOX (2x2) */}
-                <div className={`col-start-2 col-end-4 row-start-2 row-end-4 border-2 p-2 sm:p-3 flex flex-col items-center justify-between text-center transition-all ${
-                  isLight
-                    ? 'border-amber-800/50 bg-amber-50/70 text-[#2C241E]'
-                    : 'border-amber-700/60 bg-amber-950/30 text-white'
-                }`}>
-                  <div>
-                    <div className={`font-serif font-black text-base sm:text-lg leading-tight ${
-                      isLight ? 'text-amber-950' : 'text-amber-200'
-                    }`}>
-                      {isTa ? "ஜாமக்கோள் பிரசன்னம்" : "Jamakkol Prasanam"}
-                    </div>
-                    <div className={`text-xs font-semibold mt-0.5 ${
-                      isLight ? 'text-blue-900' : 'text-blue-300'
-                    }`}>
-                      {calculatedData?.formattedDate} {calculatedData?.formattedTime}
-                    </div>
-                    <div className={`text-xs font-bold ${
-                      isLight ? 'text-blue-800' : 'text-blue-400'
-                    }`}>
-                      {calculatedData?.tamWeekdayName} — {isTa ? "ஜாமம்" : "Jamam"} # {calculatedData?.jamamNum}
-                    </div>
-                  </div>
+          	<div className="space-y-6">
+			  <div
+				className={`w-full max-w-[760px] lg:max-w-[820px] mx-auto border-2 rounded-2xl p-4 sm:p-5 shadow-xl transition-all ${
+				  isLight
+					? 'bg-amber-50/30 border-amber-800/80 shadow-amber-500/10'
+					: 'bg-slate-900/90 border-amber-700/80 shadow-2xl'
+				}`}
+			  >
 
-                  {/* DYNAMIC SPHUTAS IN CENTER */}
-                  <div className="w-full space-y-1 my-auto">
-                    {!calculatedData?.hasApiData ? (
-                      <div className={`text-[10px] text-center italic py-2 ${
-                        isLight ? 'text-slate-500' : 'text-slate-400'
-                      }`}>
-                        {apiLoading ? (isTa ? "⏳ API கணக்கிடுகிறோம்…" : "⏳ Fetching astronomical data…") : (isTa ? "⚡ கணக்கிடுக அழுத்தவும்" : "⚡ Click Calculate")}
-                      </div>
-                    ) : (<>
-                    <div className={`border rounded-md py-0.5 px-2 flex justify-between items-center text-xs shadow-2xs ${
-                      isLight
-                        ? 'bg-white/95 border-red-300 text-[#2C241E]'
-                        : 'bg-slate-900/90 border-red-800/80 text-slate-100'
-                    }`}>
-                      <span className={`font-bold ${isLight ? 'text-red-700' : 'text-red-400'}`}>
-                        {isTa ? "உதயம்" : "Udayam"}
-                      </span>
-                      <span className="font-medium">★ {calculatedData?.udayamInfo?.formattedStar}</span>
-                    </div>
+				{/* 4x4 SOUTH INDIAN CHART GRID */}
+				<div
+				  className={`grid grid-cols-4
+					grid-rows-[minmax(125px,auto)_minmax(125px,auto)_minmax(125px,auto)_minmax(125px,auto)]
+					border-2 rounded-xl overflow-hidden shadow-inner ${
+					  isLight
+						? 'border-amber-800 bg-white'
+						: 'border-amber-700 bg-slate-950'
+					}`}
+				>
 
-                    <div className={`border rounded-md py-0.5 px-2 flex justify-between items-center text-xs shadow-2xs ${
-                      isLight
-                        ? 'bg-white/95 border-red-300 text-[#2C241E]'
-                        : 'bg-slate-900/90 border-red-800/80 text-slate-100'
-                    }`}>
-                      <span className={`font-bold ${isLight ? 'text-red-700' : 'text-red-400'}`}>
-                        {isTa ? "ஆருடம்" : "Aarudam"}
-                      </span>
-                      <span className="font-medium">★ {calculatedData?.arudamInfo?.formattedStar}</span>
-                    </div>
+				  {/* CENTER BOX (2x2) */}
+				  <div
+					className={`col-start-2 col-end-4 row-start-2 row-end-4
+					  border-2 p-3 sm:p-4 min-h-[250px] sm:min-h-[290px]
+					  flex flex-col items-center justify-between text-center
+					  transition-all ${
+						isLight
+						  ? 'border-amber-800/50 bg-amber-50/70 text-[#2C241E]'
+						  : 'border-amber-700/60 bg-amber-950/30 text-white'
+					  }`}
+				  >
+					<div className="w-full">
+					  <div
+						className={`font-serif font-black text-lg sm:text-xl leading-tight ${
+						  isLight ? 'text-amber-950' : 'text-amber-200'
+						}`}
+					  >
+						{isTa ? "ஜாமக்கோள் பிரசன்னம்" : "Jamakkol Prasanam"}
+					  </div>
 
-                    <div className={`border rounded-md py-0.5 px-2 flex justify-between items-center text-xs shadow-2xs ${
-                      isLight
-                        ? 'bg-white/95 border-red-300 text-[#2C241E]'
-                        : 'bg-slate-900/90 border-red-800/80 text-slate-100'
-                    }`}>
-                      <span className={`font-bold ${isLight ? 'text-red-700' : 'text-red-400'}`}>
-                        {isTa ? "கவிப்பு" : "Kavippu"}
-                      </span>
-                      <span className="font-medium">★ {calculatedData?.kavippuInfo?.formattedStar}</span>
-                    </div>
-                    </>)}
-                  </div>
+					  <div
+						className={`text-sm font-semibold mt-1 ${
+						  isLight ? 'text-blue-900' : 'text-blue-300'
+						}`}
+					  >
+						{calculatedData?.formattedDate} {calculatedData?.formattedTime}
+					  </div>
 
-                  <div className={`text-[10px] font-medium truncate max-w-full ${
-                    isLight ? 'text-[#7A695A]' : 'text-slate-400'
-                  }`}>
-                    {timingParams.location}
-                  </div>
-                </div>
+					  <div
+						className={`text-sm font-bold ${
+						  isLight ? 'text-blue-800' : 'text-blue-400'
+						}`}
+					  >
+						{calculatedData?.tamWeekdayName} —{" "}
+						{isTa ? "ஜாமம்" : "Jamam"} # {calculatedData?.jamamNum}
+					  </div>
+					</div>
 
-                {/* 12 RASI HOUSES */}
-                {SIGNS.map((sign, index) => {
-                  const pos = SOUTH_INDIAN_GRID_POS[index];
-                  const cellSphutas = sphutasInChart[index] || [];
-                  const jamaGrahas = jamaGrahasInChart[index] || [];
-                  const signName = isTa ? sign.nameTa : sign.nameEn;
+					{/* DYNAMIC SPHUTAS IN CENTER */}
+					<div className="w-full space-y-2 my-auto py-3">
+					  {!calculatedData?.hasApiData ? (
+						<div
+						  className={`text-xs text-center italic py-3 ${
+							isLight ? 'text-slate-500' : 'text-slate-400'
+						  }`}
+						>
+						  {apiLoading
+							? isTa
+							  ? "⏳ API கணக்கிடுகிறோம்…"
+							  : "⏳ Fetching astronomical data…"
+							: isTa
+							  ? "⚡ கணக்கிடுக அழுத்தவும்"
+							  : "⚡ Click Calculate"}
+						</div>
+					  ) : (
+						<>
+						  {/* UDAYAM */}
+						  <div
+							className={`border rounded-md py-1.5 px-3 flex justify-between items-center text-sm shadow-2xs ${
+							  isLight
+								? 'bg-white/95 border-red-300 text-[#2C241E]'
+								: 'bg-slate-900/90 border-red-800/80 text-slate-100'
+							}`}
+						  >
+							<span
+							  className={`font-bold ${
+								isLight ? 'text-red-700' : 'text-red-400'
+							  }`}
+							>
+							  {isTa ? "உதயம்" : "Udayam"}
+							</span>
 
-                  return (
-                    <div
-                      key={sign.nameEn}
-                      style={{ gridRow: pos.row, gridColumn: pos.col }}
-                      className={`border p-1.5 flex flex-col justify-between items-center relative aspect-square overflow-hidden transition-colors ${
-                        isLight
-                          ? 'border-amber-800/30 bg-white'
-                          : 'border-amber-700/40 bg-slate-900/95'
-                      }`}
-                    >
-                      <span className={`text-[9px] sm:text-[10px] font-semibold self-start ${
-                        isLight ? 'text-[#7A695A]' : 'text-slate-400'
-                      }`}>
-                        {signName}
-                      </span>
+							<span className="font-medium">
+							  ★ {calculatedData?.udayamInfo?.formattedStar}
+							</span>
+						  </div>
 
-                      <div className="flex flex-col items-center gap-0.5 my-auto text-center w-full">
-                        {/* DYNAMIC JAMA GRAHAS */}
-                        {jamaGrahas.map((jg, jgIdx) => (
-                          <div key={jgIdx} className={`flex flex-col items-center leading-tight font-bold ${
-                            isLight ? 'text-blue-800' : 'text-blue-400'
-                          }`}>
-                            <span className="text-[11px] sm:text-xs">{jg.name}</span>
-                            <span className="text-[8px] sm:text-[9px] font-mono">({jg.degree})</span>
-                          </div>
-                        ))}
+						  {/* AARUDAM */}
+						  <div
+							className={`border rounded-md py-1.5 px-3 flex justify-between items-center text-sm shadow-2xs ${
+							  isLight
+								? 'bg-white/95 border-red-300 text-[#2C241E]'
+								: 'bg-slate-900/90 border-red-800/80 text-slate-100'
+							}`}
+						  >
+							<span
+							  className={`font-bold ${
+								isLight ? 'text-red-700' : 'text-red-400'
+							  }`}
+							>
+							  {isTa ? "ஆருடம்" : "Aarudam"}
+							</span>
 
-                        {/* DYNAMIC PRASANNA SPHUTAS */}
-                        {cellSphutas.map((item, i) => (
-                          <div key={i} className="flex flex-col items-center leading-tight">
-                            <span className={`text-[10px] sm:text-[11px] ${item.colorClass}`}>{item.label}</span>
-                            <span className={`text-[8px] sm:text-[9px] font-mono ${
-                              isLight ? 'text-slate-600' : 'text-slate-400'
-                            }`}>
-                              ({item.degree})
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+							<span className="font-medium">
+							  ★ {calculatedData?.arudamInfo?.formattedStar}
+							</span>
+						  </div>
 
-                      <span className={`absolute bottom-0.5 right-1 text-[8px] sm:text-[9px] font-bold ${
-                        isLight ? 'text-amber-800' : 'text-amber-400'
-                      }`}>
-                        {pos.bhava}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+						  {/* KAVIPPU */}
+						  <div
+							className={`border rounded-md py-1.5 px-3 flex justify-between items-center text-sm shadow-2xs ${
+							  isLight
+								? 'bg-white/95 border-red-300 text-[#2C241E]'
+								: 'bg-slate-900/90 border-red-800/80 text-slate-100'
+							}`}
+						  >
+							<span
+							  className={`font-bold ${
+								isLight ? 'text-red-700' : 'text-red-400'
+							  }`}
+							>
+							  {isTa ? "கவிப்பு" : "Kavippu"}
+							</span>
+
+							<span className="font-medium">
+							  ★ {calculatedData?.kavippuInfo?.formattedStar}
+							</span>
+						  </div>
+						</>
+					  )}
+					</div>
+
+					{/* LOCATION */}
+					<div
+					  className={`text-xs font-medium truncate max-w-full ${
+						isLight ? 'text-[#7A695A]' : 'text-slate-400'
+					  }`}
+					>
+					  {timingParams.location}
+					</div>
+				  </div>
+
+				  {/* 12 RASI HOUSES */}
+				  {SIGNS.map((sign, index) => {
+					const pos = SOUTH_INDIAN_GRID_POS[index];
+					const cellSphutas = sphutasInChart[index] || [];
+					const jamaGrahas = jamaGrahasInChart[index] || [];
+					const signName = isTa ? sign.nameTa : sign.nameEn;
+
+					return (
+					  <div
+						key={sign.nameEn}
+						style={{
+						  gridRow: pos.row,
+						  gridColumn: pos.col,
+						}}
+						className={`border p-2 sm:p-3 min-h-[125px] sm:min-h-[145px]
+						  flex flex-col justify-between items-center relative
+						  overflow-hidden transition-colors ${
+							isLight
+							  ? 'border-amber-800/30 bg-white'
+							  : 'border-amber-700/40 bg-slate-900/95'
+						  }`}
+					  >
+						{/* RASI NAME */}
+						<span
+						  className={`text-[11px] sm:text-xs font-semibold self-start ${
+							isLight ? 'text-[#7A695A]' : 'text-slate-400'
+						  }`}
+						>
+						  {signName}
+						</span>
+
+						{/* CELL CONTENT */}
+						<div className="flex flex-col items-center gap-1 my-auto text-center w-full">
+
+						  {/* DYNAMIC JAMA GRAHAS */}
+						  {jamaGrahas.map((jg, jgIdx) => (
+							<div
+							  key={jgIdx}
+							  className={`flex flex-col items-center leading-tight font-bold ${
+								isLight ? 'text-blue-800' : 'text-blue-400'
+							  }`}
+							>
+							  <span className="text-xs sm:text-sm">
+								{jg.name}
+							  </span>
+
+							  <span className="text-[9px] sm:text-[10px] font-mono">
+								({jg.degree})
+							  </span>
+							</div>
+						  ))}
+
+						  {/* DYNAMIC PRASANNA SPHUTAS */}
+						  {cellSphutas.map((item, i) => (
+							<div
+							  key={i}
+							  className="flex flex-col items-center leading-tight"
+							>
+							  <span
+								className={`text-[11px] sm:text-xs ${item.colorClass}`}
+							  >
+								{item.label}
+							  </span>
+
+							  <span
+								className={`text-[9px] sm:text-[10px] font-mono ${
+								  isLight
+									? 'text-slate-600'
+									: 'text-slate-400'
+								}`}
+							  >
+								({item.degree})
+							  </span>
+							</div>
+						  ))}
+						</div>
+
+						{/* BHAVA NUMBER */}
+						<span
+						  className={`absolute bottom-1 right-1.5 text-[9px] sm:text-[10px] font-bold ${
+							isLight ? 'text-amber-800' : 'text-amber-400'
+						  }`}
+						>
+						  {pos.bhava}
+						</span>
+					  </div>
+					);
+				  })}
+				</div>
+			  </div>
+			</div>
         )}
 
         {/* 5. Dynamic Prasanna Sphutas Tab */}

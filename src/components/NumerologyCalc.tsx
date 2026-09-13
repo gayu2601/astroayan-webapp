@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import ScreenGuard from './ScreenGuard';
 
 /* ------------------------------------------------------------------ */
 /*  NumerologyCalc — Bilingual Tamil & English Numerology Calculator  */
@@ -451,6 +452,7 @@ export default function NumerologyCalc({
   const monthNames = isTa ? MONTHS_TA : MONTHS_EN;
 
   return (
+  <ScreenGuard featureId="jadhagam_numerology">
     <div className={`numc-root ${isLight ? 'numc-theme-light' : 'numc-theme-dark'}`}>
       <style>{`
         .numc-root {
@@ -973,5 +975,6 @@ export default function NumerologyCalc({
         </div>
       </div>
     </div>
+	</ScreenGuard>
   );
 }

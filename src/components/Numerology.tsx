@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ScreenGuard from './ScreenGuard';
 
 export type Mode = "full" | "last4";
 export type CompatibilityLevel = "same" | "friend" | "neutral" | "enemy";
@@ -399,6 +400,7 @@ export default function Numerology({
     : "w-full rounded-lg bg-slate-800 border border-slate-700 px-3.5 py-2.5 text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 text-sm";
 
   return (
+  <ScreenGuard featureId="numerology">
     <div className={`rounded-2xl border p-5 md:p-8 transition-colors ${
       isLight
         ? 'bg-[#F5EFE0] text-[#3A2E22] border-[#DED2B8]'
@@ -629,5 +631,6 @@ export default function Numerology({
         </div>
       </div>
     </div>
+	</ScreenGuard>
   );
 }

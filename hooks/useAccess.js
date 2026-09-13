@@ -41,6 +41,8 @@ export const FEATURE_ROUTE_MAP = {
   rutu_madha_palan: '(app)/muhurtham',
   rutu_lagna_palan: '(app)/muhurtham',
   star_gemstone: '(app)/gemstone-mapping',
+  numerology: '(app)/numerology',
+  jadhagam_numerology: '(app)/jadhagam-numerology',
 };
 
 // Reverse: route segment → featureId  e.g. 'home' → 'panchang'

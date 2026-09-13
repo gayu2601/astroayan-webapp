@@ -1798,7 +1798,7 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
       </tr>
     </table>
 
-      <div class="info-box left">
+      <div class="info-box left" style="margin-top: 20px; margin-bottom: 20px;">
         <div style="text-align:center;">
           <span class="info-label">${t.labels.dashaBalanceLabel}: </span>
           <span class="info-value">${dashaBalance || ''}</span>
@@ -1812,14 +1812,27 @@ export const generateBookReportHTML = (data, lang = 'ta', user) => {
           <span class="info-value">${ascendantDegree}°</span>
         </div>
       </div>
-      <div class="info-box right" style="margin-top:10px; margin-bottom:20px">
-        <div class="info-title">${t.labels.currentDashaTitle}</div>
-        <div class="info-value" style="color:#1a237e; font-size:clamp(15px, 3.7vw, 19px);">${nadappuDasa ? nadappuDasa.text : ''}</div>
-        <div style="font-size:clamp(12px, 2.5vw, 15px); color:#d32f2f;">${t.labels.bhukthiEndLabel}</div>
-        <div style="font-size:clamp(12px, 2.5vw, 15px); color:#d32f2f;">
-          <b>${nadappuDasa ? (nadappuDasa.endDate || '') : ''}</b>
-        </div>
-      </div>
+        <div class="info-box right" style="margin-bottom: 20px;">
+		  <div class="info-title">${t.labels.currentDashaTitle}</div>
+
+		  <div class="info-value" style="color:#1a237e; font-size:clamp(12px,3vw,15px);">
+			${nadappuDasa ? nadappuDasa.text : ''}
+		  </div>
+
+		  <div style="font-size:clamp(12px,3vw,15px); font-weight: 900; color:#d32f2f; margin-bottom: 5px">
+			${lang === 'ta' ? 'தசா முடிவு:' : 'Dasha ends:'}
+		  </div>
+		  <div style="font-size:clamp(12px,3vw,15px); color:#1a237e; margin-bottom: 5px">
+			<b>${nadappuDasa ? (nadappuDasa.dashaEnd || '') : ''}</b>
+		  </div>
+
+		  <div style="font-size:clamp(12px,3vw,15px); font-weight: 900; color:#d32f2f; margin-bottom: 5px">
+			${lang === 'ta' ? 'புக்தி முடிவு:' : 'Bhukthi ends:'}
+		  </div>
+		  <div style="font-size:clamp(12px,3vw,15px); color:#1a237e; margin-bottom: 5px">
+			<b>${nadappuDasa ? (nadappuDasa.bhukthiEnd || '') : ''}</b>
+		  </div>
+		</div>
 
     <div class="planets-wrapper page-break-row">
       <table class="planets">

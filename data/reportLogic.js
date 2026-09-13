@@ -428,14 +428,27 @@ export const generateReportHTML = (data, lang = 'ta', user = {}) => {
           <span class="info-value">${ascendantDegree}°</span>
         </div>
       </div>
-      <div class="info-box right">
-        <div class="info-title">${t.labels.currentDashaTitle}</div>
-        <div class="info-value" style="color:#1a237e; font-size:clamp(12px,3vw,15px);">${nadappuDasa ? nadappuDasa.text : ''}</div>
-        <div style="font-size:clamp(9px,2vw,12px); color:#d32f2f;">${t.labels.bhukthiEndLabel}</div>
-        <div style="font-size:clamp(9px,2vw,12px); color:#d32f2f;">
-          <b>${nadappuDasa ? (nadappuDasa.endDate || '') : ''}</b>
-        </div>
-      </div>
+        <div class="info-box right">
+		  <div class="info-title">${t.labels.currentDashaTitle}</div>
+
+		  <div class="info-value" style="color:#1a237e; font-size:clamp(12px,3vw,15px);">
+			${nadappuDasa ? nadappuDasa.text : ''}
+		  </div>
+
+		  <div style="font-size:clamp(9px,2vw,12px); color:#d32f2f;">
+			${lang === 'ta' ? 'தசா முடிவு:' : 'Dasha ends:'}
+		  </div>
+		  <div style="font-size:clamp(9px,2vw,12px); color:#1a237e;">
+			<b>${nadappuDasa ? (nadappuDasa.dashaEnd || '') : ''}</b>
+		  </div>
+
+		  <div style="font-size:clamp(9px,2vw,12px); color:#d32f2f;">
+			${lang === 'ta' ? 'புக்தி முடிவு:' : 'Bhukthi ends:'}
+		  </div>
+		  <div style="font-size:clamp(9px,2vw,12px); color:#1a237e;">
+			<b>${nadappuDasa ? (nadappuDasa.bhukthiEnd || '') : ''}</b>
+		  </div>
+		</div>
     </div>
 
     <div class="planets-wrapper">

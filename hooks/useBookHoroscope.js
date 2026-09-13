@@ -164,15 +164,17 @@ export const useBookHoroscope = () => {
 		const nadappuDasa = lang === 'ta'
 		  ? {
 			  text: `${currentDasha?.response?.order_of_dashas?.major?.name} தசா / ${currentDasha?.response?.order_of_dashas?.minor?.name} புக்தி`,
-			  endDate: currentDasha?.response?.order_of_dashas?.minor?.end
+			  dashaEnd: currentDasha?.response?.order_of_dashas?.major?.end,
+			  bhukthiEnd: currentDasha?.response?.order_of_dashas?.minor?.end
 			}
 		  : {
 			  text: `${currentDasha?.response?.order_of_dashas?.major?.name} Dasha / ${currentDasha?.response?.order_of_dashas?.minor?.name} Bhukthi`,
-			  endDate: currentDasha?.response?.order_of_dashas?.minor?.end
+			  dashaEnd: currentDasha?.response?.order_of_dashas?.major?.end,
+			  bhukthiEnd: currentDasha?.response?.order_of_dashas?.minor?.end
 			};
 		console.log('nadappuDasa', nadappuDasa);
 
-      const reportPayload = {
+      /*const reportPayload = {
         name, fatherName, motherName, birthParams, place,
         planets: planets.response, astro:astro.response, d1Chart: d1.response, d9Chart: d9.response,
         dashaBalance: dashaList?.response?.dasha_remaining_at_birth,
@@ -200,8 +202,8 @@ export const useBookHoroscope = () => {
 		d45Chart: d45.response,
 		d60Chart: d60.response,
 		ashtakvargaChart: ashtakvarga.response
-      };
-	  /*const reportPayload = {
+      };*/
+	  const reportPayload = {
     "name": "ggg",
     "fatherName": "",
     "motherName": "",
@@ -693,9 +695,10 @@ export const useBookHoroscope = () => {
     "dashaBalance": "3 வருடங்கள் 3 மாதங்கள் 15 நாட்கள்",
     "dashaPlanet": "சூரியன்",
     "nadappuDasa": {
-        "text": "ராகு தசா / புதன் புக்தி",
-        "endDate": "திங்கள் செப்டம்பர் 25 2028 மாலை 6:02 மணி"
-    },
+		"text": "ராகு தசா / ராகு புக்தி",
+		"dashaEnd": "வியாழன் மே 29 2042 மதியம் 1:56 மணி",
+		"bhukthiEnd": "செவ்வாய் பிப்ரவரி 09 2027 காலை 8:59 மணி"
+	},
     "predictions": [
         {
             "current_house": 1,
@@ -3277,7 +3280,7 @@ export const useBookHoroscope = () => {
             24
         ]
     }
-}*/
+}
 	  
 	  console.log('reportPayload', reportPayload)
 

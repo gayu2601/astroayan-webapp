@@ -25,6 +25,9 @@ import DailyNakshatraPalan from './components/DailyNakshatraPalan';
 import WeeklyRasiPalan from './components/WeeklyRasiPalan';
 import HoraSection from './components/HoraSection';
 import GocharamTransit from './components/GocharamTransit';
+import RasiGocharaPalan from './components/RasiGocharaPalan';
+import SpecialDaysCalendar from './components/SpecialDaysCalendar';
+import BabyNameFinder from './components/BabyNameFinder';
 import CholiPrasnamForm from './components/CholiPrasnamForm';
 import VetrilaiPrasnamApp from './components/VetrilaiPrasnamApp';
 import JamakkolCalculator from './components/JamakkolCalculator';
@@ -984,7 +987,7 @@ export default function App() {
 
   // Sub-tabs parsed from URL path parameters
   const predictionsSubTab = (activeTab === 'predictions' && pathParts[2]) ? pathParts[2] : 'rasi';
-  // NEW: panchangam now has 4 sub-pills
+  // NEW: panchangam now has 7 sub-pills
   const panchangamSubTab = (activeTab === 'panchangam' && pathParts[2]) ? pathParts[2] : 'daily';
   // NEW: horoscope sub-tabs
   const horoscopeSubTab = (activeTab === 'horoscope' && pathParts[2]) ? pathParts[2] : 'birth';
@@ -993,7 +996,7 @@ export default function App() {
   // Keep vedic-tools for other tools (palli, manaiyadi, age)
   const vedicToolSub = (activeTab === 'vedic-tools' && pathParts[2]) ? pathParts[2] : null;
   // NEW: advanced enkanidham sub-tabs (enkanidham, jadhagam-enkanidham)
-  const advancedEnkanidhamSubTab = (activeTab === 'advanced-enkanidham' && pathParts[2]) ? pathParts[2] : 'enkanidham';
+  const advancedNumerologySubTab = (activeTab === 'advanced-numerology' && pathParts[2]) ? pathParts[2] : 'numerology';
   // NEW: prasannam sub-tabs
   const prasannamSubTab = (activeTab === 'prasannam' && pathParts[2]) ? pathParts[2] : 'jamakkol';
 
@@ -1544,7 +1547,7 @@ export default function App() {
               { id: 'horoscope',   labelEn: 'Horoscope',    labelTa: 'ஜாதகம்',           path: '/horoscope' },
               { id: 'marriage',    labelEn: 'Marriage',     labelTa: 'திருமணம்',          path: '/marriage' },
               { id: 'prasannam',   labelEn: 'Prasannam',    labelTa: 'பிரசன்னம்',         path: '/prasannam' },
-              { id: 'advanced-enkanidham', labelEn: 'Advanced Numerology', labelTa: 'மேம்பட்ட எண்கணிதம்', path: '/advanced-enkanidham' },
+              { id: 'advanced-numerology', labelEn: 'Advanced Numerology', labelTa: 'மேம்பட்ட எண்கணிதம்', path: '/advanced-numerology' },
               { id: 'vedic-tools', labelEn: 'Other Tools',  labelTa: 'பிற கருவிகள்', path: '/vedic-tools' }
             ].map((tab) => (
               <Link
@@ -1780,8 +1783,8 @@ export default function App() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
-                      { path: '/advanced-enkanidham/enkanidham', icon: <House className="h-5 w-5" />, titleTa: "எண்கணிதம்", titleEn: "Numerology", descTa: "உங்கள் பிறந்த தேதியின் அடிப்படையில் எண் கணித பலன்கள்.", descEn: "Numerology insights based on your date of birth.", ctaTa: "பலன் காண்க", ctaEn: "Explore Numerology" },
-                      { path: '/advanced-enkanidham/jadhagam-enkanidham', icon: <House className="h-5 w-5" />, titleTa: "ஜாதக எண்கணிதம்", titleEn: "Horocope Numerology", descTa: "உங்கள் ஜாதகத்தின் அடிப்படையில் எண் கணித பலன்கள்.", descEn: "Numerology insights derived from your horoscope (Jadhagam).", ctaTa: "பலன் காண்க", ctaEn: "Explore Numerology" },
+                      { path: '/advanced-numerology/numerology', icon: <House className="h-5 w-5" />, titleTa: "எண்கணிதம்", titleEn: "Numerology", descTa: "உங்கள் பிறந்த தேதியின் அடிப்படையில் எண் கணித பலன்கள்.", descEn: "Numerology insights based on your date of birth.", ctaTa: "பலன் காண்க", ctaEn: "Explore Numerology" },
+                      { path: '/advanced-numerology/jadhagam-numerology', icon: <House className="h-5 w-5" />, titleTa: "ஜாதக எண்கணிதம்", titleEn: "Horocope Numerology", descTa: "உங்கள் ஜாதகத்தின் அடிப்படையில் எண் கணித பலன்கள்.", descEn: "Numerology insights derived from your horoscope (Jadhagam).", ctaTa: "பலன் காண்க", ctaEn: "Explore Numerology" },
                     ].map((item) => (
                       <div key={item.path} onClick={() => navigate(item.path)} className={`p-5 rounded-2xl border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer flex flex-col justify-between ${isLight ? "bg-white border-amber-500/15 hover:bg-amber-50/75 hover:border-amber-500/40 shadow-sm" : "bg-black/35 border-white/5 hover:bg-black/55 hover:border-amber-500/30"}`}>
                         <div className="space-y-3">
@@ -1877,7 +1880,7 @@ export default function App() {
               </div>
             } />
 
-            {/* ── PANCHANGAM (now with 4 sub-pills) ──────────────────────────────── */}
+            {/* ── PANCHANGAM (now with 7 sub-pills) ──────────────────────────────── */}
             <Route path="/panchangam/*" element={
               <div className="space-y-6 animate-fade-in">
                 <BackButton />
@@ -1888,6 +1891,8 @@ export default function App() {
                     { id: 'hora',           labelEn: 'Hora Muhurtham',      labelTa: 'ஹோரா முகூர்த்தம்' },
                     { id: 'gocharam',       labelEn: 'Live Gocharam Transit', labelTa: 'நேரடி கோச்சாரம்' },
                     { id: 'muhurtham',      labelEn: 'Muhurtham Days',      labelTa: 'சுபமுகூர்த்தம்' },
+                    { id: 'gochara-palan',  labelEn: 'Rasi Gochara Palan',  labelTa: 'ராசி கோசார பலன்' },
+                    { id: 'special-days',   labelEn: 'Special Days',        labelTa: 'சிறப்பு நாட்கள்' },
                   ].map((sub) => (
                     <button key={sub.id} onClick={() => navigate(`/panchangam/${sub.id}`)} className={subPillClass(panchangamSubTab === sub.id)}>
                       {language === 'ta' ? sub.labelTa : sub.labelEn}
@@ -1899,6 +1904,8 @@ export default function App() {
                 {panchangamSubTab === 'hora'           && <HoraSection isLight={isLight} />}
                 {panchangamSubTab === 'gocharam'       && <GocharamTransit isLight={isLight} />}
                 {panchangamSubTab === 'muhurtham'      && <SubhaMuhurthamDays isLight={isLight} />}
+                {panchangamSubTab === 'gochara-palan'  && <RasiGocharaPalan isLight={isLight} language={language} />}
+                {panchangamSubTab === 'special-days'   && <SpecialDaysCalendar isLight={isLight} language={language} />}
               </div>
             } />
 
@@ -1989,22 +1996,29 @@ export default function App() {
 
             {/* ── VEDIC TOOLS (palli, manaiyadi, age only) ───────────────────────── */}
             {/* ── ADVANCED ENKANIDHAM (enkanidham, jadhagam-enkanidham) ──────────── */}
-            <Route path="/advanced-enkanidham/*" element={
+            <Route path="/advanced-numerology/*" element={
               <div className="space-y-6 animate-fade-in">
                 <BackButton />
                 <div className="flex flex-wrap gap-2 border-b border-gray-700/25 pb-3">
-                  {[
-                    { id: 'enkanidham',           labelEn: 'Numerology',           labelTa: 'எண்கணிதம்' },
-                    { id: 'jadhagam-enkanidham',   labelEn: 'Horocope Numerology',  labelTa: 'ஜாதக எண்கணிதம்' },
-                  ].map((sub) => (
-                    <button key={sub.id} onClick={() => navigate(`/advanced-enkanidham/${sub.id}`)} className={subPillClass(advancedEnkanidhamSubTab === sub.id)}>
-                      {language === 'ta' ? sub.labelTa : sub.labelEn}
-                    </button>
-                  ))}
-                </div>
+				  {[
+					{ id: 'numerology',         labelEn: 'Numerology',          labelTa: 'எண்கணிதம்' },
+					{ id: 'jadhagam-numerology', labelEn: 'Jadhagam Numerology', labelTa: 'ஜாதக எண்கணிதம்' },
+				  ].map((sub) => (
+					<button
+					  key={sub.id}
+					  onClick={() => navigate(`/advanced-numerology/${sub.id}`)}
+					  className={subPillClass(advancedNumerologySubTab === sub.id)}
+					>
+					  {language === 'ta' ? sub.labelTa : sub.labelEn}
+					</button>
+				  ))}
+				</div>
 
-                {advancedEnkanidhamSubTab === 'enkanidham'         && <Numerology language={language} isLight={isLight}/>}
-                {advancedEnkanidhamSubTab === 'jadhagam-enkanidham' && <NumerologyCalc language={language} isLight={isLight}/>}
+				{advancedNumerologySubTab === 'numerology' &&
+				  <Numerology language={language} isLight={isLight} />}
+
+				{advancedNumerologySubTab === 'jadhagam-numerology' &&
+				  <NumerologyCalc language={language} isLight={isLight} />}
               </div>
             } />
 
@@ -2043,7 +2057,14 @@ export default function App() {
 							? 'உங்கள் நட்சத்திரத்திற்கான அதிபதி கிரகத்தையும் அணிய ஏற்ற ரத்தினக் கல்லையும் அறியுங்கள்.'
 							: 'Find the ruling planet and the recommended gemstone for your birth star (Nakshatra).'
 						},
-						{ id: 'age',        title: language === 'ta' ? 'வயது கணிப்பான்'     : 'Age Calculator',       desc: language === 'ta' ? 'துல்லியமான வயது, மாதங்கள் மற்றும் நாட்கள் கணக்கீடு.' : 'Find your precise chronological age down to the day.' }
+						{ id: 'age',        title: language === 'ta' ? 'வயது கணிப்பான்'     : 'Age Calculator',       desc: language === 'ta' ? 'துல்லியமான வயது, மாதங்கள் மற்றும் நாட்கள் கணக்கீடு.' : 'Find your precise chronological age down to the day.' },
+						{
+						  id: 'baby-name-finder',
+						  title: language === 'ta' ? 'குழந்தை பெயர் தேடல்' : 'Baby Name Finder',
+						  desc: language === 'ta'
+							? 'நட்சத்திரம் மற்றும் ராசியின் அடிப்படையில் குழந்தைக்கு ஏற்ற பெயர்களைக் கண்டறியுங்கள்.'
+							: 'Find auspicious baby names based on birth nakshatra and rasi.'
+						}
                       ].map((tool) => (
                         <div key={tool.id} onClick={() => navigate(`/vedic-tools/${tool.id}`)} className="glass-panel p-5 rounded-2xl border cursor-pointer hover:scale-[1.01] transition-all space-y-2">
                           <h3 className="text-sm font-serif font-bold text-amber-400">{tool.title}</h3>
@@ -2062,6 +2083,7 @@ export default function App() {
 					{vedicToolSub === 'rutu-lagna'       && <RutuLagnaPalangal language={language} />}
 					{vedicToolSub === 'gemstone-mapping'       && <StarGemstoneMapping language={language} />}
 					{vedicToolSub === 'age'       && <AgeCalculator language={language} />}
+					{vedicToolSub === 'baby-name-finder' && <BabyNameFinder language={language} isLight={isLight} />}
                   </div>
                 )}
               </div>

@@ -61,6 +61,8 @@ const FEATURE_META: Record<string, { icon: string; name: string; nameTA: string 
   jamakkol:              { icon: '🔮', name: 'Jamakkol',                nameTA: 'ஜாமக்கோள் பிரசன்னம்' },
   prasannam:       { icon: '🐚', name: 'Choli Prasannam',         nameTA: 'சோழி பிரசன்னம்' },
   vetrilai_prasannam:    { icon: '🍃', name: 'Vetrilai Prasannam',      nameTA: 'வெற்றிலை பிரசன்னம்' },
+  numerology:            { icon: '🔢', name: 'Numerology',             nameTA: 'எண் கணிதம்' },
+  jadhagam_numerology:   { icon: '🔮', name: 'Jadhagam Numerology',    nameTA: 'ஜாதக எண் கணிதம்' },
 };
 
 const CONTACT_EMAIL = 'astroayancc@gmail.com';

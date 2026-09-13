@@ -46,6 +46,8 @@ const FEATURES = [
     { id: 'jamakkol', icon: '🔮', name: 'Jamakkol', nameTA: 'ஜாமக்கோள் பிரசன்னம்', desc: 'ஜாமக்கோள் பிரசன்னம்' },
   { id: 'prasannam', icon: '🐚', name: 'Choli Prasannam', nameTA: 'சோழி பிரசன்னம்', desc: 'சோழிகளைப் பயன்படுத்தி பிரசன்ன பலன்கள்' },
   { id: 'vetrilai_prasannam', icon: '🍃', name: 'Vetrilai Prasannam', nameTA: 'வெற்றிலை பிரசன்னம்', desc: 'வெற்றிலையைப் பயன்படுத்தி பிரசன்ன பலன்கள்' },
+  { id: 'numerology', icon: '🔢', name: 'Numerology', nameTA: 'எண் கணிதம்', desc: 'பிறந்த தேதியின் அடிப்படையில் செல் எண் மற்றும் வாகன எண் பொருத்தம்' },
+  { id: 'jadhagam_numerology', icon: '🔮', name: 'Jadhagam Numerology', nameTA: 'ஜாதக எண் கணிதம்', desc: 'பிறந்த தேதியின் அடிப்படையில் குணாதிசயங்கள் மற்றும் வாழ்க்கைப் பலன்கள்' },
 ];
 
 const DURATIONS = [
@@ -95,6 +97,8 @@ const FEATURE_LABELS: Record<string, string> = {
   jamakkol: 'Jamakkol',
   prasannam: 'Choli Prasannam',
   vetrilai_prasannam: 'Vetrilai Prasannam',
+  numerology: 'Numerology',
+  jadhagam_numerology: 'Advanced Numerology'
 };
 
 const ADMIN_ID = 'f7191c3d-b329-49e3-965d-c5015663ebba';

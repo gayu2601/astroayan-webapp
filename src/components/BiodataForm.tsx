@@ -23,6 +23,8 @@ export default function BiodataForm({ onSubmit, loading, isLight = false }: Biod
     dob: '',
     tob: '',
     birthPlace: '',
+    lat: 13.0827, // default to Chennai
+    lon: 80.2707, // default to Chennai
     religion: isTamil ? 'இந்து' : 'Hindu',
     caste: '',
     height: '',
@@ -63,6 +65,14 @@ export default function BiodataForm({ onSubmit, loading, isLight = false }: Biod
   const [placeSuggestions, setPlaceSuggestions] = useState<any[]>([]);
   const [activeLocationField, setActiveLocationField] = useState<string | null>(null);
   const autocompleteTimeout = useRef<any>(null);
+
+  // Raw text for the optional manual birth-place lat/lon inputs, kept
+  // separate from `values.lat`/`values.lon` so the user can type freely.
+  const [latInput, setLatInput] = useState<string>(String(13.0827));
+  const [lonInput, setLonInput] = useState<string>(String(80.2707));
+  // Once the user manually edits lat/lon, their values take precedence over
+  // whatever the birth-place autocomplete/geocoding would otherwise set.
+  const [coordsManuallyEdited, setCoordsManuallyEdited] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -115,6 +125,9 @@ export default function BiodataForm({ onSubmit, loading, isLight = false }: Biod
     }
 
     setValues({ ...values, ...loadedData });
+    setLatInput(String(loadedData.lat ?? values.lat ?? 13.0827));
+    setLonInput(String(loadedData.lon ?? values.lon ?? 80.2707));
+    setCoordsManuallyEdited(false);
     setCurrentEntryId(data.id);
     setCurrentEntryName(data.entry_name || '');
   } catch (err) {
@@ -147,6 +160,8 @@ export default function BiodataForm({ onSubmit, loading, isLight = false }: Biod
       dob: '',
       tob: '',
       birthPlace: '',
+      lat: 13.0827,
+      lon: 80.2707,
       religion: isTamil ? 'இந்து' : 'Hindu',
       caste: '',
       height: '',
@@ -173,6 +188,9 @@ export default function BiodataForm({ onSubmit, loading, isLight = false }: Biod
     });
     setCurrentEntryId(null);
     setCurrentEntryName('');
+    setLatInput(String(13.0827));
+    setLonInput(String(80.2707));
+    setCoordsManuallyEdited(false);
   };
 
   // ─── Shared photo-upload helper ─────────────────────────────────────────────
@@ -309,10 +327,61 @@ const saveToSupabase = async (entryName: string) => {
     }, 400);
   };
 
-  const handleSelectSuggestion = (display_name: string, fieldKey: string) => {
-    setValues((prev: any) => ({ ...prev, [fieldKey]: display_name }));
+  const handleSelectSuggestion = (item: any, fieldKey: string) => {
+    setValues((prev: any) => {
+      const next = { ...prev, [fieldKey]: item.display_name };
+      // Only the birth place's coordinates feed the astrology calculation,
+      // and only if the user hasn't already typed their own lat/lon.
+      if (fieldKey === 'birthPlace' && !coordsManuallyEdited && item.lat && item.lon) {
+        next.lat = parseFloat(item.lat);
+        next.lon = parseFloat(item.lon);
+        setLatInput(String(next.lat));
+        setLonInput(String(next.lon));
+      }
+      return next;
+    });
     setPlaceSuggestions([]);
     setActiveLocationField(null);
+  };
+
+  // ── Manual lat/lon override for Birth Place ──
+  const handleLatChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLatInput(value);
+    setCoordsManuallyEdited(true);
+    const parsed = parseFloat(value);
+    if (!isNaN(parsed)) setValues((prev: any) => ({ ...prev, lat: parsed }));
+  };
+
+  const handleLonChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLonInput(value);
+    setCoordsManuallyEdited(true);
+    const parsed = parseFloat(value);
+    if (!isNaN(parsed)) setValues((prev: any) => ({ ...prev, lon: parsed }));
+  };
+
+  const handleResetCoords = () => {
+    setCoordsManuallyEdited(false);
+    if (!values.birthPlace) return;
+    // Re-geocode the currently typed birth place so the fields snap back
+    // to the auto-derived coordinates.
+    (async () => {
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(values.birthPlace)}&format=json&limit=1`;
+        const res = await fetch(url, { headers: { 'User-Agent': 'VedicAstroApp/1.0' } });
+        const data = await res.json();
+        if (data && data[0]) {
+          const newLat = parseFloat(data[0].lat);
+          const newLon = parseFloat(data[0].lon);
+          setValues((prev: any) => ({ ...prev, lat: newLat, lon: newLon }));
+          setLatInput(String(newLat));
+          setLonInput(String(newLon));
+        }
+      } catch (err) {
+        console.error('Error re-geocoding birth place:', err);
+      }
+    })();
   };
 
   const triggerSubmit = () => {
@@ -479,7 +548,7 @@ const saveToSupabase = async (entryName: string) => {
                 {placeSuggestions.map((p, idx) => (
                   <button
                     key={idx}
-                    onClick={() => handleSelectSuggestion(p.display_name, 'birthPlace')}
+                    onClick={() => handleSelectSuggestion(p, 'birthPlace')}
                     className="w-full text-left px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-slate-900 hover:text-white border-b border-gray-100 dark:border-gray-900/60"
                   >
                     {p.display_name}
@@ -487,6 +556,46 @@ const saveToSupabase = async (entryName: string) => {
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="space-y-1.5 md:col-span-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-gray-600 dark:text-gray-500 uppercase tracking-widest">
+                {isTamil ? 'அட்சரேகை / தீர்க்கரேகை (விருப்பத்தேர்வு)' : 'Latitude / Longitude (Optional)'}
+              </span>
+              {coordsManuallyEdited && (
+                <button
+                  type="button"
+                  onClick={handleResetCoords}
+                  className="text-[10px] font-bold text-violet-600 dark:text-violet-400 hover:underline uppercase tracking-wider"
+                >
+                  {isTamil ? 'மீட்டமை' : 'Reset to place'}
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="number"
+                step="any"
+                value={latInput}
+                onChange={handleLatChange}
+                placeholder={isTamil ? 'அட்சரேகை' : 'Latitude'}
+                className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-xs outline-none focus:border-violet-500"
+              />
+              <input
+                type="number"
+                step="any"
+                value={lonInput}
+                onChange={handleLonChange}
+                placeholder={isTamil ? 'தீர்க்கரேகை' : 'Longitude'}
+                className="w-full bg-white dark:bg-slate-950/60 border border-gray-300 dark:border-gray-800 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-xs outline-none focus:border-violet-500"
+              />
+            </div>
+            <p className="text-[9px] text-gray-500 dark:text-gray-500 leading-relaxed">
+              {isTamil
+                ? 'இயல்பாக பிறந்த இடத்தில் இருந்து கணக்கிடப்படும். நீங்கள் மாற்றினால், அந்த மதிப்புகளே பயன்படுத்தப்படும்.'
+                : "Auto-filled from Birth Place above. Edit these and your values will be used instead."}
+            </p>
           </div>
 
           <div className="space-y-1.5">
@@ -564,7 +673,7 @@ const saveToSupabase = async (entryName: string) => {
                 {placeSuggestions.map((p, idx) => (
                   <button
                     key={idx}
-                    onClick={() => handleSelectSuggestion(p.display_name, 'nativePlace')}
+                    onClick={() => handleSelectSuggestion(p, 'nativePlace')}
                     className="w-full text-left px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-slate-900 hover:text-white border-b border-gray-100 dark:border-gray-900/60"
                   >
                     {p.display_name}

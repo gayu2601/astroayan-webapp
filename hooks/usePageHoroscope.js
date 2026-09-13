@@ -103,11 +103,13 @@ export const usePageHoroscope = () => {
 		const nadappuDasa = lang === 'ta'
 		  ? {
 			  text: `${currentDasha?.response?.order_of_dashas?.major?.name} தசா / ${currentDasha?.response?.order_of_dashas?.minor?.name} புக்தி`,
-			  endDate: currentDasha?.response?.order_of_dashas?.minor?.end
+			  dashaEnd: currentDasha?.response?.order_of_dashas?.major?.end,
+			  bhukthiEnd: currentDasha?.response?.order_of_dashas?.minor?.end
 			}
 		  : {
 			  text: `${currentDasha?.response?.order_of_dashas?.major?.name} Dasha / ${currentDasha?.response?.order_of_dashas?.minor?.name} Bhukthi`,
-			  endDate: currentDasha?.response?.order_of_dashas?.minor?.end
+			  dashaEnd: currentDasha?.response?.order_of_dashas?.major?.end,
+			  bhukthiEnd: currentDasha?.response?.order_of_dashas?.minor?.end
 			};
 		console.log('nadappuDasa', nadappuDasa);
 
