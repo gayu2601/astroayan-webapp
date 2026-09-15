@@ -1760,6 +1760,7 @@ export default function App() {
                       { path: '/panchangam/gocharam', icon: <Globe className="h-5 w-5" />, titleTa: "நேரடி கோச்சாரம்", titleEn: "Live Gocharam", descTa: "தற்போதைய கோள்களின் நிகழ்நேர இராசி கட்டப் பெயர்ச்சி பலன்கள்.", descEn: "Real-time planetary transit positions across the zodiac.", ctaTa: "கோச்சாரம் காண்க", ctaEn: "View Transit" },
                       { path: '/panchangam/hora', icon: <Clock className="h-5 w-5" />, titleTa: "ஹோரா முகூர்த்தம்", titleEn: "Hora Muhurtham", descTa: "சுப காரியங்களுக்கு சிறந்த ஹோரா கால அட்டவணை.", descEn: "Planetary hour table to pick the ideal time for important tasks.", ctaTa: "ஹோரா காண்க", ctaEn: "View Horas" },
                       { path: '/panchangam/muhurtham', icon: <CalendarCheck className="h-5 w-5" />, titleTa: "சுபமுகூர்த்தம்", titleEn: "Subha Muhurtham Days", descTa: "2026-ன் சுப முகூர்த்தங்கள்.", descEn: "Pick Auspicious Marriage Muhurtham days in 2026.", ctaTa: "நாட்கள் காண்க", ctaEn: "View Days" },
+                      { path: '/panchangam/gochara-palan', icon: <Compass className="h-5 w-5" />, titleTa: "ராசி கோச்சார பலன்", titleEn: "Rasi Gochara Palan", descTa: "இராசி அடிப்படையில் கோள் பெயர்ச்சி பலன்கள்.", descEn: "Rasi-wise planetary transit predictions and effects.", ctaTa: "பலன் காண்க", ctaEn: "View Palan" },
                     ].map((item) => (
                       <div key={item.path} onClick={() => navigate(item.path)} className={`p-5 rounded-2xl border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer flex flex-col justify-between ${isLight ? "bg-white border-amber-500/15 hover:bg-amber-50/75 hover:border-amber-500/40 shadow-sm" : "bg-black/35 border-white/5 hover:bg-black/55 hover:border-amber-500/30"}`}>
                         <div className="space-y-3">
@@ -1841,6 +1842,7 @@ export default function App() {
                       { path: '/vedic-tools/rutu-lagna', icon: <Clock className="h-5 w-5" />, titleTa: "ருது லக்ன பலன்கள்", titleEn: "Rutu Lagna Predictions", descTa: "ருது நேரத்தில் இருந்த லக்னத்தின் அடிப்படையில் பாரம்பரிய பலன்களையும் பரிகாரங்களையும் அறியுங்கள்.", descEn: "Explore traditional astrological predictions and remedies based on the ascendant (Lagna) at the time of Rutu.", ctaTa: "பலன்களைப் பார்க்க", ctaEn: "View Predictions" },
                       { path: '/vedic-tools/gemstone-mapping', icon: <Gem className="h-5 w-5" />, titleTa: "நட்சத்திர கல் வழிகாட்டி", titleEn: "Nakshatra Gemstone Guide", descTa: "உங்கள் நட்சத்திரத்திற்கான அதிபதி கிரகத்தையும் அணிய ஏற்ற ரத்தினக் கல்லையும் அறியுங்கள்.", descEn: "Find the ruling planet and the recommended gemstone for your birth star (Nakshatra).", ctaTa: "நட்சத்திர கல்லை அறிய", ctaEn: "Find Gemstone" },
                       { path: '/vedic-tools/age', icon: <Clock className="h-5 w-5" />, titleTa: "வயது கணிப்பான்", titleEn: "Age Calculator", descTa: "துல்லியமான வயது, மாதங்கள் மற்றும் நாட்கள் கணக்கீடு.", descEn: "Calculate your precise chronological age in years, months, and days.", ctaTa: "வயதை கணக்கிடு", ctaEn: "Calculate Age" },
+                      { path: '/vedic-tools/baby-name-finder', icon: <Heart className="h-5 w-5" />, titleTa: "குழந்தை பெயர் தேடல்", titleEn: "Baby Name Finder", descTa: "நட்சத்திரம் மற்றும் ராசியின் அடிப்படையில் குழந்தைக்கு ஏற்ற பெயர்களைக் கண்டறியுங்கள்.", descEn: "Find auspicious baby names based on birth nakshatra and rasi.", ctaTa: "பெயர்களைத் தேடு", ctaEn: "Find Names" },
                     ].map((item) => (
                       <div key={item.path} onClick={() => navigate(item.path)} className={`p-5 rounded-2xl border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer flex flex-col justify-between ${isLight ? "bg-white border-amber-500/15 hover:bg-amber-50/75 hover:border-amber-500/40 shadow-sm" : "bg-black/35 border-white/5 hover:bg-black/55 hover:border-amber-500/30"}`}>
                         <div className="space-y-3">
@@ -1891,7 +1893,7 @@ export default function App() {
                     { id: 'hora',           labelEn: 'Hora Muhurtham',      labelTa: 'ஹோரா முகூர்த்தம்' },
                     { id: 'gocharam',       labelEn: 'Live Gocharam Transit', labelTa: 'நேரடி கோச்சாரம்' },
                     { id: 'muhurtham',      labelEn: 'Muhurtham Days',      labelTa: 'சுபமுகூர்த்தம்' },
-                    { id: 'gochara-palan',  labelEn: 'Rasi Gochara Palan',  labelTa: 'ராசி கோசார பலன்' },
+                    { id: 'gochara-palan',  labelEn: 'Rasi Gochara Palan',  labelTa: 'ராசி கோச்சார பலன்' },
                     { id: 'special-days',   labelEn: 'Special Days',        labelTa: 'சிறப்பு நாட்கள்' },
                   ].map((sub) => (
                     <button key={sub.id} onClick={() => navigate(`/panchangam/${sub.id}`)} className={subPillClass(panchangamSubTab === sub.id)}>

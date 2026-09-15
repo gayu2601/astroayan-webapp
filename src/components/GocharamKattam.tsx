@@ -85,7 +85,7 @@ function PlanetBadge({ name }: { name: string }) {
 	console.log('in PlanetBadge', name)
   const s = BADGE[name] || { abbr: name.slice(0, 2), bg: 'bg-gray-700', fg: 'text-white' };
   return (
-    <span className={`px-1.5 py-0.5 rounded text-[10px] font-black tracking-wider shadow-sm uppercase ${s.bg} ${s.fg}`}>
+    <span className={`px-2 py-1 rounded text-xs md:text-sm font-black tracking-wider shadow-sm uppercase ${s.bg} ${s.fg}`}>
       {s.abbr}
     </span>
   );
@@ -103,20 +103,20 @@ function HouseCell({ house, bySign, language, isLight }: HouseCellProps) {
   const signName = (language === 'en' ? SIGN_NAMES_EN : SIGN_NAMES_TA)[house] || '';
   
   return (
-    <div className={`aspect-square border p-1.5 flex flex-col items-center justify-between transition-all duration-300 ${
+    <div className={`aspect-square border p-2 md:p-3 flex flex-col items-center justify-between transition-all duration-300 ${
       isLight 
         ? "bg-[#FCFBF7] border-[#E8DCC4]" 
         : "bg-[#0c0c16]/80 border-gray-700/50"
     }`}>
-      <span className={`text-[10px] md:text-xs font-black uppercase tracking-wider ${isLight ? "text-[#1E120A]/70" : "text-amber-500/80"}`}>
+      <span className={`text-xs md:text-sm font-black uppercase tracking-wider ${isLight ? "text-[#1E120A]/70" : "text-amber-500/80"}`}>
         {signName}
       </span>
-      <div className="flex flex-wrap gap-1 items-center justify-center py-1">
+      <div className="flex flex-wrap gap-1.5 items-center justify-center py-1">
         {planets.map((name, i) => (
           <PlanetBadge key={i} name={name} />
         ))}
       </div>
-      <span className="text-[8px] font-mono opacity-25">{house}</span>
+      <span className="text-[10px] font-mono opacity-25">{house}</span>
     </div>
   );
 }
@@ -140,7 +140,7 @@ export default function GocharamKattam({ planets, date, time, isLight = false }:
 
   return (
     <div className="flex flex-col items-center justify-center space-y-4">
-      <div className="w-full max-w-[420px] aspect-square relative grid grid-cols-4 grid-rows-4 border border-gray-700/40 rounded-2xl overflow-hidden shadow-2xl">
+      <div className="w-[90vw] sm:w-[85vw] md:w-[40vw] max-w-[1100px] aspect-square relative grid grid-cols-4 grid-rows-4 border border-gray-700/40 rounded-2xl overflow-hidden shadow-2xl">
         {/* Row 1 */}
         <HouseCell house={12} bySign={bySign} language={language} isLight={isLight} />
         <HouseCell house={1} bySign={bySign} language={language} isLight={isLight} />
@@ -155,10 +155,10 @@ export default function GocharamKattam({ planets, date, time, isLight = false }:
             ? "bg-[#FAF8F2] border-[#E8DCC4]" 
             : "bg-[#111122] border-gray-700/50"
         }`}>
-          <h4 className="text-xs md:text-sm font-serif font-black text-amber-500 uppercase tracking-widest leading-tight">
+          <h4 className="text-sm md:text-base font-serif font-black text-amber-500 uppercase tracking-widest leading-tight">
             {t('gocharam.title')}
           </h4>
-          <span className="text-[9px] md:text-xs font-mono font-bold text-gray-400 mt-1.5 block">
+          <span className="text-[11px] md:text-sm font-mono font-bold text-gray-400 mt-1.5 block">
             {date} {time}
           </span>
         </div>
