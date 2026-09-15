@@ -174,7 +174,7 @@ export const useBookHoroscope = () => {
 			};
 		console.log('nadappuDasa', nadappuDasa);
 
-      /*const reportPayload = {
+      const reportPayload = {
         name, fatherName, motherName, birthParams, place,
         planets: planets.response, astro:astro.response, d1Chart: d1.response, d9Chart: d9.response,
         dashaBalance: dashaList?.response?.dasha_remaining_at_birth,
@@ -202,8 +202,8 @@ export const useBookHoroscope = () => {
 		d45Chart: d45.response,
 		d60Chart: d60.response,
 		ashtakvargaChart: ashtakvarga.response
-      };*/
-	  const reportPayload = {
+      };
+	  /*const reportPayload = {
     "name": "ggg",
     "fatherName": "",
     "motherName": "",
@@ -3280,8 +3280,7 @@ export const useBookHoroscope = () => {
             24
         ]
     }
-}
-	  
+}*/	  
 	  console.log('reportPayload', reportPayload)
 
       let html;
