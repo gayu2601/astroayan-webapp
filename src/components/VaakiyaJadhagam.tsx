@@ -1,8 +1,53 @@
 import { useState, useCallback } from "react";
+import type { CSSProperties, ChangeEvent, ReactNode } from "react";
+
+// ─── Shared Types ─────────────────────────────────────────────────────────────
+
+type PlanetInfo = {
+  sid: number;
+  rasiIdx: number;
+  degInRasi: number;
+  rasiTN: string;
+  nakshatraIdx: number;
+  nakshatraTN: string;
+  pada: number;
+  navamsaRasi: number;
+  navamsaRasiTN: string;
+};
+
+type FormState = {
+  name: string;
+  date: string;
+  time: string;
+  place: string;
+  lat: string;
+  lon: string;
+};
+
+type ChartData = {
+  name: string;
+  date: string;
+  time: string;
+  place: string;
+  lat: number;
+  lon: number;
+  planets: Record<string, PlanetInfo>;
+  dasa: { lord: string; remaining: string };
+  panchagam: {
+    tithi: string;
+    tithiNum: number;
+    vaaram: string;
+    nakshatra: string;
+    pada: number;
+    rasi: string;
+    lagna: string;
+    lagnaIdx: number;
+  };
+};
 
 // ─── Astronomical Core ────────────────────────────────────────────────────────
 
-function toJD(year, month, day, hour, min, sec) {
+function toJD(year: number, month: number, day: number, hour: number, min: number, sec: number): number {
   const a = Math.floor((14 - month) / 12);
   const y = year + 4800 - a;
   const m = month + 12 * a - 3;
@@ -11,10 +56,10 @@ function toJD(year, month, day, hour, min, sec) {
   return jdn - 0.5 + (hour + min / 60 + sec / 3600) / 24;
 }
 
-function rad(d) { return d * Math.PI / 180; }
-function deg(r) { return r * 180 / Math.PI; }
-function norm360(v) { return ((v % 360) + 360) % 360; }
-function norm180(v) { const r = norm360(v); return r > 180 ? r - 360 : r; }
+function rad(d: number): number { return d * Math.PI / 180; }
+function deg(r: number): number { return r * 180 / Math.PI; }
+function norm360(v: number): number { return ((v % 360) + 360) % 360; }
+function norm180(v: number): number { const r = norm360(v); return r > 180 ? r - 360 : r; }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // VAAKIYA PANCHANGAM ENGINE — Surya Siddhanta (சுத்த வாக்கியம்)
@@ -83,7 +128,7 @@ const SS = {
 const BIJA_REF_JD = 2450875.9167;
 
 // Interpolate epicycle radius between quadrant values
-function getEpiR([r0, r90], kendra) {
+function getEpiR([r0, r90]: number[], kendra: number): number {
   const k = Math.abs(norm180(kendra));
   return k <= 90
     ? r0 + (r90 - r0) * k / 90
@@ -91,7 +136,7 @@ function getEpiR([r0, r90], kendra) {
 }
 
 // Manda (equation of centre) correction — two-step method (Surya Siddhanta)
-function mandaCorr(meanL, apoL, epiDef) {
+function mandaCorr(meanL: number, apoL: number, epiDef: number[]): number {
   const k1 = norm180(meanL - apoL);
   const r1 = getEpiR(epiDef, k1);
   const hc = deg(Math.asin(Math.min(1, Math.max(-1, r1 * Math.sin(rad(k1))))));
@@ -101,19 +146,24 @@ function mandaCorr(meanL, apoL, epiDef) {
 }
 
 // Shighra (geocentric) correction — arctan formula (handles large epicycles)
-function shighraCorr(mandaSp, shighraMean, epiDef) {
+function shighraCorr(mandaSp: number, shighraMean: number, epiDef: number[]): number {
   const kendra = norm360(shighraMean - mandaSp);
   const r = getEpiR(epiDef, kendra);
   return deg(Math.atan2(r * Math.sin(rad(kendra)), 1 + r * Math.cos(rad(kendra))));
 }
 
+type SSLongitudes = {
+  Sun: number; Moon: number; Mars: number; Mercury: number;
+  Jupiter: number; Venus: number; Saturn: number; Rahu: number;
+};
+
 // Core Surya Siddhanta computation (returns raw SS longitudes, sidereal)
-function computeSS(jd) {
+function computeSS(jd: number): SSLongitudes {
   const A = jd - SS.KALI_EPOCH_JD;
   const R = SS.REV;
   const M = SS.MAHAYUGA;
 
-  function mL(rev, retro = false) {
+  function mL(rev: number, retro = false): number {
     return norm360((retro ? -1 : 1) * rev * A / M * 360);
   }
 
@@ -170,23 +220,24 @@ function computeSS(jd) {
 // For dates far from the reference, we scale the bija by time elapsed using
 // the ratio of SS mean daily motions to observed Vaakiya daily motions.
 // For most practical purposes (within ±30 years of reference) this is accurate.
-function getVaakiyaLongitudes(jd) {
+function getVaakiyaLongitudes(jd: number): Record<string, number> {
   const raw = computeSS(jd);
 
   // Apply bija corrections (calibrated at reference date)
   // Bija is essentially constant over decades for slow planets;
   // fast planets (Moon, Mercury, Venus) need no additional drift correction
   // because their short periods self-correct via the epicycle mechanism.
-  const result = {};
+  const bija: Record<string, number> = SS.BIJA;
+  const result: Record<string, number> = {};
   for (const [p, lon] of Object.entries(raw)) {
-    result[p] = norm360(lon + (SS.BIJA[p] || 0));
+    result[p] = norm360(lon + (bija[p] || 0));
   }
   return result;
 }
 
 // ── Lagna (Ascendant) ─────────────────────────────────────────────────────────
 // Uses sidereal time. Vaakiya ayanamsa ≈ same as Lahiri for lagna purposes.
-function getLagna(jd, lat, lon) {
+function getLagna(jd: number, lat: number, lon: number): number {
   const T  = (jd - 2451545.0) / 36525;
   const GMST = 280.46061837 + 360.98564736629 * (jd - 2451545.0)
              + 0.000387933 * T * T - T * T * T / 38710000;
@@ -215,28 +266,28 @@ const NAKSHATRA_TN = [
   "உத்திராடம்","திருவோணம்","அவிட்டம்","சதயம்","பூரட்டாதி","உத்திரட்டாதி","ரேவதி"
 ];
 
-const PLANET_NAMES_TN = {
+const PLANET_NAMES_TN: Record<string, string> = {
   Lagna:"லக்னம்", Sun:"சூரியன்", Moon:"சந்திரன்", Mars:"செவ்வாய்",
   Mercury:"புதன்", Jupiter:"குரு", Venus:"சுக்கிரன்", Saturn:"சனி",
   Rahu:"ராகு", Ketu:"கேது"
 };
-const PLANET_SHORT_TN = {
+const PLANET_SHORT_TN: Record<string, string> = {
   Lagna:"லக்", Sun:"சூரி", Moon:"சந்", Mars:"செவ்", Mercury:"புத",
   Jupiter:"குரு", Venus:"சுக்", Saturn:"சனி", Rahu:"ராகு", Ketu:"கேது"
 };
 
 // Nakshatra lords for Vimshottari dasa
 const NAKS_LORDS = ["Ketu","Venus","Sun","Moon","Mars","Rahu","Jupiter","Saturn","Mercury"];
-const DASA_YEARS = { Ketu:7, Venus:20, Sun:6, Moon:10, Mars:7, Rahu:18, Jupiter:16, Saturn:19, Mercury:17 };
+const DASA_YEARS: Record<string, number> = { Ketu:7, Venus:20, Sun:6, Moon:10, Mars:7, Rahu:18, Jupiter:16, Saturn:19, Mercury:17 };
 const DASA_ORDER = ["Ketu","Venus","Sun","Moon","Mars","Rahu","Jupiter","Saturn","Mercury"];
 
-function getRasiInfo(sidLon) {
+function getRasiInfo(sidLon: number): { rasiIdx: number; degInRasi: number; rasiTN: string } {
   const rasiIdx = Math.floor(sidLon / 30);
   const degInRasi = sidLon % 30;
   return { rasiIdx, degInRasi, rasiTN: RASI_NAMES_TN[rasiIdx] };
 }
 
-function getNakshatraInfo(sidLon) {
+function getNakshatraInfo(sidLon: number): { nakshatraIdx: number; nakshatraTN: string; pada: number } {
   const span = 360 / 27;
   const nIdx = Math.floor(sidLon / span);
   const degInNak = sidLon % span;
@@ -244,7 +295,7 @@ function getNakshatraInfo(sidLon) {
   return { nakshatraIdx: nIdx, nakshatraTN: NAKSHATRA_TN[nIdx], pada };
 }
 
-function getNavamsaRasi(sidLon) {
+function getNavamsaRasi(sidLon: number): number {
   const rasiIdx = Math.floor(sidLon / 30);
   const degInRasi = sidLon % 30;
   const navIdx = Math.floor(degInRasi / (30 / 9));
@@ -289,7 +340,7 @@ const TN_CITIES = {
   "pune":         { lat: 18.5204, lon: 73.8567 },
 };
 
-async function geocodePlace(placeName) {
+async function geocodePlace(placeName: string): Promise<{ lat: number; lon: number; display: string } | null> {
   const key = placeName.trim().toLowerCase();
 
   // 1. Try Open-Meteo geocoding (good CORS support)
@@ -332,25 +383,26 @@ const SOUTH_INDIAN_CELLS = [
 ];
 
 // rasi index to grid cell position
-function rasiToCell(rasiIdx) {
+function rasiToCell(rasiIdx: number): number {
   return SOUTH_INDIAN_CELLS.indexOf(rasiIdx);
 }
 
-function cellToRowCol(cellIdx) {
+function cellToRowCol(cellIdx: number): { row: number; col: number } {
   return { row: Math.floor(cellIdx / 4), col: cellIdx % 4 };
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function VaakiyaJadhagam() {
-  const [form, setForm] = useState({ name: "", date: "", time: "", place: "", lat: "", lon: "" });
-  const [chart, setChart] = useState(null);
+  const [form, setForm] = useState<FormState>({ name: "", date: "", time: "", place: "", lat: "", lon: "" });
+  const [chart, setChart] = useState<ChartData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [geoStatus, setGeoStatus] = useState("");
   const [showManual, setShowManual] = useState(false);
 
-  const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
+    setForm(f => ({ ...f, [e.target.name as keyof FormState]: e.target.value }));
 
   const calculate = useCallback(async () => {
     setError(""); setLoading(true); setGeoStatus("Locating place...");
@@ -390,13 +442,13 @@ export default function VaakiyaJadhagam() {
       const vaakiyaLons = getVaakiyaLongitudes(jd);
       const lagnaLon    = getLagna(jd, geo.lat, geo.lon);
 
-      const sidLons = {
+      const sidLons: Record<string, number> = {
         Lagna:   lagnaLon,
         ...vaakiyaLons,
         Ketu:    norm360(vaakiyaLons.Rahu + 180),
       };
 
-      const planets = {};
+      const planets: Record<string, PlanetInfo> = {};
       for (const [p, sid] of Object.entries(sidLons)) {
         const rasi    = getRasiInfo(sid);
         const nak     = getNakshatraInfo(sid);
@@ -440,7 +492,7 @@ export default function VaakiyaJadhagam() {
           lagnaIdx: planets.Lagna.rasiIdx,
         }
       });
-    } catch (e) {
+    } catch (e: any) {
       setError(e.message);
     } finally {
       setLoading(false);
@@ -463,12 +515,12 @@ export default function VaakiyaJadhagam() {
       {!chart && (
         <div style={styles.formCard}>
           <div style={styles.formGrid}>
-            {[
+            {([
               { label: "பெயர் / Name", name: "name", type: "text", placeholder: "உங்கள் பெயர்" },
               { label: "பிறந்த தேதி / Date", name: "date", type: "date", placeholder: "" },
               { label: "பிறந்த நேரம் / Time (IST)", name: "time", type: "time", placeholder: "" },
               { label: "பிறந்த இடம் / Place", name: "place", type: "text", placeholder: "Chennai, Tamil Nadu" },
-            ].map(f => (
+            ] as const).map(f => (
               <div key={f.name} style={styles.formGroup}>
                 <label style={styles.label}>{f.label}</label>
                 <input
@@ -476,7 +528,7 @@ export default function VaakiyaJadhagam() {
                   type={f.type}
                   name={f.name}
                   placeholder={f.placeholder}
-                  value={form[f.name]}
+                  value={form[f.name as keyof FormState]}
                   onChange={handleChange}
                 />
               </div>
@@ -528,8 +580,8 @@ export default function VaakiyaJadhagam() {
 
 // ─── Chart Display ────────────────────────────────────────────────────────────
 
-function buildGridData(planets) {
-  const grid = Array(16).fill(null).map(() => []);
+function buildGridData(planets: Record<string, PlanetInfo>): string[][] {
+  const grid: string[][] = Array(16).fill(null).map((): string[] => []);
   for (const [p, info] of Object.entries(planets)) {
     if (p === "Lagna") continue;
     const cell = rasiToCell(info.rasiIdx);
@@ -538,8 +590,8 @@ function buildGridData(planets) {
   return grid;
 }
 
-function buildNavamsaGrid(planets) {
-  const grid = Array(16).fill(null).map(() => []);
+function buildNavamsaGrid(planets: Record<string, PlanetInfo>): string[][] {
+  const grid: string[][] = Array(16).fill(null).map((): string[] => []);
   for (const [p, info] of Object.entries(planets)) {
     if (p === "Lagna") continue;
     const cell = rasiToCell(info.navamsaRasi);
@@ -548,7 +600,7 @@ function buildNavamsaGrid(planets) {
   return grid;
 }
 
-function SouthIndianGrid({ grid, lagnaCell, label }) {
+function SouthIndianGrid({ grid, lagnaCell, label }: { grid: string[][]; lagnaCell: number; label: string }) {
   return (
     <div style={styles.chartWrap}>
       <div style={styles.chartLabel}>{label}</div>
@@ -585,7 +637,7 @@ function SouthIndianGrid({ grid, lagnaCell, label }) {
   );
 }
 
-function JadhagamChart({ chart, onReset }) {
+function JadhagamChart({ chart, onReset }: { chart: ChartData; onReset: () => void }) {
   const { planets, panchagam, dasa, name, date, time, place } = chart;
   const rasiGrid = buildGridData(planets);
   const navGrid = buildNavamsaGrid(planets);
@@ -674,7 +726,7 @@ function JadhagamChart({ chart, onReset }) {
   );
 }
 
-function InfoRow({ label, value }) {
+function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div style={styles.infoRow}>
       <span style={styles.infoLabel}>{label}</span>
@@ -690,7 +742,7 @@ const GOLD = "#b8860b";
 const DARK = "#3a1a00";
 const ACCENT = "#8b1a00";
 
-const styles = {
+const styles: { [key: string]: CSSProperties } = {
   page: {
     minHeight: "100vh",
     background: "linear-gradient(160deg, #fdf6e3 0%, #fef9ee 60%, #fdf3d8 100%)",
