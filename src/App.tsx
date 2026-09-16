@@ -16,6 +16,7 @@ import { CustomKattamGrid } from './components/CustomKattamGrid';
 import { CosmicBackground } from './components/CosmicBackground';
 import AgeCalculator from './components/AgeCalculator';
 import ManaiyadiShastram from './components/ManaiyadiShastram';
+import VaakiyaJadhagam from './components/VaakiyaJadhagam';
 import AdminDashboardScreen from './components/AdminDashboardScreen';
 import RetailerDashboardScreen from './components/RetailerDashboardScreen';
 import LizardOmens from './components/LizardOmens';
@@ -999,6 +1000,8 @@ export default function App() {
   const advancedNumerologySubTab = (activeTab === 'advanced-numerology' && pathParts[2]) ? pathParts[2] : 'numerology';
   // NEW: prasannam sub-tabs
   const prasannamSubTab = (activeTab === 'prasannam' && pathParts[2]) ? pathParts[2] : 'jamakkol';
+  // NEW: vaakiyam sub-tabs (dashboard grid → jadhagam)
+  const vaakiyamSubTab = (activeTab === 'vaakiyam' && pathParts[2]) ? pathParts[2] : null;
 
   const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
   const [showPasswordModal, setShowPasswordModal] = useState<boolean>(false);
@@ -1547,6 +1550,7 @@ export default function App() {
               { id: 'horoscope',   labelEn: 'Horoscope',    labelTa: 'ஜாதகம்',           path: '/horoscope' },
               { id: 'marriage',    labelEn: 'Marriage',     labelTa: 'திருமணம்',          path: '/marriage' },
               { id: 'prasannam',   labelEn: 'Prasannam',    labelTa: 'பிரசன்னம்',         path: '/prasannam' },
+              { id: 'vaakiyam',    labelEn: 'Vaakiyam',     labelTa: 'வாக்கியம்',         path: '/vaakiyam' },
               { id: 'advanced-numerology', labelEn: 'Advanced Numerology', labelTa: 'மேம்பட்ட எண்கணிதம்', path: '/advanced-numerology' },
               { id: 'vedic-tools', labelEn: 'Other Tools',  labelTa: 'பிற கருவிகள்', path: '/vedic-tools' }
             ].map((tab) => (
@@ -1761,6 +1765,7 @@ export default function App() {
                       { path: '/panchangam/hora', icon: <Clock className="h-5 w-5" />, titleTa: "ஹோரா முகூர்த்தம்", titleEn: "Hora Muhurtham", descTa: "சுப காரியங்களுக்கு சிறந்த ஹோரா கால அட்டவணை.", descEn: "Planetary hour table to pick the ideal time for important tasks.", ctaTa: "ஹோரா காண்க", ctaEn: "View Horas" },
                       { path: '/panchangam/muhurtham', icon: <CalendarCheck className="h-5 w-5" />, titleTa: "சுபமுகூர்த்தம்", titleEn: "Subha Muhurtham Days", descTa: "2026-ன் சுப முகூர்த்தங்கள்.", descEn: "Pick Auspicious Marriage Muhurtham days in 2026.", ctaTa: "நாட்கள் காண்க", ctaEn: "View Days" },
                       { path: '/panchangam/gochara-palan', icon: <Compass className="h-5 w-5" />, titleTa: "ராசி கோச்சார பலன்", titleEn: "Rasi Gochara Palan", descTa: "இராசி அடிப்படையில் கோள் பெயர்ச்சி பலன்கள்.", descEn: "Rasi-wise planetary transit predictions and effects.", ctaTa: "பலன் காண்க", ctaEn: "View Palan" },
+                      { path: '/panchangam/vaakiya-jadhagam', icon: <Compass className="h-5 w-5" />, titleTa: "ராசி கோச்சார பலன்", titleEn: "Rasi Gochara Palan", descTa: "இராசி அடிப்படையில் கோள் பெயர்ச்சி பலன்கள்.", descEn: "Rasi-wise planetary transit predictions and effects.", ctaTa: "பலன் காண்க", ctaEn: "View Palan" },
                     ].map((item) => (
                       <div key={item.path} onClick={() => navigate(item.path)} className={`p-5 rounded-2xl border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer flex flex-col justify-between ${isLight ? "bg-white border-amber-500/15 hover:bg-amber-50/75 hover:border-amber-500/40 shadow-sm" : "bg-black/35 border-white/5 hover:bg-black/55 hover:border-amber-500/30"}`}>
                         <div className="space-y-3">
@@ -1812,6 +1817,30 @@ export default function App() {
                       { path: '/prasannam/jamakkol', icon: <Sparkles className="h-5 w-5" />, titleTa: "ஜாமக்கோள் பிரசன்னம்", titleEn: "Jamakkol Prasannam", descTa: "ஜாமக்கோள் முறையைப் பயன்படுத்தி உங்கள் கேள்விகளுக்கான பிரசன்ன பலன்களையும் வழிகாட்டுதலையும் அறியலாம்.", descEn: "Seek answers and guidance through the traditional Jamakkol Prasannam method.", ctaTa: "ஜாமக்கோள் காண்க", ctaEn: "Check Jamakkol" },
                       { path: '/prasannam/choli',    icon: <Star className="h-5 w-5" />,     titleTa: "சோழி பிரசன்னம்",     titleEn: "Choli Prasannam",    descTa: "சோழிகளைப் பயன்படுத்தி உங்கள் கேள்விகளுக்கான பிரசன்ன பலன்களையும் வழிகாட்டுதலையும் அறியலாம்.",    descEn: "Seek answers and guidance through the traditional Choli Prasannam method.",    ctaTa: "சோழி காண்க",    ctaEn: "Check Choli" },
                       { path: '/prasannam/vetrilai', icon: <Gem className="h-5 w-5" />,      titleTa: "வெற்றிலைப் பிரசன்னம்", titleEn: "Vetrilai Prasannam", descTa: "வெற்றிலையைப் பயன்படுத்தி உங்கள் கேள்விகளுக்கான பிரசன்ன பலன்களையும் வழிகாட்டுதலையும் அறியலாம்.", descEn: "Seek answers and guidance through the traditional Vetrilai Prasannam method.", ctaTa: "வெற்றிலை காண்க", ctaEn: "Check Vetrilai" },
+                    ].map((item) => (
+                      <div key={item.path} onClick={() => navigate(item.path)} className={`p-5 rounded-2xl border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer flex flex-col justify-between ${isLight ? "bg-white border-amber-500/15 hover:bg-amber-50/75 hover:border-amber-500/40 shadow-sm" : "bg-black/35 border-white/5 hover:bg-black/55 hover:border-amber-500/30"}`}>
+                        <div className="space-y-3">
+                          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">{item.icon}</div>
+                          <div>
+                            <h3 className={`text-sm font-bold font-serif ${isLight ? "text-[#1E120A]" : "text-white"}`}>{language === 'ta' ? item.titleTa : item.titleEn}</h3>
+                            <p className={`text-[11px] leading-relaxed mt-1 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{language === 'ta' ? item.descTa : item.descEn}</p>
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-center justify-between text-[11px] font-bold text-amber-500"><span>{language === 'ta' ? item.ctaTa : item.ctaEn}</span><ChevronRight className="h-4 w-4" /></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* GROUP: VAAKIYAM */}
+                <div className="gradient-group-tools p-6 rounded-3xl space-y-5 animate-fade-in border">
+                  <div className="border-b border-gray-700/10 pb-4">
+                    <h2 className="text-xl font-serif font-black tracking-tight text-amber-500 flex items-center gap-2"><BookOpen className="h-5 w-5" />{language === 'ta' ? "வாக்கியம்" : "Vaakiyam"}</h2>
+                    <p className={`text-xs mt-1 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{language === 'ta' ? "வாக்கிய முறையில் ஜாதகம் கணிக்கவும்." : "Generate a horoscope using the traditional Vaakiyam method."}</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { path: '/vaakiyam/jadhagam', icon: <BookOpen className="h-5 w-5" />, titleTa: "வாக்கிய ஜாதகம்", titleEn: "Vaakiya Jadhagam", descTa: "வாக்கிய முறையில் உங்கள் ஜாதகத்தை உருவாக்குங்கள்.", descEn: "Generate your horoscope using the traditional Vaakiya method.", ctaTa: "ஜாதகம் காண்க", ctaEn: "Open Jadhagam" },
                     ].map((item) => (
                       <div key={item.path} onClick={() => navigate(item.path)} className={`p-5 rounded-2xl border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer flex flex-col justify-between ${isLight ? "bg-white border-amber-500/15 hover:bg-amber-50/75 hover:border-amber-500/40 shadow-sm" : "bg-black/35 border-white/5 hover:bg-black/55 hover:border-amber-500/30"}`}>
                         <div className="space-y-3">
@@ -2086,6 +2115,37 @@ export default function App() {
 					{vedicToolSub === 'gemstone-mapping'       && <StarGemstoneMapping language={language} />}
 					{vedicToolSub === 'age'       && <AgeCalculator language={language} />}
 					{vedicToolSub === 'baby-name-finder' && <BabyNameFinder language={language} isLight={isLight} />}
+                  </div>
+                )}
+              </div>
+            } />
+
+            {/* ── VAAKIYAM (dashboard section with Vaakiya Jadhagam) ─────────────── */}
+            <Route path="/vaakiyam/*" element={
+              <div className="space-y-6 animate-fade-in">
+                <BackButton />
+                {vaakiyamSubTab === null ? (
+                  <div className="space-y-6">
+                    <div className="border-b border-gray-700/25 pb-3">
+                      <h2 className="text-xl font-serif font-bold text-amber-500">{language === 'ta' ? "வாக்கியம்" : "Vaakiyam"}</h2>
+                      <p className={`text-xs mt-1 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{language === 'ta' ? "வாக்கிய முறையில் ஜாதகம் கணிக்கவும்." : "Generate a horoscope using the traditional Vaakiyam method."}</p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {[
+                        { id: 'jadhagam', title: language === 'ta' ? 'வாக்கிய ஜாதகம்' : 'Vaakiya Jadhagam', desc: language === 'ta' ? 'வாக்கிய முறையில் உங்கள் ஜாதகத்தை உருவாக்குங்கள்.' : 'Generate your horoscope using the traditional Vaakiya method.' },
+                      ].map((tool) => (
+                        <div key={tool.id} onClick={() => navigate(`/vaakiyam/${tool.id}`)} className="glass-panel p-5 rounded-2xl border cursor-pointer hover:scale-[1.01] transition-all space-y-2">
+                          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500"><BookOpen className="h-5 w-5" /></div>
+                          <h3 className="text-sm font-serif font-bold text-amber-400">{tool.title}</h3>
+                          <p className="text-[11px] text-gray-400 leading-normal">{tool.desc}</p>
+                          <div className="text-[9px] font-mono font-bold text-amber-500 tracking-wider pt-2 uppercase">LAUNCH TOOL ✦</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {vaakiyamSubTab === 'jadhagam' && <VaakiyaJadhagam />}
                   </div>
                 )}
               </div>

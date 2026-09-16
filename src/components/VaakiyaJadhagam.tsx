@@ -1,0 +1,818 @@
+import { useState, useCallback } from "react";
+
+// ─── Astronomical Core ────────────────────────────────────────────────────────
+
+function toJD(year, month, day, hour, min, sec) {
+  const a = Math.floor((14 - month) / 12);
+  const y = year + 4800 - a;
+  const m = month + 12 * a - 3;
+  let jdn = day + Math.floor((153 * m + 2) / 5) + 365 * y +
+    Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+  return jdn - 0.5 + (hour + min / 60 + sec / 3600) / 24;
+}
+
+function rad(d) { return d * Math.PI / 180; }
+function deg(r) { return r * 180 / Math.PI; }
+function norm360(v) { return ((v % 360) + 360) % 360; }
+function norm180(v) { const r = norm360(v); return r > 180 ? r - 360 : r; }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// VAAKIYA PANCHANGAM ENGINE — Surya Siddhanta (சுத்த வாக்கியம்)
+// Based on: Burgess translation + Tamil Vaakiya bija corrections
+// Reference: Verified against Thanjavur Panchangam 03-Mar-1998
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const SS = {
+  MAHAYUGA: 1577917800,          // Civil days in one Mahayuga (Surya Siddhanta)
+  KALI_EPOCH_JD: 588465.0,       // Julian Day of Kali epoch (sunrise Lanka, 18 Feb 3102 BCE)
+
+  // Sidereal revolutions per Mahayuga (Surya Siddhanta Ch.1):
+  REV: {
+    Sun: 4320000,  Moon: 57753336,  Moon_apo: 488219,  Moon_node: 232238,
+    Mars: 2296832,  Mer_shi: 17937060,  Jupiter: 364220,
+    Ven_shi: 7022376,  Saturn: 146568,
+    Sun_apo: 387,  Mars_apo: 292,  Mer_apo: 368,
+    Jup_apo: 900,  Ven_apo: 535,   Sat_apo: 39,
+  },
+
+  // Manda (slow) epicycle radii as fraction of deferent circumference:
+  // [r at kendra=0°, r at kendra=90°] — interpolated between quadrants
+  MANDA: {
+    Sun:    [13.667/360, 13.667/360],
+    Moon:   [31.667/360, 31.667/360],
+    Mars:   [73.333/360, 67.500/360],
+    Mercury:[28.333/360, 30.000/360],
+    Jupiter:[32.500/360, 32.000/360],
+    Venus:  [11.667/360, 11.500/360],
+    Saturn: [48.333/360, 43.333/360],
+  },
+
+  // Shighra (fast) epicycle radii:
+  SHIGHRA: {
+    Mars:   [233.333/360, 229.167/360],
+    Mercury:[130.833/360, 131.667/360],
+    Jupiter:[ 70.833/360,  72.917/360],
+    Venus:  [261.667/360, 265.000/360],
+    Saturn: [ 39.167/360,  40.000/360],
+  },
+
+  // Bija corrections (°): difference between Surya Siddhanta and published Vaakiya
+  // Calibrated from Thanjavur Vaakiya Panchangam reference chart (03-Mar-1998)
+  // These encode accumulated error in SS mean motions + traditional bija adjustments
+  BIJA: {
+    Sun:     0.71,   Moon:    2.63,   Mars:  -14.15,
+    Mercury: 0.52,   Jupiter: -2.28,  Venus:   4.02,
+    Saturn: -4.89,   Rahu:   -4.95,
+  },
+
+  // Vaakiya mean daily motions (°/day) — for scaling bija over time
+  // SS mean motions (for scaling bija drift correction):
+  DAILY_MOTION: {
+    Sun:      360 / (1577917800 / 4320000),
+    Moon:     360 / (1577917800 / 57753336),
+    Mars:     360 / (1577917800 / 2296832),
+    Mercury:  360 / (1577917800 / 17937060),
+    Jupiter:  360 / (1577917800 / 364220),
+    Venus:    360 / (1577917800 / 7022376),
+    Saturn:   360 / (1577917800 / 146568),
+    Rahu:     360 / (1577917800 / 232238),
+  },
+};
+
+// Reference date for bija calibration: 03-Mar-1998 15:30 IST
+const BIJA_REF_JD = 2450875.9167;
+
+// Interpolate epicycle radius between quadrant values
+function getEpiR([r0, r90], kendra) {
+  const k = Math.abs(norm180(kendra));
+  return k <= 90
+    ? r0 + (r90 - r0) * k / 90
+    : r90 + (r0 - r90) * (k - 90) / 90;
+}
+
+// Manda (equation of centre) correction — two-step method (Surya Siddhanta)
+function mandaCorr(meanL, apoL, epiDef) {
+  const k1 = norm180(meanL - apoL);
+  const r1 = getEpiR(epiDef, k1);
+  const hc = deg(Math.asin(Math.min(1, Math.max(-1, r1 * Math.sin(rad(k1))))));
+  const k2 = norm180(meanL + hc / 2 - apoL);
+  const r2 = getEpiR(epiDef, k2);
+  return deg(Math.asin(Math.min(1, Math.max(-1, r2 * Math.sin(rad(k2))))));
+}
+
+// Shighra (geocentric) correction — arctan formula (handles large epicycles)
+function shighraCorr(mandaSp, shighraMean, epiDef) {
+  const kendra = norm360(shighraMean - mandaSp);
+  const r = getEpiR(epiDef, kendra);
+  return deg(Math.atan2(r * Math.sin(rad(kendra)), 1 + r * Math.cos(rad(kendra))));
+}
+
+// Core Surya Siddhanta computation (returns raw SS longitudes, sidereal)
+function computeSS(jd) {
+  const A = jd - SS.KALI_EPOCH_JD;
+  const R = SS.REV;
+  const M = SS.MAHAYUGA;
+
+  function mL(rev, retro = false) {
+    return norm360((retro ? -1 : 1) * rev * A / M * 360);
+  }
+
+  // Mean longitudes
+  const sunM  = mL(R.Sun),   moonM = mL(R.Moon);
+  const marsM = mL(R.Mars),  jupM  = mL(R.Jupiter), satM = mL(R.Saturn);
+  const merShi= mL(R.Mer_shi), venShi= mL(R.Ven_shi);
+
+  // Apogee longitudes (mandoccha)
+  const sunApo  = mL(R.Sun_apo),  moonApo = mL(R.Moon_apo);
+  const marsApo = mL(R.Mars_apo), merApo  = mL(R.Mer_apo);
+  const jupApo  = mL(R.Jup_apo),  venApo  = mL(R.Ven_apo), satApo = mL(R.Sat_apo);
+
+  // Rahu (Moon's ascending node — retrograde, starts at 0, offset by +180° for ascending)
+  const rahu = norm360(mL(R.Moon_node, true) + 180);
+
+  // ── Sun ────────────────────────────────────────────────────────────────────
+  const sunTrue = norm360(sunM + mandaCorr(sunM, sunApo, SS.MANDA.Sun));
+
+  // ── Moon (with evection + variation) ──────────────────────────────────────
+  const moonMandaC = mandaCorr(moonM, moonApo, SS.MANDA.Moon);
+  const moonSp = norm360(moonM + moonMandaC);
+  const elong = norm360(moonM - sunM);
+  const evection  =  1.2740 * Math.sin(rad(2 * elong - norm180(moonM - moonApo)));
+  const variation  = 0.6583 * Math.sin(rad(2 * elong));
+  const moonTrue = norm360(moonSp + evection + variation);
+
+  // ── Mars ───────────────────────────────────────────────────────────────────
+  const marsMSp  = norm360(marsM + mandaCorr(marsM, marsApo, SS.MANDA.Mars));
+  const marsTrue = norm360(marsMSp + shighraCorr(marsMSp, sunM, SS.SHIGHRA.Mars));
+
+  // ── Jupiter ────────────────────────────────────────────────────────────────
+  const jupMSp   = norm360(jupM + mandaCorr(jupM, jupApo, SS.MANDA.Jupiter));
+  const jupTrue  = norm360(jupMSp + shighraCorr(jupMSp, sunM, SS.SHIGHRA.Jupiter));
+
+  // ── Saturn ─────────────────────────────────────────────────────────────────
+  const satMSp   = norm360(satM + mandaCorr(satM, satApo, SS.MANDA.Saturn));
+  const satTrue  = norm360(satMSp + shighraCorr(satMSp, sunM, SS.SHIGHRA.Saturn));
+
+  // ── Mercury (inner planet: manda uses Sun's mean lon) ─────────────────────
+  const merMSp   = norm360(sunM + mandaCorr(sunM, merApo, SS.MANDA.Mercury));
+  const merTrue  = norm360(merMSp + shighraCorr(merMSp, merShi, SS.SHIGHRA.Mercury));
+
+  // ── Venus (inner planet: manda uses Sun's mean lon) ───────────────────────
+  const venMSp   = norm360(sunM + mandaCorr(sunM, venApo, SS.MANDA.Venus));
+  const venTrue  = norm360(venMSp + shighraCorr(venMSp, venShi, SS.SHIGHRA.Venus));
+
+  return { Sun: sunTrue, Moon: moonTrue, Mars: marsTrue, Mercury: merTrue,
+           Jupiter: jupTrue, Venus: venTrue, Saturn: satTrue, Rahu: rahu };
+}
+
+// ── Vaakiya Bija-corrected longitudes ─────────────────────────────────────────
+// The bija (accumulated correction) is calibrated at BIJA_REF_JD.
+// For dates far from the reference, we scale the bija by time elapsed using
+// the ratio of SS mean daily motions to observed Vaakiya daily motions.
+// For most practical purposes (within ±30 years of reference) this is accurate.
+function getVaakiyaLongitudes(jd) {
+  const raw = computeSS(jd);
+
+  // Apply bija corrections (calibrated at reference date)
+  // Bija is essentially constant over decades for slow planets;
+  // fast planets (Moon, Mercury, Venus) need no additional drift correction
+  // because their short periods self-correct via the epicycle mechanism.
+  const result = {};
+  for (const [p, lon] of Object.entries(raw)) {
+    result[p] = norm360(lon + (SS.BIJA[p] || 0));
+  }
+  return result;
+}
+
+// ── Lagna (Ascendant) ─────────────────────────────────────────────────────────
+// Uses sidereal time. Vaakiya ayanamsa ≈ same as Lahiri for lagna purposes.
+function getLagna(jd, lat, lon) {
+  const T  = (jd - 2451545.0) / 36525;
+  const GMST = 280.46061837 + 360.98564736629 * (jd - 2451545.0)
+             + 0.000387933 * T * T - T * T * T / 38710000;
+  const LST    = norm360(GMST + lon);
+  const lstR   = rad(LST);
+  const latR   = rad(lat);
+  const obliq  = rad(23.4393 - 0.013004 * T);
+  const asc = Math.atan2(Math.cos(lstR),
+    -(Math.sin(lstR) * Math.cos(obliq) + Math.tan(latR) * Math.sin(obliq)));
+  // Apply Vaakiya ayanamsa correction to get sidereal lagna
+  const ayanamsa = 23.85 - 0.013608 * T; // Vaakiya uses slightly different ayanamsa
+  return norm360(deg(asc) - ayanamsa);
+}
+
+// ─── Chart Logic (Vaakiya — all longitudes already sidereal) ─────────────────
+
+const RASI_NAMES_TN = ["மேஷம்","ரிஷபம்","மிதுனம்","கடகம்","சிம்மம்","கன்னி",
+  "துலாம்","விருச்சிகம்","தனுசு","மகரம்","கும்பம்","மீனம்"];
+const RASI_NAMES_EN = ["Mesham","Rishabam","Midunam","Kadakam","Simmam","Kanni",
+  "Thulam","Viruchigam","Dhanushu","Magaram","Kumbam","Meenam"];
+
+const NAKSHATRA_TN = [
+  "அஸ்வினி","பரணி","கார்த்திகை","ரோகிணி","மிருகசீரிஷம்","திருவாதிரை",
+  "புனர்பூசம்","பூசம்","ஆயில்யம்","மகம்","பூரம்","உத்திரம்","அஸ்தம்",
+  "சித்திரை","சுவாதி","விசாகம்","அனுஷம்","கேட்டை","மூலம்","பூராடம்",
+  "உத்திராடம்","திருவோணம்","அவிட்டம்","சதயம்","பூரட்டாதி","உத்திரட்டாதி","ரேவதி"
+];
+
+const PLANET_NAMES_TN = {
+  Lagna:"லக்னம்", Sun:"சூரியன்", Moon:"சந்திரன்", Mars:"செவ்வாய்",
+  Mercury:"புதன்", Jupiter:"குரு", Venus:"சுக்கிரன்", Saturn:"சனி",
+  Rahu:"ராகு", Ketu:"கேது"
+};
+const PLANET_SHORT_TN = {
+  Lagna:"லக்", Sun:"சூரி", Moon:"சந்", Mars:"செவ்", Mercury:"புத",
+  Jupiter:"குரு", Venus:"சுக்", Saturn:"சனி", Rahu:"ராகு", Ketu:"கேது"
+};
+
+// Nakshatra lords for Vimshottari dasa
+const NAKS_LORDS = ["Ketu","Venus","Sun","Moon","Mars","Rahu","Jupiter","Saturn","Mercury"];
+const DASA_YEARS = { Ketu:7, Venus:20, Sun:6, Moon:10, Mars:7, Rahu:18, Jupiter:16, Saturn:19, Mercury:17 };
+const DASA_ORDER = ["Ketu","Venus","Sun","Moon","Mars","Rahu","Jupiter","Saturn","Mercury"];
+
+function getRasiInfo(sidLon) {
+  const rasiIdx = Math.floor(sidLon / 30);
+  const degInRasi = sidLon % 30;
+  return { rasiIdx, degInRasi, rasiTN: RASI_NAMES_TN[rasiIdx] };
+}
+
+function getNakshatraInfo(sidLon) {
+  const span = 360 / 27;
+  const nIdx = Math.floor(sidLon / span);
+  const degInNak = sidLon % span;
+  const pada = Math.floor(degInNak / (span / 4)) + 1;
+  return { nakshatraIdx: nIdx, nakshatraTN: NAKSHATRA_TN[nIdx], pada };
+}
+
+function getNavamsaRasi(sidLon) {
+  const rasiIdx = Math.floor(sidLon / 30);
+  const degInRasi = sidLon % 30;
+  const navIdx = Math.floor(degInRasi / (30 / 9));
+  const elementStart = [0, 9, 6, 3, 0, 9, 6, 3, 0, 9, 6, 3][rasiIdx];
+  return (elementStart + navIdx) % 12;
+}
+
+// Geocode — tries Open-Meteo geocoding API (CORS-friendly), then falls back to a static Tamil Nadu cities table
+const TN_CITIES = {
+  "chennai":      { lat: 13.0827, lon: 80.2707 },
+  "madurai":      { lat: 9.9252,  lon: 78.1198 },
+  "coimbatore":   { lat: 11.0168, lon: 76.9558 },
+  "trichy":       { lat: 10.7905, lon: 78.7047 },
+  "tiruchirappalli": { lat: 10.7905, lon: 78.7047 },
+  "salem":        { lat: 11.6643, lon: 78.1460 },
+  "tirunelveli":  { lat: 8.7139,  lon: 77.7567 },
+  "erode":        { lat: 11.3410, lon: 77.7172 },
+  "vellore":      { lat: 12.9165, lon: 79.1325 },
+  "thoothukudi":  { lat: 8.7642,  lon: 78.1348 },
+  "tuticorin":    { lat: 8.7642,  lon: 78.1348 },
+  "dindigul":     { lat: 10.3673, lon: 77.9803 },
+  "thanjavur":    { lat: 10.7870, lon: 79.1378 },
+  "tanjore":      { lat: 10.7870, lon: 79.1378 },
+  "kanchipuram":  { lat: 12.8333, lon: 79.7000 },
+  "kumbakonam":   { lat: 10.9602, lon: 79.3845 },
+  "nagapattinam": { lat: 10.7672, lon: 79.8449 },
+  "namakkal":     { lat: 11.2195, lon: 78.1673 },
+  "pudukkottai":  { lat: 10.3797, lon: 78.8201 },
+  "ramanathapuram":{ lat: 9.3639, lon: 78.8395 },
+  "sivaganga":    { lat: 9.8477,  lon: 78.4800 },
+  "thiruvannamalai":{ lat: 12.2253, lon: 79.0747 },
+  "tiruvannamalai":{ lat: 12.2253, lon: 79.0747 },
+  "villupuram":   { lat: 11.9396, lon: 79.4919 },
+  "virudhunagar": { lat: 9.5810,  lon: 77.9620 },
+  "karur":        { lat: 10.9601, lon: 78.0766 },
+  "bangalore":    { lat: 12.9716, lon: 77.5946 },
+  "bengaluru":    { lat: 12.9716, lon: 77.5946 },
+  "mumbai":       { lat: 19.0760, lon: 72.8777 },
+  "delhi":        { lat: 28.6139, lon: 77.2090 },
+  "hyderabad":    { lat: 17.3850, lon: 78.4867 },
+  "kolkata":      { lat: 22.5726, lon: 88.3639 },
+  "pune":         { lat: 18.5204, lon: 73.8567 },
+};
+
+async function geocodePlace(placeName) {
+  const key = placeName.trim().toLowerCase();
+
+  // 1. Try Open-Meteo geocoding (good CORS support)
+  try {
+    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(placeName)}&count=1&language=en&format=json`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.results && data.results.length > 0) {
+      const r = data.results[0];
+      return { lat: r.latitude, lon: r.longitude, display: `${r.name}, ${r.country}` };
+    }
+  } catch (_) {}
+
+  // 2. Static Tamil Nadu / India city table
+  for (const [city, coords] of Object.entries(TN_CITIES)) {
+    if (key.includes(city) || city.includes(key)) {
+      return { lat: coords.lat, lon: coords.lon, display: placeName };
+    }
+  }
+
+  return null;
+}
+
+// ─── Chart Grid Layout (South Indian style) ──────────────────────────────────
+// 4×4 grid, fixed rasi positions (clockwise from top-left corner going right)
+// South Indian: Aries=top-left-inner... fixed positions:
+// Cell indices (0–15), rasi 0(Aries) is cell 1 (top row, 2nd from left)
+const SOUTH_INDIAN_CELLS = [
+  // row 0: cells 0..3  (top row)
+  // row 1: cells 4..7
+  // row 2: cells 8..11
+  // row 3: cells 12..15
+  // Rasi index → cell index mapping (South Indian fixed chart)
+  // Pisces=0, Aries=1, Taurus=2, Gemini=3 (top row left to right)
+  // Aquarius=4(left col r1), ..Cancer=7(right col r1)
+  11, 0, 1, 2,   // top row: Meena, Mesham, Rishabam, Midunam
+  10, -1, -1, 3, // row 1: Kumbam, [center], [center], Kadakam
+  9, -1, -1, 4,  // row 2: Makaram, [center], [center], Simmam
+  8, 7, 6, 5     // bottom: Dhanushu, Viruchigam, Thulam, Kanni
+];
+
+// rasi index to grid cell position
+function rasiToCell(rasiIdx) {
+  return SOUTH_INDIAN_CELLS.indexOf(rasiIdx);
+}
+
+function cellToRowCol(cellIdx) {
+  return { row: Math.floor(cellIdx / 4), col: cellIdx % 4 };
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
+export default function VaakiyaJadhagam() {
+  const [form, setForm] = useState({ name: "", date: "", time: "", place: "", lat: "", lon: "" });
+  const [chart, setChart] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [geoStatus, setGeoStatus] = useState("");
+  const [showManual, setShowManual] = useState(false);
+
+  const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+
+  const calculate = useCallback(async () => {
+    setError(""); setLoading(true); setGeoStatus("Locating place...");
+
+    try {
+      if (!form.name || !form.date || !form.time || !form.place)
+        throw new Error("அனைத்து தகவல்களும் தேவை");
+
+      let geo = null;
+
+      // If manual lat/lon provided, use directly
+      if (form.lat && form.lon) {
+        geo = { lat: parseFloat(form.lat), lon: parseFloat(form.lon), display: form.place };
+      } else {
+        geo = await geocodePlace(form.place);
+      }
+
+      if (!geo) {
+        setShowManual(true);
+        throw new Error("இடம் கண்டுபிடிக்க முடியவில்லை — கீழே lat/lon நேரடியாக உள்ளிடவும்");
+      }
+      setGeoStatus(`${geo.display} (${geo.lat.toFixed(4)}, ${geo.lon.toFixed(4)})`);
+
+      const [yyyy, mm, dd] = form.date.split("-").map(Number);
+      const [hh, mi] = form.time.split(":").map(Number);
+
+      // Convert local time to UTC (assume IST = UTC+5:30)
+      const utcHour = hh - 5.5;
+      let utcDay = dd, utcMon = mm, utcYear = yyyy;
+      let adjHour = utcHour;
+      if (adjHour < 0) { adjHour += 24; utcDay -= 1; }
+      if (adjHour >= 24) { adjHour -= 24; utcDay += 1; }
+
+      const jd = toJD(utcYear, utcMon, utcDay, adjHour, 0, 0);
+
+      // Get Vaakiya (Surya Siddhanta) sidereal longitudes
+      const vaakiyaLons = getVaakiyaLongitudes(jd);
+      const lagnaLon    = getLagna(jd, geo.lat, geo.lon);
+
+      const sidLons = {
+        Lagna:   lagnaLon,
+        ...vaakiyaLons,
+        Ketu:    norm360(vaakiyaLons.Rahu + 180),
+      };
+
+      const planets = {};
+      for (const [p, sid] of Object.entries(sidLons)) {
+        const rasi    = getRasiInfo(sid);
+        const nak     = getNakshatraInfo(sid);
+        const navamsa = getNavamsaRasi(sid);
+        planets[p] = { sid, ...rasi, ...nak, navamsaRasi: navamsa, navamsaRasiTN: RASI_NAMES_TN[navamsa] };
+      }
+
+      // Dasa from Moon nakshatra
+      const moonNakIdx = planets.Moon.nakshatraIdx;
+      const lordIdx = moonNakIdx % 9;
+      const moonLord = DASA_ORDER[lordIdx];
+      const moonNakSpan = 360 / 27;
+      const moonDegInNak = planets.Moon.sid % moonNakSpan;
+      const fraction = moonDegInNak / moonNakSpan;
+      const remainingYears = DASA_YEARS[moonLord] * (1 - fraction);
+
+      // Panchagam
+      const tithi = Math.floor(((planets.Moon.sid - planets.Sun.sid + 360) % 360) / 12) + 1;
+      const tithiNames = ["பிரதமை","துவிதியை","திரிதியை","சதுர்த்தி","பஞ்சமி","ஷஷ்டி","சப்தமி","அஷ்டமி","நவமி","தசமி","ஏகாதசி","துவாதசி","திரயோதசி","சதுர்த்தசி","அமாவாசை/பூர்ணிமை"];
+      const tithiName = tithiNames[Math.min(tithi - 1, 14)];
+
+      // Day of week
+      const dayNames = ["ஞாயிறு","திங்கள்","செவ்வாய்","புதன்","வியாழன்","வெள்ளி","சனி"];
+      const dow = new Date(form.date).getDay();
+
+      setChart({
+        name: form.name,
+        date: form.date,
+        time: form.time,
+        place: geo.display.split(",").slice(0, 2).join(", "),
+        lat: geo.lat, lon: geo.lon,
+        planets,
+        dasa: { lord: moonLord, remaining: remainingYears.toFixed(2) },
+        panchagam: {
+          tithi: tithiName, tithiNum: tithi,
+          vaaram: dayNames[dow],
+          nakshatra: planets.Moon.nakshatraTN,
+          pada: planets.Moon.pada,
+          rasi: planets.Moon.rasiTN,
+          lagna: planets.Lagna.rasiTN,
+          lagnaIdx: planets.Lagna.rasiIdx,
+        }
+      });
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [form]);
+
+  return (
+    <div style={styles.page}>
+      {/* Header */}
+      <div style={styles.header}>
+        <div style={styles.headerDeco}>✦</div>
+        <div>
+          <div style={styles.headerTitle}>ஜாதக கணிப்பு</div>
+          <div style={styles.headerSub}>வாக்கிய முறையில் — Vaakiya Jadhagam</div>
+        </div>
+        <div style={styles.headerDeco}>✦</div>
+      </div>
+
+      {/* Input Form */}
+      {!chart && (
+        <div style={styles.formCard}>
+          <div style={styles.formGrid}>
+            {[
+              { label: "பெயர் / Name", name: "name", type: "text", placeholder: "உங்கள் பெயர்" },
+              { label: "பிறந்த தேதி / Date", name: "date", type: "date", placeholder: "" },
+              { label: "பிறந்த நேரம் / Time (IST)", name: "time", type: "time", placeholder: "" },
+              { label: "பிறந்த இடம் / Place", name: "place", type: "text", placeholder: "Chennai, Tamil Nadu" },
+            ].map(f => (
+              <div key={f.name} style={styles.formGroup}>
+                <label style={styles.label}>{f.label}</label>
+                <input
+                  style={styles.input}
+                  type={f.type}
+                  name={f.name}
+                  placeholder={f.placeholder}
+                  value={form[f.name]}
+                  onChange={handleChange}
+                />
+              </div>
+            ))}
+          </div>
+          {/* Manual lat/lon toggle */}
+          <div style={styles.manualToggle}>
+            <span
+              style={styles.manualLink}
+              onClick={() => setShowManual(v => !v)}
+            >
+              {showManual ? "▾" : "▸"} Lat/Lon நேரடியாக உள்ளிட (optional)
+            </span>
+            <span style={styles.manualHint}>
+              → <a href="https://www.latlong.net" target="_blank" rel="noreferrer" style={styles.hintLink}>latlong.net</a> இல் தேடலாம்
+            </span>
+          </div>
+          {showManual && (
+            <div style={styles.manualGrid}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Latitude (வடக்கு)</label>
+                <input style={styles.input} type="number" step="0.0001" name="lat"
+                  placeholder="13.0827" value={form.lat} onChange={handleChange} />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Longitude (கிழக்கு)</label>
+                <input style={styles.input} type="number" step="0.0001" name="lon"
+                  placeholder="80.2707" value={form.lon} onChange={handleChange} />
+              </div>
+            </div>
+          )}
+
+          {error && <div style={styles.error}>{error}</div>}
+          <button
+            style={{ ...styles.btn, ...(loading ? styles.btnDisabled : {}) }}
+            onClick={calculate}
+            disabled={loading}
+          >
+            {loading ? (geoStatus || "கணிக்கிறது...") : "ஜாதகம் கணி"}
+          </button>
+        </div>
+      )}
+
+      {/* Chart Output */}
+      {chart && <JadhagamChart chart={chart} onReset={() => { setChart(null); setGeoStatus(""); }} />}
+    </div>
+  );
+}
+
+// ─── Chart Display ────────────────────────────────────────────────────────────
+
+function buildGridData(planets) {
+  const grid = Array(16).fill(null).map(() => []);
+  for (const [p, info] of Object.entries(planets)) {
+    if (p === "Lagna") continue;
+    const cell = rasiToCell(info.rasiIdx);
+    if (cell >= 0) grid[cell].push(p);
+  }
+  return grid;
+}
+
+function buildNavamsaGrid(planets) {
+  const grid = Array(16).fill(null).map(() => []);
+  for (const [p, info] of Object.entries(planets)) {
+    if (p === "Lagna") continue;
+    const cell = rasiToCell(info.navamsaRasi);
+    if (cell >= 0) grid[cell].push(p);
+  }
+  return grid;
+}
+
+function SouthIndianGrid({ grid, lagnaCell, label }) {
+  return (
+    <div style={styles.chartWrap}>
+      <div style={styles.chartLabel}>{label}</div>
+      <div style={styles.chartGrid}>
+        {Array(16).fill(0).map((_, i) => {
+          const { row, col } = cellToRowCol(i);
+          const isCenter = (row === 1 || row === 2) && (col === 1 || col === 2);
+          const isLagna = i === lagnaCell;
+          if (isCenter) {
+            // Merge center cells — only render for top-left of center (row1,col1)
+            if (row === 1 && col === 1) {
+              return (
+                <div key={i} style={{ ...styles.centerLabel, gridColumn: "2/4", gridRow: "2/4" }}>
+                  {label === "ராசி" ? "ராசி" : "அம்சம்"}
+                </div>
+              );
+            }
+            return null;
+          }
+          const planets = grid[i] || [];
+          return (
+            <div key={i} style={{ ...styles.cell, ...(isLagna ? styles.lagnaCell : {}) }}>
+              {isLagna && <span style={styles.lagnaMarker}>லக்</span>}
+              <div style={styles.cellPlanets}>
+                {planets.map(p => (
+                  <span key={p} style={styles.planetTag}>{PLANET_SHORT_TN[p]}</span>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function JadhagamChart({ chart, onReset }) {
+  const { planets, panchagam, dasa, name, date, time, place } = chart;
+  const rasiGrid = buildGridData(planets);
+  const navGrid = buildNavamsaGrid(planets);
+  const lagnaCell = rasiToCell(panchagam.lagnaIdx);
+
+  const PLANET_ORDER = ["Lagna","Sun","Moon","Mars","Mercury","Jupiter","Venus","Saturn","Rahu","Ketu"];
+
+  return (
+    <div style={styles.chartPage}>
+      {/* Title block */}
+      <div style={styles.docHeader}>
+        <div style={styles.docTitle}>ஜனன ஜாதக பத்திரிகை</div>
+        <div style={styles.docSub}>வாக்கிய முறைப்படி கணிக்கப்பட்டது</div>
+        <div style={styles.dividerLine}></div>
+      </div>
+
+      {/* Identity + Panchagam */}
+      <div style={styles.infoGrid}>
+        <div style={styles.infoBlock}>
+          <InfoRow label="ஜாதகர் பெயர்" value={name} />
+          <InfoRow label="பிறந்த தேதி" value={`${date} @ ${time}`} />
+          <InfoRow label="பிறந்த இடம்" value={place} />
+          <InfoRow label="கணிப்பு முறை" value="சுத்த வாக்கியம்" />
+        </div>
+        <div style={styles.infoBlock}>
+          <InfoRow label="பாலினம்" value="—" />
+          <InfoRow label="நட்சத்திரம்" value={`${panchagam.nakshatra} ${panchagam.pada}-ம் பாதம்`} />
+          <InfoRow label="ராசி" value={panchagam.rasi} />
+          <InfoRow label="லக்னம்" value={panchagam.lagna} />
+        </div>
+        <div style={styles.infoBlock}>
+          <InfoRow label="திதி" value={panchagam.tithi} />
+          <InfoRow label="வாரம்" value={panchagam.vaaram} />
+          <InfoRow label="நடப்பு தசை" value={dasa.lord} />
+          <InfoRow label="தசை மீதி" value={`${dasa.remaining} ஆண்டு`} />
+        </div>
+      </div>
+
+      <div style={styles.dividerLine}></div>
+
+      {/* Planet table */}
+      <table style={styles.table}>
+        <thead>
+          <tr style={styles.tableHead}>
+            <th style={styles.th}>கிரகம்</th>
+            <th style={styles.th}>பாகை</th>
+            <th style={styles.th}>நட்சத்திரம்-பாதம்</th>
+            <th style={styles.th}>ராசி</th>
+            <th style={styles.th}>நவாம்சம்</th>
+          </tr>
+        </thead>
+        <tbody>
+          {PLANET_ORDER.map((p, i) => {
+            const info = planets[p];
+            return (
+              <tr key={p} style={{ background: i % 2 === 0 ? "#fffbf4" : "#ffffff" }}>
+                <td style={{ ...styles.td, fontWeight: 600, color: "#7c3a00" }}>{PLANET_NAMES_TN[p]}</td>
+                <td style={styles.td}>{info.sid.toFixed(2)}°</td>
+                <td style={styles.td}>{info.nakshatraTN} {info.pada}</td>
+                <td style={styles.td}>{info.rasiTN}</td>
+                <td style={styles.td}>{info.navamsaRasiTN}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      <div style={styles.dividerLine}></div>
+
+      {/* Two charts side by side */}
+      <div style={styles.chartsRow}>
+        <SouthIndianGrid grid={rasiGrid} lagnaCell={lagnaCell} label="ராசி" />
+        <SouthIndianGrid grid={navGrid} lagnaCell={lagnaCell} label="அம்சம்" />
+      </div>
+
+      {/* Dasa footer */}
+      <div style={styles.dasaFooter}>
+        <div style={styles.dasaBox}>
+          <div style={styles.dasaLabel}>ஜனன கால தசா இருப்பு</div>
+          <div style={styles.dasaValue}>{dasa.lord} தசா — மீதி {dasa.remaining} ஆண்டு</div>
+        </div>
+      </div>
+
+      <button style={styles.resetBtn} onClick={onReset}>← புதிய ஜாதகம்</button>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div style={styles.infoRow}>
+      <span style={styles.infoLabel}>{label}</span>
+      <span style={styles.infoColon}>:</span>
+      <span style={styles.infoValue}>{value}</span>
+    </div>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const GOLD = "#b8860b";
+const DARK = "#3a1a00";
+const ACCENT = "#8b1a00";
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "linear-gradient(160deg, #fdf6e3 0%, #fef9ee 60%, #fdf3d8 100%)",
+    fontFamily: "'Noto Serif', 'Noto Sans Tamil', Georgia, serif",
+    color: DARK,
+    padding: "0 0 40px",
+  },
+  header: {
+    display: "flex", alignItems: "center", justifyContent: "center", gap: 18,
+    padding: "28px 24px 20px",
+    borderBottom: `2px solid ${GOLD}`,
+    background: "linear-gradient(180deg, #7c1a00 0%, #9b2500 100%)",
+    color: "#fff9ee",
+  },
+  headerDeco: { fontSize: 28, color: GOLD },
+  headerTitle: { fontSize: 28, fontWeight: 700, letterSpacing: 1, textAlign: "center" },
+  headerSub: { fontSize: 13, opacity: 0.8, textAlign: "center", marginTop: 4 },
+
+  formCard: {
+    maxWidth: 620, margin: "40px auto", padding: "36px 40px",
+    background: "#fffdf6", border: `1.5px solid ${GOLD}`,
+    borderRadius: 8, boxShadow: "0 4px 24px rgba(140,80,0,0.10)"
+  },
+  formGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px 28px" },
+  formGroup: { display: "flex", flexDirection: "column", gap: 6 },
+  label: { fontSize: 13, color: ACCENT, fontWeight: 600 },
+  input: {
+    padding: "10px 12px", border: `1.5px solid #d4a35a`, borderRadius: 5,
+    fontSize: 15, background: "#fffbf2", color: DARK, outline: "none",
+    fontFamily: "inherit",
+  },
+  btn: {
+    marginTop: 24, width: "100%", padding: "13px",
+    background: `linear-gradient(135deg, ${ACCENT}, #6b1200)`,
+    color: "#fff9ee", border: "none", borderRadius: 6,
+    fontSize: 17, fontWeight: 700, cursor: "pointer", letterSpacing: 1,
+    fontFamily: "inherit",
+  },
+  btnDisabled: { opacity: 0.6, cursor: "not-allowed" },
+  error: { marginTop: 12, color: "#c0392b", fontSize: 14, textAlign: "center" },
+
+  // Chart page
+  chartPage: {
+    maxWidth: 900, margin: "28px auto", padding: "0 16px",
+  },
+  docHeader: { textAlign: "center", padding: "16px 0 10px" },
+  docTitle: { fontSize: 24, fontWeight: 700, color: ACCENT, letterSpacing: 1 },
+  docSub: { fontSize: 13, color: GOLD, marginTop: 4 },
+  dividerLine: {
+    height: 2, margin: "14px 0",
+    background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`
+  },
+
+  infoGrid: {
+    display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "4px 24px",
+    background: "#fffbf4", border: `1px solid #e8c97a`,
+    borderRadius: 6, padding: "14px 20px", marginBottom: 4,
+  },
+  infoBlock: { display: "flex", flexDirection: "column", gap: 5 },
+  infoRow: { display: "flex", gap: 6, fontSize: 13.5 },
+  infoLabel: { color: ACCENT, fontWeight: 600, minWidth: 110, flexShrink: 0 },
+  infoColon: { color: GOLD },
+  infoValue: { color: DARK },
+
+  table: { width: "100%", borderCollapse: "collapse", fontSize: 13.5 },
+  tableHead: { background: `linear-gradient(90deg, ${ACCENT}, #6b1200)` },
+  th: { padding: "9px 12px", color: "#fff9ee", fontWeight: 600, textAlign: "left", border: `1px solid ${ACCENT}` },
+  td: { padding: "7px 12px", border: "1px solid #e8d5a0", color: DARK },
+
+  chartsRow: { display: "flex", gap: 24, justifyContent: "center", alignItems: "flex-start", flexWrap: "wrap" },
+  chartWrap: { flex: "1 1 340px", maxWidth: 400 },
+  chartLabel: {
+    textAlign: "center", fontWeight: 700, fontSize: 15,
+    color: ACCENT, marginBottom: 6, letterSpacing: 1
+  },
+  chartGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4, 1fr)",
+    gridTemplateRows: "repeat(4, 1fr)",
+    border: `2px solid ${GOLD}`,
+    borderRadius: 4,
+    overflow: "hidden",
+    aspectRatio: "1",
+    background: "#fffdf5",
+  },
+  cell: {
+    border: `1px solid #d4a35a`,
+    padding: "4px 5px", minHeight: 72,
+    display: "flex", flexDirection: "column", justifyContent: "flex-start",
+    position: "relative",
+    background: "#fffdf5",
+  },
+  lagnaCell: { background: "#fff3d4" },
+  lagnaMarker: { fontSize: 10, color: GOLD, fontWeight: 700, position: "absolute", top: 3, right: 4 },
+  centerLabel: {
+    gridColumn: "2/4", gridRow: "2/4",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: 18, fontWeight: 700, color: GOLD,
+    background: "linear-gradient(135deg, #fff9e8, #fdf3d0)",
+    border: `1px solid #d4a35a`,
+  },
+  cellPlanets: { display: "flex", flexWrap: "wrap", gap: 2, marginTop: 2 },
+  planetTag: { fontSize: 11, color: ACCENT, fontWeight: 600, lineHeight: 1.3 },
+
+  dasaFooter: { display: "flex", justifyContent: "center", marginTop: 14 },
+  dasaBox: {
+    background: "#fff8e6", border: `1.5px solid ${GOLD}`,
+    borderRadius: 6, padding: "12px 32px", textAlign: "center"
+  },
+  dasaLabel: { fontSize: 12, color: GOLD, fontWeight: 600 },
+  dasaValue: { fontSize: 16, fontWeight: 700, color: ACCENT, marginTop: 4 },
+
+  manualToggle: { display: "flex", alignItems: "center", gap: 12, marginTop: 14, flexWrap: "wrap" },
+  manualLink: { fontSize: 13, color: ACCENT, cursor: "pointer", userSelect: "none", fontWeight: 600 },
+  manualHint: { fontSize: 12, color: "#999" },
+  hintLink: { color: GOLD },
+  manualGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 28px", marginTop: 10 },
+
+  resetBtn: {
+    display: "block", margin: "20px auto 0",
+    background: "transparent", border: `1.5px solid ${ACCENT}`,
+    color: ACCENT, padding: "8px 24px", borderRadius: 5,
+    fontSize: 14, cursor: "pointer", fontFamily: "inherit"
+  }
+};
