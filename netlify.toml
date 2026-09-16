@@ -27,7 +27,3 @@
   to = "/.netlify/functions/jadhagam1"
   status = 200
   
-[[redirects]]
-  from = "/api/prokerala/*"
-  to = "/.netlify/functions/prokerala-proxy/:splat"
-  status = 200
