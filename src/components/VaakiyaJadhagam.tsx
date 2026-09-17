@@ -656,12 +656,12 @@ export default function VaakiyaJadhagam() {
           .vj-header { padding: 16px 12px 14px !important; gap: 10px !important; }
           .vj-header-title { font-size: 22px !important; }
           .vj-header-sub { font-size: 11px !important; }
-          .vj-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-          .vj-table-wrap table { min-width: 360px; }
+          .vj-table-wrap { overflow-x: visible; }
           .vj-charts-row { gap: 10px !important; }
           .vj-dasa-box { padding: 10px 16px !important; }
           .vj-info-row { font-size: 12px !important; }
           .vj-info-label { min-width: 80px !important; }
+          .vj-planet-tag { font-size: 9px !important; }
         }
       `}</style>
       {/* Header */}
@@ -818,7 +818,7 @@ function SouthIndianGrid({ grid, lagnaCell, label }: { grid: string[][]; lagnaCe
               {isLagna && <span style={styles.lagnaMarker}>லக்</span>}
               <div style={styles.cellPlanets}>
                 {planets.map(p => (
-                  <span key={p} style={styles.planetTag}>{PLANET_SHORT_TN[p]}</span>
+                  <span key={p} style={styles.planetTag} className="vj-planet-tag">{PLANET_SHORT_TN[p]}  </span>
                 ))}
               </div>
             </div>
@@ -879,7 +879,6 @@ function JadhagamChart({ chart, onReset }: { chart: ChartData; onReset: () => vo
             <th style={styles.th}>பாகை</th>
             <th style={styles.th}>நட்சத்திரம்-பாதம்</th>
             <th style={styles.th}>ராசி</th>
-            <th style={styles.th}>நவாம்சம்</th>
           </tr>
         </thead>
         <tbody>
@@ -891,7 +890,6 @@ function JadhagamChart({ chart, onReset }: { chart: ChartData; onReset: () => vo
                 <td style={styles.td}>{info.sid.toFixed(2)}°</td>
                 <td style={styles.td}>{info.nakshatraTN} {info.pada}</td>
                 <td style={styles.td}>{info.rasiTN}</td>
-                <td style={styles.td}>{info.navamsaRasiTN}</td>
               </tr>
             );
           })}
@@ -1001,10 +999,10 @@ const styles: { [key: string]: CSSProperties } = {
   infoColon: { color: GOLD },
   infoValue: { color: DARK },
 
-  table: { width: "100%", borderCollapse: "collapse", fontSize: 13.5 },
+  table: { width: "100%", borderCollapse: "collapse", fontSize: 12 },
   tableHead: { background: `linear-gradient(90deg, ${ACCENT}, #6b1200)` },
-  th: { padding: "9px 12px", color: "#fff9ee", fontWeight: 600, textAlign: "left", border: `1px solid ${ACCENT}` },
-  td: { padding: "7px 12px", border: "1px solid #e8d5a0", color: DARK },
+  th: { padding: "7px 7px", color: "#fff9ee", fontWeight: 600, textAlign: "left", border: `1px solid ${ACCENT}` },
+  td: { padding: "6px 7px", border: "1px solid #e8d5a0", color: DARK, fontSize: 12 },
 
   chartsRow: { display: "flex", gap: 24, justifyContent: "center", alignItems: "flex-start", flexWrap: "wrap" },
   chartWrap: { flex: "1 1 140px", maxWidth: 400, minWidth: 0 },
@@ -1024,10 +1022,11 @@ const styles: { [key: string]: CSSProperties } = {
   },
   cell: {
     border: `1px solid #d4a35a`,
-    padding: "3px 4px", minHeight: 52,
+    padding: "2px 3px",
     display: "flex", flexDirection: "column", justifyContent: "flex-start",
     position: "relative",
     background: "#fffdf5",
+    overflow: "hidden",
   },
   lagnaCell: { background: "#fff3d4" },
   lagnaMarker: { fontSize: 10, color: GOLD, fontWeight: 700, position: "absolute", top: 3, right: 4 },
@@ -1038,7 +1037,7 @@ const styles: { [key: string]: CSSProperties } = {
     background: "linear-gradient(135deg, #fff9e8, #fdf3d0)",
     border: `1px solid #d4a35a`,
   },
-  cellPlanets: { display: "flex", flexWrap: "wrap", gap: 2, marginTop: 2 },
+  cellPlanets: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 2 },
   planetTag: { fontSize: 11, color: ACCENT, fontWeight: 600, lineHeight: 1.3 },
 
   dasaFooter: { display: "flex", justifyContent: "center", marginTop: 14 },
