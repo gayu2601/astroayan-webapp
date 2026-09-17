@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import type { CSSProperties, ChangeEvent, ReactNode } from "react";
 
 // ─── Shared Types ─────────────────────────────────────────────────────────────
@@ -364,6 +364,119 @@ async function geocodePlace(placeName: string): Promise<{ lat: number; lon: numb
   return null;
 }
 
+// ─── Ola Maps place autocomplete (with Nominatim fallback) ───────────────────
+// Used by the Place field for live "type-ahead" suggestions. geocodePlace()
+// above remains as the final fallback if the user submits without picking a
+// suggestion from the dropdown.
+
+type PlaceSuggestion = {
+  description: string;
+  place_id: string;
+  source: "olamaps" | "nominatim";
+};
+
+const OLA_MAPS_API_KEY = "0tHplupDAorsTgwAvRu9tiM2VI8u93PtaJ02wBf9";
+
+async function fetchPlaceSuggestions(queryStr: string): Promise<PlaceSuggestion[]> {
+  if (!queryStr || queryStr.length < 2) return [];
+
+  const olaPromise = (async (): Promise<PlaceSuggestion[]> => {
+    try {
+      const url = `https://api.olamaps.io/places/v1/autocomplete?input=${encodeURIComponent(queryStr)}&api_key=${OLA_MAPS_API_KEY}`;
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      const data = await res.json();
+      const predictions: any[] = data.predictions || [];
+
+      // Ola Maps' fuzzy matching can return loosely-related Indian places for
+      // queries with no real presence in its (India-focused) index — keep a
+      // result only if a meaningful chunk of the query actually appears in it.
+      const queryTokens = queryStr.toLowerCase().split(/[\s,]+/).filter(t => t.length > 2);
+      const relevant = predictions.filter((p: any) => {
+        const desc = (p.description || "").toLowerCase();
+        const matchCount = queryTokens.filter(t => desc.includes(t)).length;
+        return queryTokens.length === 0 || matchCount / queryTokens.length >= 0.5;
+      });
+
+      return relevant.map((p: any) => ({
+        description: p.description as string,
+        place_id: p.place_id as string,
+        source: "olamaps" as const,
+      }));
+    } catch {
+      return [];
+    }
+  })();
+
+  const nominatimPromise = (async (): Promise<PlaceSuggestion[]> => {
+    try {
+      // Nominatim reads comma-separated segments as an address hierarchy, so
+      // progressively drop trailing segments until something matches.
+      const segments = queryStr.split(",").map(s => s.trim()).filter(Boolean);
+      const attempts = segments.length > 1
+        ? [queryStr, segments.slice(0, 2).join(", "), segments[0]]
+        : [queryStr];
+
+      for (const attempt of attempts) {
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(attempt)}&format=json&limit=5&addressdetails=1`;
+        const res = await fetch(url, { headers: { "Accept-Language": "en" } });
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (data && data.length > 0) {
+          return data.map((item: any) => ({
+            description: item.display_name as string,
+            place_id: (item.place_id ? item.place_id.toString() : `nom-${item.lat}-${item.lon}`) as string,
+            source: "nominatim" as const,
+          }));
+        }
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  })();
+
+  const [olaResults, nominatimResults] = await Promise.all([olaPromise, nominatimPromise]);
+
+  // Merge, de-duplicating by normalized description. Ola results first
+  // (usually better for Indian addresses), Nominatim fills in the rest.
+  const seen = new Set<string>();
+  const merged: PlaceSuggestion[] = [];
+  for (const item of [...olaResults, ...nominatimResults]) {
+    const key = item.description.trim().toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push(item);
+    }
+  }
+  return merged.slice(0, 8);
+}
+
+// Resolve lat/lon for a chosen suggestion (Ola place details, or Nominatim by name).
+async function fetchPlaceCoords(item: PlaceSuggestion): Promise<{ lat: number; lon: number } | null> {
+  try {
+    if (item.source === "olamaps") {
+      const url = `https://api.olamaps.io/places/v1/details?place_id=${item.place_id}&api_key=${OLA_MAPS_API_KEY}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        const location = data.result?.geometry?.location;
+        if (location) return { lat: location.lat, lon: location.lng };
+      }
+    } else {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(item.description)}&format=json&limit=1`;
+      const res = await fetch(url, { headers: { "Accept-Language": "en" } });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data[0]) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+      }
+    }
+  } catch (e) {
+    console.error("Error fetching place coordinates:", e);
+  }
+  return null;
+}
+
 // ─── Chart Grid Layout (South Indian style) ──────────────────────────────────
 // 4×4 grid, fixed rasi positions (clockwise from top-left corner going right)
 // South Indian: Aries=top-left-inner... fixed positions:
@@ -401,8 +514,45 @@ export default function VaakiyaJadhagam() {
   const [geoStatus, setGeoStatus] = useState("");
   const [showManual, setShowManual] = useState(false);
 
+  // ── Place autocomplete (Ola Maps + Nominatim) ──
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [openLocation, setOpenLocation] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
     setForm(f => ({ ...f, [e.target.name as keyof FormState]: e.target.value }));
+
+  const handleLocationChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const text = e.target.value;
+    // Typing invalidates any lat/lon locked in by a previous selection.
+    setForm(f => ({ ...f, place: text, lat: "", lon: "" }));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!text || text.length < 2) {
+      setSuggestions([]);
+      setOpenLocation(false);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      setLoadingLocation(true);
+      const results = await fetchPlaceSuggestions(text);
+      setSuggestions(results);
+      setOpenLocation(results.length > 0);
+      setLoadingLocation(false);
+    }, 400);
+  };
+
+  const handleSelectLocation = async (item: PlaceSuggestion) => {
+    setForm(f => ({ ...f, place: item.description }));
+    setSuggestions([]);
+    setOpenLocation(false);
+    setLoadingLocation(true);
+    const coords = await fetchPlaceCoords(item);
+    if (coords) {
+      setForm(f => ({ ...f, lat: String(coords.lat), lon: String(coords.lon) }));
+    }
+    setLoadingLocation(false);
+  };
 
   const calculate = useCallback(async () => {
     setError(""); setLoading(true); setGeoStatus("Locating place...");
@@ -519,7 +669,6 @@ export default function VaakiyaJadhagam() {
               { label: "பெயர் / Name", name: "name", type: "text", placeholder: "உங்கள் பெயர்" },
               { label: "பிறந்த தேதி / Date", name: "date", type: "date", placeholder: "" },
               { label: "பிறந்த நேரம் / Time (IST)", name: "time", type: "time", placeholder: "" },
-              { label: "பிறந்த இடம் / Place", name: "place", type: "text", placeholder: "Chennai, Tamil Nadu" },
             ] as const).map(f => (
               <div key={f.name} style={styles.formGroup}>
                 <label style={styles.label}>{f.label}</label>
@@ -533,6 +682,36 @@ export default function VaakiyaJadhagam() {
                 />
               </div>
             ))}
+
+            {/* Birth Place — Ola Maps autocomplete (Nominatim fallback) */}
+            <div style={{ ...styles.formGroup, position: "relative" }}>
+              <label style={styles.label}>பிறந்த இடம் / Place</label>
+              <input
+                style={styles.input}
+                type="text"
+                name="place"
+                placeholder="Chennai, Tamil Nadu"
+                autoComplete="off"
+                value={form.place}
+                onChange={handleLocationChange}
+                onFocus={() => { if (suggestions.length > 0) setOpenLocation(true); }}
+                onBlur={() => setTimeout(() => setOpenLocation(false), 150)}
+              />
+              {loadingLocation && <span style={styles.placeLoading}>தேடுகிறது…</span>}
+              {openLocation && suggestions.length > 0 && (
+                <div style={styles.suggestionsPanel}>
+                  {suggestions.map(item => (
+                    <div
+                      key={item.place_id}
+                      style={styles.suggestionItem}
+                      onMouseDown={() => handleSelectLocation(item)}
+                    >
+                      📍 {item.description}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           {/* Manual lat/lon toggle */}
           <div style={styles.manualToggle}>
@@ -860,6 +1039,18 @@ const styles: { [key: string]: CSSProperties } = {
   manualHint: { fontSize: 12, color: "#999" },
   hintLink: { color: GOLD },
   manualGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 28px", marginTop: 10 },
+
+  placeLoading: { fontSize: 11, color: GOLD, marginTop: 2 },
+  suggestionsPanel: {
+    position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4,
+    background: "#fffdf6", border: `1.5px solid ${GOLD}`, borderRadius: 6,
+    boxShadow: "0 6px 20px rgba(140,80,0,0.18)", zIndex: 50,
+    maxHeight: 220, overflowY: "auto",
+  },
+  suggestionItem: {
+    padding: "9px 12px", fontSize: 13, color: DARK, cursor: "pointer",
+    borderBottom: "1px solid #f0e2bd",
+  },
 
   resetBtn: {
     display: "block", margin: "20px auto 0",
