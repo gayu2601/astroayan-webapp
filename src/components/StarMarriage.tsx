@@ -38,9 +38,18 @@ const NAKSH: [string, string][] = [
   ["Revati", "ரேவதி"]
 ];
 
+// Rasi occupied by each of the 27 nakshatras (0=Mesha … 11=Meena).
+// A nakshatra is 13°20′ and a rasi is 30°, so they don't align evenly —
+// 9 of the 27 nakshatras straddle a rasi boundary (Krittika, Mrigashira,
+// Punarvasu, Uttara Phalguni, Chitra, Vishakha, Uttara Ashadha, Dhanishta,
+// Purva Bhadrapada). For those, this uses whichever rasi contains the
+// majority of the nakshatra's span (the standard simplified assignment).
+// [Fix: previously a rigid "3 nakshatras per rasi" (36-slot) pattern was
+// used for only 27 nakshatras, which drifted out of alignment from
+// Krittika onward — e.g. Anuradha/Anusham was wrongly showing Kanya
+// instead of Vrischika.]
 const NAKSH_RASI = [
-  0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5,
-  6, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10, 10, 11, 11, 11
+  0, 0, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 9, 10, 10, 11, 11
 ];
 
 const RASI_NAMES_EN = ["Mesha", "Rishabha", "Mithuna", "Kataka", "Simha", "Kanya", "Thula", "Vrischika", "Dhanus", "Makara", "Kumbha", "Meena"];
