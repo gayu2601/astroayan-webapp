@@ -2145,7 +2145,7 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {vaakiyamSubTab === 'jadhagam' && <VaakiyaJadhagam />}
+                    {vaakiyamSubTab === 'jadhagam' && <VaakiyaJadhagam language={language} isLight={isLight} />}
                   </div>
                 )}
               </div>

@@ -1,5 +1,14 @@
-import { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import type { CSSProperties, ChangeEvent, ReactNode } from "react";
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../lib/AuthContext';
+
+// ─── Component Props ──────────────────────────────────────────────────────────
+
+export interface VaakiyaJadhagamProps {
+  language?: 'ta' | 'en';
+  isLight?: boolean;
+}
 
 // ─── Shared Types ─────────────────────────────────────────────────────────────
 
@@ -8,11 +17,14 @@ type PlanetInfo = {
   rasiIdx: number;
   degInRasi: number;
   rasiTN: string;
+  rasiEN: string;
   nakshatraIdx: number;
   nakshatraTN: string;
+  nakshatraEN: string;
   pada: number;
   navamsaRasi: number;
   navamsaRasiTN: string;
+  navamsaRasiEN: string;
 };
 
 type FormState = {
@@ -35,12 +47,17 @@ type ChartData = {
   dasa: { lord: string; remaining: string };
   panchagam: {
     tithi: string;
+    tithiEn: string;
     tithiNum: number;
     vaaram: string;
+    vaaramEn: string;
     nakshatra: string;
+    nakshatraEn: string;
     pada: number;
     rasi: string;
+    rasiEn: string;
     lagna: string;
+    lagnaEn: string;
     lagnaIdx: number;
   };
 };
@@ -51,7 +68,7 @@ function toJD(year: number, month: number, day: number, hour: number, min: numbe
   const a = Math.floor((14 - month) / 12);
   const y = year + 4800 - a;
   const m = month + 12 * a - 3;
-  let jdn = day + Math.floor((153 * m + 2) / 5) + 365 * y +
+  const jdn = day + Math.floor((153 * m + 2) / 5) + 365 * y +
     Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
   return jdn - 0.5 + (hour + min / 60 + sec / 3600) / 24;
 }
@@ -81,7 +98,6 @@ const SS = {
   },
 
   // Manda (slow) epicycle radii as fraction of deferent circumference:
-  // [r at kendra=0°, r at kendra=90°] — interpolated between quadrants
   MANDA: {
     Sun:    [13.667/360, 13.667/360],
     Moon:   [31.667/360, 31.667/360],
@@ -102,16 +118,12 @@ const SS = {
   },
 
   // Bija corrections (°): difference between Surya Siddhanta and published Vaakiya
-  // Calibrated from Thanjavur Vaakiya Panchangam reference chart (03-Mar-1998)
-  // These encode accumulated error in SS mean motions + traditional bija adjustments
   BIJA: {
     Sun:     0.71,   Moon:    2.63,   Mars:  -14.15,
     Mercury: 0.52,   Jupiter: -2.28,  Venus:   4.02,
     Saturn: -4.89,   Rahu:   -4.95,
   },
 
-  // Vaakiya mean daily motions (°/day) — for scaling bija over time
-  // SS mean motions (for scaling bija drift correction):
   DAILY_MOTION: {
     Sun:      360 / (1577917800 / 4320000),
     Moon:     360 / (1577917800 / 57753336),
@@ -124,9 +136,6 @@ const SS = {
   },
 };
 
-// Reference date for bija calibration: 03-Mar-1998 15:30 IST
-const BIJA_REF_JD = 2450875.9167;
-
 // Interpolate epicycle radius between quadrant values
 function getEpiR([r0, r90]: number[], kendra: number): number {
   const k = Math.abs(norm180(kendra));
@@ -135,7 +144,7 @@ function getEpiR([r0, r90]: number[], kendra: number): number {
     : r90 + (r0 - r90) * (k - 90) / 90;
 }
 
-// Manda (equation of centre) correction — two-step method (Surya Siddhanta)
+// Manda (equation of centre) correction
 function mandaCorr(meanL: number, apoL: number, epiDef: number[]): number {
   const k1 = norm180(meanL - apoL);
   const r1 = getEpiR(epiDef, k1);
@@ -145,7 +154,7 @@ function mandaCorr(meanL: number, apoL: number, epiDef: number[]): number {
   return deg(Math.asin(Math.min(1, Math.max(-1, r2 * Math.sin(rad(k2))))));
 }
 
-// Shighra (geocentric) correction — arctan formula (handles large epicycles)
+// Shighra (geocentric) correction
 function shighraCorr(mandaSp: number, shighraMean: number, epiDef: number[]): number {
   const kendra = norm360(shighraMean - mandaSp);
   const r = getEpiR(epiDef, kendra);
@@ -157,7 +166,7 @@ type SSLongitudes = {
   Jupiter: number; Venus: number; Saturn: number; Rahu: number;
 };
 
-// Core Surya Siddhanta computation (returns raw SS longitudes, sidereal)
+// Core Surya Siddhanta computation
 function computeSS(jd: number): SSLongitudes {
   const A = jd - SS.KALI_EPOCH_JD;
   const R = SS.REV;
@@ -167,23 +176,18 @@ function computeSS(jd: number): SSLongitudes {
     return norm360((retro ? -1 : 1) * rev * A / M * 360);
   }
 
-  // Mean longitudes
   const sunM  = mL(R.Sun),   moonM = mL(R.Moon);
   const marsM = mL(R.Mars),  jupM  = mL(R.Jupiter), satM = mL(R.Saturn);
   const merShi= mL(R.Mer_shi), venShi= mL(R.Ven_shi);
 
-  // Apogee longitudes (mandoccha)
   const sunApo  = mL(R.Sun_apo),  moonApo = mL(R.Moon_apo);
   const marsApo = mL(R.Mars_apo), merApo  = mL(R.Mer_apo);
   const jupApo  = mL(R.Jup_apo),  venApo  = mL(R.Ven_apo), satApo = mL(R.Sat_apo);
 
-  // Rahu (Moon's ascending node — retrograde, starts at 0, offset by +180° for ascending)
   const rahu = norm360(mL(R.Moon_node, true) + 180);
 
-  // ── Sun ────────────────────────────────────────────────────────────────────
   const sunTrue = norm360(sunM + mandaCorr(sunM, sunApo, SS.MANDA.Sun));
 
-  // ── Moon (with evection + variation) ──────────────────────────────────────
   const moonMandaC = mandaCorr(moonM, moonApo, SS.MANDA.Moon);
   const moonSp = norm360(moonM + moonMandaC);
   const elong = norm360(moonM - sunM);
@@ -191,23 +195,18 @@ function computeSS(jd: number): SSLongitudes {
   const variation  = 0.6583 * Math.sin(rad(2 * elong));
   const moonTrue = norm360(moonSp + evection + variation);
 
-  // ── Mars ───────────────────────────────────────────────────────────────────
   const marsMSp  = norm360(marsM + mandaCorr(marsM, marsApo, SS.MANDA.Mars));
   const marsTrue = norm360(marsMSp + shighraCorr(marsMSp, sunM, SS.SHIGHRA.Mars));
 
-  // ── Jupiter ────────────────────────────────────────────────────────────────
   const jupMSp   = norm360(jupM + mandaCorr(jupM, jupApo, SS.MANDA.Jupiter));
   const jupTrue  = norm360(jupMSp + shighraCorr(jupMSp, sunM, SS.SHIGHRA.Jupiter));
 
-  // ── Saturn ─────────────────────────────────────────────────────────────────
   const satMSp   = norm360(satM + mandaCorr(satM, satApo, SS.MANDA.Saturn));
   const satTrue  = norm360(satMSp + shighraCorr(satMSp, sunM, SS.SHIGHRA.Saturn));
 
-  // ── Mercury (inner planet: manda uses Sun's mean lon) ─────────────────────
   const merMSp   = norm360(sunM + mandaCorr(sunM, merApo, SS.MANDA.Mercury));
   const merTrue  = norm360(merMSp + shighraCorr(merMSp, merShi, SS.SHIGHRA.Mercury));
 
-  // ── Venus (inner planet: manda uses Sun's mean lon) ───────────────────────
   const venMSp   = norm360(sunM + mandaCorr(sunM, venApo, SS.MANDA.Venus));
   const venTrue  = norm360(venMSp + shighraCorr(venMSp, venShi, SS.SHIGHRA.Venus));
 
@@ -215,18 +214,8 @@ function computeSS(jd: number): SSLongitudes {
            Jupiter: jupTrue, Venus: venTrue, Saturn: satTrue, Rahu: rahu };
 }
 
-// ── Vaakiya Bija-corrected longitudes ─────────────────────────────────────────
-// The bija (accumulated correction) is calibrated at BIJA_REF_JD.
-// For dates far from the reference, we scale the bija by time elapsed using
-// the ratio of SS mean daily motions to observed Vaakiya daily motions.
-// For most practical purposes (within ±30 years of reference) this is accurate.
 function getVaakiyaLongitudes(jd: number): Record<string, number> {
   const raw = computeSS(jd);
-
-  // Apply bija corrections (calibrated at reference date)
-  // Bija is essentially constant over decades for slow planets;
-  // fast planets (Moon, Mercury, Venus) need no additional drift correction
-  // because their short periods self-correct via the epicycle mechanism.
   const bija: Record<string, number> = SS.BIJA;
   const result: Record<string, number> = {};
   for (const [p, lon] of Object.entries(raw)) {
@@ -235,8 +224,6 @@ function getVaakiyaLongitudes(jd: number): Record<string, number> {
   return result;
 }
 
-// ── Lagna (Ascendant) ─────────────────────────────────────────────────────────
-// Uses sidereal time. Vaakiya ayanamsa ≈ same as Lahiri for lagna purposes.
 function getLagna(jd: number, lat: number, lon: number): number {
   const T  = (jd - 2451545.0) / 36525;
   const GMST = 280.46061837 + 360.98564736629 * (jd - 2451545.0)
@@ -247,17 +234,17 @@ function getLagna(jd: number, lat: number, lon: number): number {
   const obliq  = rad(23.4393 - 0.013004 * T);
   const asc = Math.atan2(Math.cos(lstR),
     -(Math.sin(lstR) * Math.cos(obliq) + Math.tan(latR) * Math.sin(obliq)));
-  // Apply Vaakiya ayanamsa correction to get sidereal lagna
-  const ayanamsa = 23.85 - 0.013608 * T; // Vaakiya uses slightly different ayanamsa
+  const ayanamsa = 23.85 - 0.013608 * T;
   return norm360(deg(asc) - ayanamsa);
 }
 
-// ─── Chart Logic (Vaakiya — all longitudes already sidereal) ─────────────────
+// ─── Chart Nomenclature ───────────────────────────────────────────────────────
 
 const RASI_NAMES_TN = ["மேஷம்","ரிஷபம்","மிதுனம்","கடகம்","சிம்மம்","கன்னி",
   "துலாம்","விருச்சிகம்","தனுசு","மகரம்","கும்பம்","மீனம்"];
-const RASI_NAMES_EN = ["Mesham","Rishabam","Midunam","Kadakam","Simmam","Kanni",
-  "Thulam","Viruchigam","Dhanushu","Magaram","Kumbam","Meenam"];
+const RASI_NAMES_EN = ["Mesham (Aries)","Rishabam (Taurus)","Mithunam (Gemini)","Kadagam (Cancer)",
+  "Simmam (Leo)","Kanni (Virgo)","Thulam (Libra)","Viruchigam (Scorpio)",
+  "Dhanusu (Sagittarius)","Makaram (Capricorn)","Kumbam (Aquarius)","Meenam (Pisces)"];
 
 const NAKSHATRA_TN = [
   "அஸ்வினி","பரணி","கார்த்திகை","ரோகிணி","மிருகசீரிஷம்","திருவாதிரை",
@@ -265,34 +252,48 @@ const NAKSHATRA_TN = [
   "சித்திரை","சுவாதி","விசாகம்","அனுஷம்","கேட்டை","மூலம்","பூராடம்",
   "உத்திராடம்","திருவோணம்","அவிட்டம்","சதயம்","பூரட்டாதி","உத்திரட்டாதி","ரேவதி"
 ];
+const NAKSHATRA_EN = [
+  "Ashwini","Bharani","Krittika","Rohini","Mrigashira","Ardra",
+  "Punarvasu","Pushya","Ashlesha","Magha","Purva Phalguni","Uttara Phalguni","Hasta",
+  "Chitra","Swati","Vishakha","Anuradha","Jyeshtha","Mula","Purva Ashadha",
+  "Uttara Ashadha","Shravana","Dhanishta","Shatabhisha","Purva Bhadrapada","Uttara Bhadrapada","Revati"
+];
 
 const PLANET_NAMES_TN: Record<string, string> = {
   Lagna:"லக்னம்", Sun:"சூரியன்", Moon:"சந்திரன்", Mars:"செவ்வாய்",
   Mercury:"புதன்", Jupiter:"குரு", Venus:"சுக்கிரன்", Saturn:"சனி",
   Rahu:"ராகு", Ketu:"கேது"
 };
+const PLANET_NAMES_EN: Record<string, string> = {
+  Lagna:"Lagna (Ascendant)", Sun:"Sun (Suriyan)", Moon:"Moon (Chandran)", Mars:"Mars (Chevvai)",
+  Mercury:"Mercury (Budhan)", Jupiter:"Jupiter (Guru)", Venus:"Venus (Sukran)", Saturn:"Saturn (Sani)",
+  Rahu:"Rahu", Ketu:"Ketu"
+};
+
 const PLANET_SHORT_TN: Record<string, string> = {
   Lagna:"லக்", Sun:"சூரி", Moon:"சந்", Mars:"செவ்", Mercury:"புத",
   Jupiter:"குரு", Venus:"சுக்", Saturn:"சனி", Rahu:"ராகு", Ketu:"கேது"
 };
+const PLANET_SHORT_EN: Record<string, string> = {
+  Lagna:"Lag", Sun:"Sun", Moon:"Moo", Mars:"Mar", Mercury:"Mer",
+  Jupiter:"Jup", Venus:"Ven", Saturn:"Sat", Rahu:"Rah", Ketu:"Ket"
+};
 
-// Nakshatra lords for Vimshottari dasa
-const NAKS_LORDS = ["Ketu","Venus","Sun","Moon","Mars","Rahu","Jupiter","Saturn","Mercury"];
 const DASA_YEARS: Record<string, number> = { Ketu:7, Venus:20, Sun:6, Moon:10, Mars:7, Rahu:18, Jupiter:16, Saturn:19, Mercury:17 };
 const DASA_ORDER = ["Ketu","Venus","Sun","Moon","Mars","Rahu","Jupiter","Saturn","Mercury"];
 
-function getRasiInfo(sidLon: number): { rasiIdx: number; degInRasi: number; rasiTN: string } {
+function getRasiInfo(sidLon: number): { rasiIdx: number; degInRasi: number; rasiTN: string; rasiEN: string } {
   const rasiIdx = Math.floor(sidLon / 30);
   const degInRasi = sidLon % 30;
-  return { rasiIdx, degInRasi, rasiTN: RASI_NAMES_TN[rasiIdx] };
+  return { rasiIdx, degInRasi, rasiTN: RASI_NAMES_TN[rasiIdx], rasiEN: RASI_NAMES_EN[rasiIdx] };
 }
 
-function getNakshatraInfo(sidLon: number): { nakshatraIdx: number; nakshatraTN: string; pada: number } {
+function getNakshatraInfo(sidLon: number): { nakshatraIdx: number; nakshatraTN: string; nakshatraEN: string; pada: number } {
   const span = 360 / 27;
   const nIdx = Math.floor(sidLon / span);
   const degInNak = sidLon % span;
   const pada = Math.floor(degInNak / (span / 4)) + 1;
-  return { nakshatraIdx: nIdx, nakshatraTN: NAKSHATRA_TN[nIdx], pada };
+  return { nakshatraIdx: nIdx, nakshatraTN: NAKSHATRA_TN[nIdx], nakshatraEN: NAKSHATRA_EN[nIdx], pada };
 }
 
 function getNavamsaRasi(sidLon: number): number {
@@ -303,8 +304,9 @@ function getNavamsaRasi(sidLon: number): number {
   return (elementStart + navIdx) % 12;
 }
 
-// Geocode — tries Open-Meteo geocoding API (CORS-friendly), then falls back to a static Tamil Nadu cities table
-const TN_CITIES = {
+// ─── Geocoding ────────────────────────────────────────────────────────────────
+
+const TN_CITIES: Record<string, { lat: number; lon: number }> = {
   "chennai":      { lat: 13.0827, lon: 80.2707 },
   "madurai":      { lat: 9.9252,  lon: 78.1198 },
   "coimbatore":   { lat: 11.0168, lon: 76.9558 },
@@ -342,8 +344,6 @@ const TN_CITIES = {
 
 async function geocodePlace(placeName: string): Promise<{ lat: number; lon: number; display: string } | null> {
   const key = placeName.trim().toLowerCase();
-
-  // 1. Try Open-Meteo geocoding (good CORS support)
   try {
     const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(placeName)}&count=1&language=en&format=json`;
     const res = await fetch(url);
@@ -354,20 +354,13 @@ async function geocodePlace(placeName: string): Promise<{ lat: number; lon: numb
     }
   } catch (_) {}
 
-  // 2. Static Tamil Nadu / India city table
   for (const [city, coords] of Object.entries(TN_CITIES)) {
     if (key.includes(city) || city.includes(key)) {
       return { lat: coords.lat, lon: coords.lon, display: placeName };
     }
   }
-
   return null;
 }
-
-// ─── Ola Maps place autocomplete (with Nominatim fallback) ───────────────────
-// Used by the Place field for live "type-ahead" suggestions. geocodePlace()
-// above remains as the final fallback if the user submits without picking a
-// suggestion from the dropdown.
 
 type PlaceSuggestion = {
   description: string;
@@ -388,9 +381,6 @@ async function fetchPlaceSuggestions(queryStr: string): Promise<PlaceSuggestion[
       const data = await res.json();
       const predictions: any[] = data.predictions || [];
 
-      // Ola Maps' fuzzy matching can return loosely-related Indian places for
-      // queries with no real presence in its (India-focused) index — keep a
-      // result only if a meaningful chunk of the query actually appears in it.
       const queryTokens = queryStr.toLowerCase().split(/[\s,]+/).filter(t => t.length > 2);
       const relevant = predictions.filter((p: any) => {
         const desc = (p.description || "").toLowerCase();
@@ -410,8 +400,6 @@ async function fetchPlaceSuggestions(queryStr: string): Promise<PlaceSuggestion[
 
   const nominatimPromise = (async (): Promise<PlaceSuggestion[]> => {
     try {
-      // Nominatim reads comma-separated segments as an address hierarchy, so
-      // progressively drop trailing segments until something matches.
       const segments = queryStr.split(",").map(s => s.trim()).filter(Boolean);
       const attempts = segments.length > 1
         ? [queryStr, segments.slice(0, 2).join(", "), segments[0]]
@@ -438,8 +426,6 @@ async function fetchPlaceSuggestions(queryStr: string): Promise<PlaceSuggestion[
 
   const [olaResults, nominatimResults] = await Promise.all([olaPromise, nominatimPromise]);
 
-  // Merge, de-duplicating by normalized description. Ola results first
-  // (usually better for Indian addresses), Nominatim fills in the rest.
   const seen = new Set<string>();
   const merged: PlaceSuggestion[] = [];
   for (const item of [...olaResults, ...nominatimResults]) {
@@ -452,7 +438,6 @@ async function fetchPlaceSuggestions(queryStr: string): Promise<PlaceSuggestion[
   return merged.slice(0, 8);
 }
 
-// Resolve lat/lon for a chosen suggestion (Ola place details, or Nominatim by name).
 async function fetchPlaceCoords(item: PlaceSuggestion): Promise<{ lat: number; lon: number } | null> {
   try {
     if (item.source === "olamaps") {
@@ -477,25 +462,15 @@ async function fetchPlaceCoords(item: PlaceSuggestion): Promise<{ lat: number; l
   return null;
 }
 
-// ─── Chart Grid Layout (South Indian style) ──────────────────────────────────
-// 4×4 grid, fixed rasi positions (clockwise from top-left corner going right)
-// South Indian: Aries=top-left-inner... fixed positions:
-// Cell indices (0–15), rasi 0(Aries) is cell 1 (top row, 2nd from left)
+// ─── South Indian 4×4 Grid Fixed Rasi Map ────────────────────────────────────
+
 const SOUTH_INDIAN_CELLS = [
-  // row 0: cells 0..3  (top row)
-  // row 1: cells 4..7
-  // row 2: cells 8..11
-  // row 3: cells 12..15
-  // Rasi index → cell index mapping (South Indian fixed chart)
-  // Pisces=0, Aries=1, Taurus=2, Gemini=3 (top row left to right)
-  // Aquarius=4(left col r1), ..Cancer=7(right col r1)
-  11, 0, 1, 2,   // top row: Meena, Mesham, Rishabam, Midunam
-  10, -1, -1, 3, // row 1: Kumbam, [center], [center], Kadakam
-  9, -1, -1, 4,  // row 2: Makaram, [center], [center], Simmam
-  8, 7, 6, 5     // bottom: Dhanushu, Viruchigam, Thulam, Kanni
+  11, 0, 1, 2,   // Meena, Mesham, Rishabam, Mithunam
+  10, -1, -1, 3, // Kumbam, [center], [center], Kadagam
+  9, -1, -1, 4,  // Makaram, [center], [center], Simmam
+  8, 7, 6, 5     // Dhanusu, Viruchigam, Thulam, Kanni
 ];
 
-// rasi index to grid cell position
 function rasiToCell(rasiIdx: number): number {
   return SOUTH_INDIAN_CELLS.indexOf(rasiIdx);
 }
@@ -504,9 +479,15 @@ function cellToRowCol(cellIdx: number): { row: number; col: number } {
   return { row: Math.floor(cellIdx / 4), col: cellIdx % 4 };
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Component ───────────────────────────────────────────────────────────────
 
-export default function VaakiyaJadhagam() {
+export default function VaakiyaJadhagam({
+  language = 'ta',
+  isLight = false,
+}: VaakiyaJadhagamProps) {
+  const isTa = language === 'ta';
+  const { user } = useAuth();
+
   const [form, setForm] = useState<FormState>({ name: "", date: "", time: "", place: "", lat: "", lon: "" });
   const [chart, setChart] = useState<ChartData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -514,18 +495,227 @@ export default function VaakiyaJadhagam() {
   const [geoStatus, setGeoStatus] = useState("");
   const [showManual, setShowManual] = useState(false);
 
-  // ── Place autocomplete (Ola Maps + Nominatim) ──
+  // Autocomplete
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [openLocation, setOpenLocation] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Saved profiles
+  const [savedProfiles, setSavedProfiles] = useState<any[]>([]);
+  const [saveStatus, setSaveStatus] = useState<'saving' | 'saved' | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (user?.id) loadProfiles();
+  }, [user]);
+
+  async function loadProfiles() {
+    try {
+      const { data, error } = await supabase
+        .from('horoscope_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('saved_at', { ascending: false });
+      if (error) throw error;
+      if (data) {
+        setSavedProfiles(data.map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          fatherName: r.father_name,
+          motherName: r.mother_name,
+          dob: r.dob,
+          place: r.place,
+          lat: r.lat,
+          lon: r.lon,
+          savedAt: r.saved_at,
+        })));
+      }
+    } catch (e) {
+      console.error('Error loading profiles:', e);
+    }
+  }
+
+  async function handleSaveProfile(overrideName?: string, overrideDob?: string, overridePlace?: string, overrideLat?: number, overrideLon?: number) {
+    const nameVal = overrideName ?? form.name;
+    const dobVal = overrideDob ?? (form.date && form.time ? `${form.date}T${form.time}` : null);
+    const placeVal = overridePlace ?? form.place;
+    const latVal = overrideLat ?? (form.lat ? parseFloat(form.lat) : null);
+    const lonVal = overrideLon ?? (form.lon ? parseFloat(form.lon) : null);
+
+    if (!nameVal?.trim() || !dobVal || !placeVal?.trim() || !user?.id) return;
+    setSaveStatus('saving');
+
+    const isEditingExisting = !!selectedProfile?.id;
+    const payload = {
+      name: nameVal.trim(),
+      dob: dobVal,
+      place: placeVal.trim(),
+      lat: latVal,
+      lon: lonVal,
+      savedAt: new Date().toISOString(),
+    };
+
+    try {
+      if (isEditingExisting) {
+        const { error } = await supabase
+          .from('horoscope_profiles')
+          .update({ name: payload.name, dob: payload.dob, place: payload.place, lat: payload.lat, lon: payload.lon, saved_at: payload.savedAt })
+          .eq('id', selectedProfile.id)
+          .eq('user_id', user.id);
+        if (error) throw error;
+        const updated = { ...payload, id: selectedProfile.id };
+        setSavedProfiles(prev => prev.map(p => p.id === selectedProfile.id ? updated : p));
+        setSelectedProfile(updated);
+      } else {
+        const { data, error } = await supabase
+          .from('horoscope_profiles')
+          .insert({ user_id: user.id, name: payload.name, dob: payload.dob, place: payload.place, lat: payload.lat, lon: payload.lon, saved_at: payload.savedAt })
+          .select()
+          .single();
+        if (error) throw error;
+        const newProfile = { ...payload, id: data?.id ?? Date.now().toString() };
+        setSavedProfiles(prev => [newProfile, ...prev]);
+        setSelectedProfile(newProfile);
+      }
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus(null), 2000);
+    } catch (e) {
+      console.error('Error saving profile:', e);
+      setSaveStatus(null);
+    }
+  }
+
+  function handleLoadProfile(profile: any) {
+    const newForm: FormState = { name: profile.name || '', date: '', time: '', place: profile.place || '', lat: '', lon: '' };
+    if (profile.dob) {
+      const d = new Date(profile.dob);
+      if (!isNaN(d.getTime())) {
+        newForm.date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        newForm.time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      }
+    }
+    if (typeof profile.lat === 'number') newForm.lat = String(profile.lat);
+    if (typeof profile.lon === 'number') newForm.lon = String(profile.lon);
+    setForm(newForm);
+    setSelectedProfile(profile);
+    setDropdownOpen(false);
+  }
+
+  async function handleDeleteProfile(e: React.MouseEvent, id: string) {
+    e.stopPropagation();
+    try {
+      const { error } = await supabase.from('horoscope_profiles').delete().eq('id', id);
+      if (error) throw error;
+      setSavedProfiles(prev => prev.filter(p => p.id !== id));
+      if (selectedProfile?.id === id) setSelectedProfile(null);
+    } catch (e) {
+      console.error('Error deleting profile:', e);
+    }
+  }
+
+  // ── Palette Theme Tokens ───────────────────────────────────────────────────
+  const t = useMemo(() => {
+    if (isLight) {
+      return {
+        pageBg: "linear-gradient(180deg, #FFFDF8 0%, #FAF5EB 100%)",
+        textColor: "#1C1917",
+        textMuted: "#57534E",
+        headerBg: "linear-gradient(180deg, #85222E 0%, #5C121B 100%)",
+        headerBorder: "#B45309",
+        headerTitle: "#FFFFFF",
+        headerSub: "#FDE68A",
+        gold: "#B45309",
+        goldLight: "#92400E",
+        cardBg: "#FFFFFF",
+        cardBorder: "#E3D5C0",
+        cardShadow: "0 10px 30px rgba(74, 52, 20, 0.07)",
+        labelColor: "#853704",
+        inputBg: "#FFFFFF",
+        inputBorder: "#D8C7B0",
+        btnGradient: "linear-gradient(135deg, #85222E, #5C121B)",
+        btnText: "#FFFFFF",
+        btnShadow: "0 4px 14px rgba(133, 34, 46, 0.25)",
+        infoBg: "#FAF5EC",
+        infoBorder: "#E3D5C0",
+        tableHeadBg: "linear-gradient(90deg, #85222E, #5C121B)",
+        tableHeadText: "#FFFFFF",
+        tableRowEven: "#FAF5EC",
+        tableRowOdd: "#FFFFFF",
+        tableBorder: "#E3D5C0",
+        gridBorder: "#B45309",
+        gridCellBg: "#FFFFFF",
+        gridLagnaBg: "#FEF3C7",
+        gridLagnaMarker: "#B45309",
+        centerLabelBg: "linear-gradient(135deg, #FEF3C7, #FDE68A)",
+        centerLabelBorder: "#FCD34D",
+        centerLabelText: "#92400E",
+        planetTagColor: "#85222E",
+        dasaBoxBg: "#FEF3C7",
+        dasaBoxBorder: "#FCD34D",
+        dasaLabelColor: "#92400E",
+        dasaValueColor: "#85222E",
+        dropdownBg: "#FFFFFF",
+        dropdownBorder: "#D8C7B0",
+        dropdownHover: "#FEF3C7",
+        divider: "linear-gradient(90deg, transparent, #B45309, transparent)",
+        resetBtnBorder: "#85222E",
+        resetBtnText: "#85222E",
+      };
+    }
+    return {
+      pageBg: "radial-gradient(ellipse at 30% 10%, #20183B 0%, #0E0A1A 60%)",
+      textColor: "#F1ECDC",
+      textMuted: "#ABA7C6",
+      headerBg: "linear-gradient(180deg, #2D1432 0%, #170B1F 100%)",
+      headerBorder: "rgba(201, 162, 39, 0.4)",
+      headerTitle: "#F5E6A3",
+      headerSub: "#ABA7C6",
+      gold: "#C9A227",
+      goldLight: "#F5E6A3",
+      cardBg: "#171228",
+      cardBorder: "rgba(201, 162, 39, 0.28)",
+      cardShadow: "0 12px 35px rgba(0, 0, 0, 0.45)",
+      labelColor: "#E8CE7A",
+      inputBg: "#1F1735",
+      inputBorder: "rgba(201, 162, 39, 0.25)",
+      btnGradient: "linear-gradient(135deg, #C9A227, #996B10)",
+      btnText: "#1A1102",
+      btnShadow: "0 4px 16px rgba(201, 162, 39, 0.3)",
+      infoBg: "#1A142D",
+      infoBorder: "rgba(201, 162, 39, 0.25)",
+      tableHeadBg: "linear-gradient(90deg, #3B1528, #250B1B)",
+      tableHeadText: "#F5E6A3",
+      tableRowEven: "#1C1530",
+      tableRowOdd: "#171228",
+      tableBorder: "rgba(201, 162, 39, 0.18)",
+      gridBorder: "#C9A227",
+      gridCellBg: "#171228",
+      gridLagnaBg: "rgba(201, 162, 39, 0.18)",
+      gridLagnaMarker: "#F5E6A3",
+      centerLabelBg: "linear-gradient(135deg, rgba(201, 162, 39, 0.22), rgba(201, 162, 39, 0.08))",
+      centerLabelBorder: "rgba(201, 162, 39, 0.4)",
+      centerLabelText: "#F5E6A3",
+      planetTagColor: "#F5E6A3",
+      dasaBoxBg: "#1F1735",
+      dasaBoxBorder: "#C9A227",
+      dasaLabelColor: "#E8CE7A",
+      dasaValueColor: "#F5E6A3",
+      dropdownBg: "#1F1735",
+      dropdownBorder: "rgba(201, 162, 39, 0.35)",
+      dropdownHover: "#2A2046",
+      divider: "linear-gradient(90deg, transparent, rgba(201, 162, 39, 0.5), transparent)",
+      resetBtnBorder: "#C9A227",
+      resetBtnText: "#F5E6A3",
+    };
+  }, [isLight]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
     setForm(f => ({ ...f, [e.target.name as keyof FormState]: e.target.value }));
 
   const handleLocationChange = (e: ChangeEvent<HTMLInputElement>) => {
     const text = e.target.value;
-    // Typing invalidates any lat/lon locked in by a previous selection.
     setForm(f => ({ ...f, place: text, lat: "", lon: "" }));
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!text || text.length < 2) {
@@ -555,15 +745,16 @@ export default function VaakiyaJadhagam() {
   };
 
   const calculate = useCallback(async () => {
-    setError(""); setLoading(true); setGeoStatus("Locating place...");
+    setError("");
+    setLoading(true);
+    setGeoStatus(isTa ? "இடம் தேடுகிறது..." : "Locating place...");
 
     try {
       if (!form.name || !form.date || !form.time || !form.place)
-        throw new Error("அனைத்து தகவல்களும் தேவை");
+        throw new Error(isTa ? "அனைத்து தகவல்களும் தேவை" : "All fields are required");
 
       let geo = null;
 
-      // If manual lat/lon provided, use directly
       if (form.lat && form.lon) {
         geo = { lat: parseFloat(form.lat), lon: parseFloat(form.lon), display: form.place };
       } else {
@@ -572,14 +763,19 @@ export default function VaakiyaJadhagam() {
 
       if (!geo) {
         setShowManual(true);
-        throw new Error("இடம் கண்டுபிடிக்க முடியவில்லை — கீழே lat/lon நேரடியாக உள்ளிடவும்");
+        throw new Error(isTa
+          ? "இடம் கண்டுபிடிக்க முடியவில்லை — கீழே lat/lon நேரடியாக உள்ளிடவும்"
+          : "Could not find location — please enter lat/lon manually below");
       }
       setGeoStatus(`${geo.display} (${geo.lat.toFixed(4)}, ${geo.lon.toFixed(4)})`);
+
+      // Auto-save profile with resolved coords
+      await handleSaveProfile(form.name, `${form.date}T${form.time}`, form.place, geo.lat, geo.lon);
 
       const [yyyy, mm, dd] = form.date.split("-").map(Number);
       const [hh, mi] = form.time.split(":").map(Number);
 
-      // Convert local time to UTC (assume IST = UTC+5:30)
+      // Convert local time to UTC (IST = UTC+5:30)
       const utcHour = hh - 5.5;
       let utcDay = dd, utcMon = mm, utcYear = yyyy;
       let adjHour = utcHour;
@@ -588,14 +784,13 @@ export default function VaakiyaJadhagam() {
 
       const jd = toJD(utcYear, utcMon, utcDay, adjHour, 0, 0);
 
-      // Get Vaakiya (Surya Siddhanta) sidereal longitudes
       const vaakiyaLons = getVaakiyaLongitudes(jd);
       const lagnaLon    = getLagna(jd, geo.lat, geo.lon);
 
       const sidLons: Record<string, number> = {
-        Lagna:   lagnaLon,
+        Lagna: lagnaLon,
         ...vaakiyaLons,
-        Ketu:    norm360(vaakiyaLons.Rahu + 180),
+        Ketu: norm360(vaakiyaLons.Rahu + 180),
       };
 
       const planets: Record<string, PlanetInfo> = {};
@@ -603,7 +798,14 @@ export default function VaakiyaJadhagam() {
         const rasi    = getRasiInfo(sid);
         const nak     = getNakshatraInfo(sid);
         const navamsa = getNavamsaRasi(sid);
-        planets[p] = { sid, ...rasi, ...nak, navamsaRasi: navamsa, navamsaRasiTN: RASI_NAMES_TN[navamsa] };
+        planets[p] = {
+          sid,
+          ...rasi,
+          ...nak,
+          navamsaRasi: navamsa,
+          navamsaRasiTN: RASI_NAMES_TN[navamsa],
+          navamsaRasiEN: RASI_NAMES_EN[navamsa],
+        };
       }
 
       // Dasa from Moon nakshatra
@@ -615,13 +817,15 @@ export default function VaakiyaJadhagam() {
       const fraction = moonDegInNak / moonNakSpan;
       const remainingYears = DASA_YEARS[moonLord] * (1 - fraction);
 
-      // Panchagam
+      // Tithi
       const tithi = Math.floor(((planets.Moon.sid - planets.Sun.sid + 360) % 360) / 12) + 1;
-      const tithiNames = ["பிரதமை","துவிதியை","திரிதியை","சதுர்த்தி","பஞ்சமி","ஷஷ்டி","சப்தமி","அஷ்டமி","நவமி","தசமி","ஏகாதசி","துவாதசி","திரயோதசி","சதுர்த்தசி","அமாவாசை/பூர்ணிமை"];
-      const tithiName = tithiNames[Math.min(tithi - 1, 14)];
+      const tithiNamesTN = ["பிரதமை","துவிதியை","திரிதியை","சதுர்த்தி","பஞ்சமி","ஷஷ்டி","சப்தமி","அஷ்டமி","நவமி","தசமி","ஏகாதசி","துவாதசி","திரயோதசி","சதுர்த்தசி","அமாவாசை / பௌர்ணமி"];
+      const tithiNamesEN = ["Prathama","Dvitiya","Tritiya","Chaturthi","Panchami","Shasthi","Saptami","Ashtami","Navami","Dashami","Ekadashi","Dvadashi","Trayodashi","Chaturdashi","Amavasya / Pournami"];
+      const tithiIdx = Math.min(tithi - 1, 14);
 
       // Day of week
-      const dayNames = ["ஞாயிறு","திங்கள்","செவ்வாய்","புதன்","வியாழன்","வெள்ளி","சனி"];
+      const dayNamesTN = ["ஞாயிறு","திங்கள்","செவ்வாய்","புதன்","வியாழன்","வெள்ளி","சனி"];
+      const dayNamesEN = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
       const dow = new Date(form.date).getDay();
 
       setChart({
@@ -629,16 +833,23 @@ export default function VaakiyaJadhagam() {
         date: form.date,
         time: form.time,
         place: geo.display.split(",").slice(0, 2).join(", "),
-        lat: geo.lat, lon: geo.lon,
+        lat: geo.lat,
+        lon: geo.lon,
         planets,
         dasa: { lord: moonLord, remaining: remainingYears.toFixed(2) },
         panchagam: {
-          tithi: tithiName, tithiNum: tithi,
-          vaaram: dayNames[dow],
+          tithi: tithiNamesTN[tithiIdx],
+          tithiEn: tithiNamesEN[tithiIdx],
+          tithiNum: tithi,
+          vaaram: dayNamesTN[dow],
+          vaaramEn: dayNamesEN[dow],
           nakshatra: planets.Moon.nakshatraTN,
+          nakshatraEn: planets.Moon.nakshatraEN,
           pada: planets.Moon.pada,
           rasi: planets.Moon.rasiTN,
+          rasiEn: planets.Moon.rasiEN,
           lagna: planets.Lagna.rasiTN,
+          lagnaEn: planets.Lagna.rasiEN,
           lagnaIdx: planets.Lagna.rasiIdx,
         }
       });
@@ -647,76 +858,330 @@ export default function VaakiyaJadhagam() {
     } finally {
       setLoading(false);
     }
-  }, [form]);
+  }, [form, isTa, handleSaveProfile]);
 
   return (
-    <div style={styles.page}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: t.pageBg,
+        fontFamily: isTa
+          ? "'Noto Serif Tamil', 'Noto Sans Tamil', Georgia, serif"
+          : "'Inter', system-ui, -apple-system, sans-serif",
+        color: t.textColor,
+        padding: "0 0 48px",
+        transition: "background 0.2s ease, color 0.2s ease",
+      }}
+    >
       <style>{`
         @media (max-width: 480px) {
           .vj-header { padding: 16px 12px 14px !important; gap: 10px !important; }
           .vj-header-title { font-size: 22px !important; }
           .vj-header-sub { font-size: 11px !important; }
-          .vj-table-wrap { overflow-x: visible; }
-          .vj-charts-row { gap: 10px !important; }
+          .vj-table-wrap { overflow-x: auto; }
+          .vj-charts-row { gap: 16px !important; }
           .vj-dasa-box { padding: 10px 16px !important; }
           .vj-info-row { font-size: 12px !important; }
           .vj-info-label { min-width: 80px !important; }
-          .vj-planet-tag { font-size: 9px !important; }
+          .vj-planet-tag { font-size: 10px !important; }
         }
       `}</style>
+
       {/* Header */}
-      <div style={styles.header} className="vj-header">
-        <div style={styles.headerDeco}>✦</div>
-        <div>
-          <div style={styles.headerTitle} className="vj-header-title">ஜாதக கணிப்பு</div>
-          <div style={styles.headerSub} className="vj-header-sub">வாக்கிய முறையில் — Vaakiya Jadhagam</div>
+      <div
+        className="vj-header"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 14,
+          padding: "22px 16px 18px",
+          borderBottom: `2px solid ${t.headerBorder}`,
+          background: t.headerBg,
+          color: t.headerTitle,
+          boxShadow: "0 4px 15px rgba(0,0,0,0.12)",
+        }}
+      >
+        <div style={{ fontSize: 26, color: t.gold, lineHeight: 1 }}>✦</div>
+        <div style={{ textAlign: "center" }}>
+          <div
+            className="vj-header-title"
+            style={{
+              fontSize: 26,
+              fontWeight: 800,
+              letterSpacing: "0.02em",
+              color: t.headerTitle,
+            }}
+          >
+            {isTa ? "ஜாதக கணிப்பு" : "Vaakiya Jadhagam Calculator"}
+          </div>
+          <div
+            className="vj-header-sub"
+            style={{
+              fontSize: 13,
+              color: t.headerSub,
+              marginTop: 4,
+              fontWeight: 500,
+              letterSpacing: "0.03em",
+            }}
+          >
+            {isTa
+              ? "வாக்கிய பஞ்சாங்க முறைப்படி — Vaakiya Jadhagam"
+              : "Classical Suddha Vaakiya System (Surya Siddhanta)"}
+          </div>
         </div>
-        <div style={styles.headerDeco}>✦</div>
+        <div style={{ fontSize: 26, color: t.gold, lineHeight: 1 }}>✦</div>
       </div>
 
       {/* Input Form */}
       {!chart && (
-        <div style={styles.formCard}>
-          <div style={styles.formGrid}>
-            {([
-              { label: "பெயர் / Name", name: "name", type: "text", placeholder: "உங்கள் பெயர்" },
-              { label: "பிறந்த தேதி / Date", name: "date", type: "date", placeholder: "" },
-              { label: "பிறந்த நேரம் / Time (IST)", name: "time", type: "time", placeholder: "" },
-            ] as const).map(f => (
-              <div key={f.name} style={styles.formGroup}>
-                <label style={styles.label}>{f.label}</label>
-                <input
-                  style={styles.input}
-                  type={f.type}
-                  name={f.name}
-                  placeholder={f.placeholder}
-                  value={form[f.name as keyof FormState]}
-                  onChange={handleChange}
-                />
-              </div>
-            ))}
+        <div style={{ maxWidth: 640, margin: "28px auto", width: "92%" }}>
 
-            {/* Birth Place — Ola Maps autocomplete (Nominatim fallback) */}
-            <div style={{ ...styles.formGroup, position: "relative" }}>
-              <label style={styles.label}>பிறந்த இடம் / Place</label>
+          {/* Saved Profiles Dropdown */}
+          {user && savedProfiles.length > 0 && (
+            <div style={{ position: "relative", zIndex: 20, marginBottom: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: t.gold, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
+                {isTa ? 'சேமிக்கப்பட்ட சுயவிவரங்கள்' : 'Saved Profiles'}
+              </div>
+              <button
+                type="button"
+                onClick={() => setDropdownOpen(v => !v)}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  background: t.inputBg,
+                  border: `1.5px solid ${t.dropdownBorder}`,
+                  borderRadius: 10,
+                  padding: "10px 14px",
+                  color: t.textColor,
+                  cursor: "pointer",
+                  fontSize: 14,
+                  fontFamily: "inherit",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
+                  {selectedProfile ? (
+                    <>
+                      <div style={{
+                        width: 28, height: 28, borderRadius: "50%",
+                        background: t.dasaBoxBg, border: `1px solid ${t.dropdownBorder}`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontWeight: 800, color: t.gold, fontSize: 13, flexShrink: 0,
+                      }}>
+                        {selectedProfile.name[0].toUpperCase()}
+                      </div>
+                      <div style={{ overflow: "hidden" }}>
+                        <div style={{ fontWeight: 700, color: t.textColor, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{selectedProfile.name}</div>
+                        <div style={{ fontSize: 11, color: t.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{selectedProfile.place}</div>
+                      </div>
+                    </>
+                  ) : (
+                    <span style={{ color: t.textMuted }}>
+                      {isTa ? 'ஒரு சுயவிவரத்தைத் தேர்ந்தெடுக்கவும்' : 'Select a Saved Profile'}
+                    </span>
+                  )}
+                </div>
+                <span style={{ color: t.gold, fontSize: 12, flexShrink: 0, marginLeft: 8, transform: dropdownOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>▼</span>
+              </button>
+
+              {dropdownOpen && (
+                <div style={{
+                  position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4,
+                  background: t.dropdownBg, border: `1.5px solid ${t.dropdownBorder}`,
+                  borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+                  maxHeight: 220, overflowY: "auto", zIndex: 50,
+                }}>
+                  {savedProfiles.map(p => (
+                    <div
+                      key={p.id}
+                      onClick={() => handleLoadProfile(p)}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        padding: "10px 14px", cursor: "pointer", fontSize: 13,
+                        background: selectedProfile?.id === p.id ? t.dropdownHover : "transparent",
+                        borderBottom: `1px solid ${t.tableBorder}`,
+                        transition: "background 0.12s",
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = t.dropdownHover)}
+                      onMouseLeave={e => (e.currentTarget.style.background = selectedProfile?.id === p.id ? t.dropdownHover : "transparent")}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, overflow: "hidden" }}>
+                        <div style={{
+                          width: 26, height: 26, borderRadius: "50%",
+                          background: t.dasaBoxBg, border: `1px solid ${t.dropdownBorder}`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontWeight: 800, color: t.gold, fontSize: 12, flexShrink: 0,
+                        }}>
+                          {p.name[0].toUpperCase()}
+                        </div>
+                        <div style={{ overflow: "hidden" }}>
+                          <div style={{ fontWeight: 700, color: t.textColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                          <div style={{ fontSize: 11, color: t.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.place}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: 8 }}>
+                        {selectedProfile?.id === p.id && <span style={{ color: t.gold, fontSize: 14 }}>✓</span>}
+                        <button
+                          type="button"
+                          onClick={e => handleDeleteProfile(e, p.id)}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: t.textMuted, fontSize: 14, padding: "2px 4px", lineHeight: 1 }}
+                          title={isTa ? 'அழி' : 'Delete'}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+        <div
+          style={{
+            padding: "28px 22px",
+            background: t.cardBg,
+            border: `1.5px solid ${t.cardBorder}`,
+            borderRadius: 16,
+            boxShadow: t.cardShadow,
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+              gap: "16px 20px",
+            }}
+          >
+            {/* Name */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: 13, color: t.labelColor, fontWeight: 700 }}>
+                {isTa ? "பெயர் / Name" : "Name / பெயர்"}
+              </label>
               <input
-                style={styles.input}
+                style={{
+                  padding: "10px 12px",
+                  border: `1.5px solid ${t.inputBorder}`,
+                  borderRadius: 8,
+                  fontSize: 14,
+                  background: t.inputBg,
+                  color: t.textColor,
+                  outline: "none",
+                  fontFamily: "inherit",
+                }}
+                type="text"
+                name="name"
+                placeholder={isTa ? "உங்கள் பெயர்" : "Your Name"}
+                value={form.name}
+                onChange={handleChange}
+              />
+            </div>
+
+            {/* Date */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: 13, color: t.labelColor, fontWeight: 700 }}>
+                {isTa ? "பிறந்த தேதி / Date" : "Date of Birth / பிறந்த தேதி"}
+              </label>
+              <input
+                style={{
+                  padding: "10px 12px",
+                  border: `1.5px solid ${t.inputBorder}`,
+                  borderRadius: 8,
+                  fontSize: 14,
+                  background: t.inputBg,
+                  color: t.textColor,
+                  outline: "none",
+                  fontFamily: "inherit",
+                }}
+                type="date"
+                name="date"
+                value={form.date}
+                onChange={handleChange}
+              />
+            </div>
+
+            {/* Time */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: 13, color: t.labelColor, fontWeight: 700 }}>
+                {isTa ? "பிறந்த நேரம் / Time (IST)" : "Birth Time (IST) / நேரம்"}
+              </label>
+              <input
+                style={{
+                  padding: "10px 12px",
+                  border: `1.5px solid ${t.inputBorder}`,
+                  borderRadius: 8,
+                  fontSize: 14,
+                  background: t.inputBg,
+                  color: t.textColor,
+                  outline: "none",
+                  fontFamily: "inherit",
+                }}
+                type="time"
+                name="time"
+                value={form.time}
+                onChange={handleChange}
+              />
+            </div>
+
+            {/* Birth Place */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, position: "relative" }}>
+              <label style={{ fontSize: 13, color: t.labelColor, fontWeight: 700 }}>
+                {isTa ? "பிறந்த இடம் / Place" : "Place of Birth / இடம்"}
+              </label>
+              <input
+                style={{
+                  padding: "10px 12px",
+                  border: `1.5px solid ${t.inputBorder}`,
+                  borderRadius: 8,
+                  fontSize: 14,
+                  background: t.inputBg,
+                  color: t.textColor,
+                  outline: "none",
+                  fontFamily: "inherit",
+                }}
                 type="text"
                 name="place"
-                placeholder="Chennai, Tamil Nadu"
+                placeholder={isTa ? "எ.கா: சென்னை, மதுரை, கோவை" : "e.g., Chennai, Madurai, Coimbatore"}
                 autoComplete="off"
                 value={form.place}
                 onChange={handleLocationChange}
                 onFocus={() => { if (suggestions.length > 0) setOpenLocation(true); }}
-                onBlur={() => setTimeout(() => setOpenLocation(false), 150)}
+                onBlur={() => setTimeout(() => setOpenLocation(false), 180)}
               />
-              {loadingLocation && <span style={styles.placeLoading}>தேடுகிறது…</span>}
+              {loadingLocation && (
+                <span style={{ fontSize: 11, color: t.gold, marginTop: 2, fontWeight: 600 }}>
+                  {isTa ? "தேடுகிறது…" : "Searching…"}
+                </span>
+              )}
               {openLocation && suggestions.length > 0 && (
-                <div style={styles.suggestionsPanel}>
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    right: 0,
+                    marginTop: 4,
+                    background: t.dropdownBg,
+                    border: `1.5px solid ${t.dropdownBorder}`,
+                    borderRadius: 8,
+                    boxShadow: "0 6px 20px rgba(0,0,0,0.25)",
+                    zIndex: 50,
+                    maxHeight: 220,
+                    overflowY: "auto",
+                  }}
+                >
                   {suggestions.map(item => (
                     <div
                       key={item.place_id}
-                      style={styles.suggestionItem}
+                      style={{
+                        padding: "9px 12px",
+                        fontSize: 13,
+                        color: t.textColor,
+                        cursor: "pointer",
+                        borderBottom: `1px solid ${t.tableBorder}`,
+                      }}
                       onMouseDown={() => handleSelectLocation(item)}
                     >
                       📍 {item.description}
@@ -726,46 +1191,180 @@ export default function VaakiyaJadhagam() {
               )}
             </div>
           </div>
+
           {/* Manual lat/lon toggle */}
-          <div style={styles.manualToggle}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 16, flexWrap: "wrap" }}>
             <span
-              style={styles.manualLink}
+              style={{
+                fontSize: 13,
+                color: t.labelColor,
+                cursor: "pointer",
+                userSelect: "none",
+                fontWeight: 700,
+              }}
               onClick={() => setShowManual(v => !v)}
             >
-              {showManual ? "▾" : "▸"} Lat/Lon நேரடியாக உள்ளிட (optional)
+              {showManual ? "▾" : "▸"}{" "}
+              {isTa ? "Lat/Lon நேரடியாக உள்ளிட (விரும்பினால்)" : "Enter Lat/Lon manually (optional)"}
             </span>
-            <span style={styles.manualHint}>
-              → <a href="https://www.latlong.net" target="_blank" rel="noreferrer" style={styles.hintLink}>latlong.net</a> இல் தேடலாம்
+            <span style={{ fontSize: 12, color: t.textMuted }}>
+              →{" "}
+              <a
+                href="https://www.latlong.net"
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: t.gold, textDecoration: "underline" }}
+              >
+                {isTa ? "latlong.net இல் தேடலாம்" : "Find on latlong.net"}
+              </a>
             </span>
           </div>
           {showManual && (
-            <div style={styles.manualGrid}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Latitude (வடக்கு)</label>
-                <input style={styles.input} type="number" step="0.0001" name="lat"
-                  placeholder="13.0827" value={form.lat} onChange={handleChange} />
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                gap: "12px 20px",
+                marginTop: 12,
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={{ fontSize: 12, color: t.labelColor, fontWeight: 600 }}>
+                  {isTa ? "Latitude (வடக்கு)" : "Latitude (North)"}
+                </label>
+                <input
+                  style={{
+                    padding: "8px 10px",
+                    border: `1.5px solid ${t.inputBorder}`,
+                    borderRadius: 6,
+                    fontSize: 14,
+                    background: t.inputBg,
+                    color: t.textColor,
+                    outline: "none",
+                  }}
+                  type="number"
+                  step="0.0001"
+                  name="lat"
+                  placeholder="13.0827"
+                  value={form.lat}
+                  onChange={handleChange}
+                />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Longitude (கிழக்கு)</label>
-                <input style={styles.input} type="number" step="0.0001" name="lon"
-                  placeholder="80.2707" value={form.lon} onChange={handleChange} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={{ fontSize: 12, color: t.labelColor, fontWeight: 600 }}>
+                  {isTa ? "Longitude (கிழக்கு)" : "Longitude (East)"}
+                </label>
+                <input
+                  style={{
+                    padding: "8px 10px",
+                    border: `1.5px solid ${t.inputBorder}`,
+                    borderRadius: 6,
+                    fontSize: 14,
+                    background: t.inputBg,
+                    color: t.textColor,
+                    outline: "none",
+                  }}
+                  type="number"
+                  step="0.0001"
+                  name="lon"
+                  placeholder="80.2707"
+                  value={form.lon}
+                  onChange={handleChange}
+                />
               </div>
             </div>
           )}
 
-          {error && <div style={styles.error}>{error}</div>}
-          <button
-            style={{ ...styles.btn, ...(loading ? styles.btnDisabled : {}) }}
-            onClick={calculate}
-            disabled={loading}
-          >
-            {loading ? (geoStatus || "கணிக்கிறது...") : "ஜாதகம் கணி"}
-          </button>
+          {error && (
+            <div
+              style={{
+                marginTop: 14,
+                color: "#EF4444",
+                fontSize: 13,
+                textAlign: "center",
+                fontWeight: 600,
+                background: "rgba(239, 68, 68, 0.1)",
+                padding: "8px 12px",
+                borderRadius: 6,
+                border: "1px solid rgba(239, 68, 68, 0.3)",
+              }}
+            >
+              {error}
+            </div>
+          )}
+
+          <div style={{ marginTop: 22, display: "flex", gap: 12 }}>
+            {user && (
+              <button
+                type="button"
+                disabled={!form.name.trim() || !form.date || !form.time || !form.place.trim() || saveStatus === 'saving'}
+                onClick={() => handleSaveProfile()}
+                style={{
+                  flex: 1,
+                  padding: "13px",
+                  background: "transparent",
+                  color: saveStatus === 'saved' ? "#22C55E" : t.gold,
+                  border: `1.5px solid ${saveStatus === 'saved' ? "#22C55E" : t.dropdownBorder}`,
+                  borderRadius: 10,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: (!form.name.trim() || !form.date || !form.time || !form.place.trim() || saveStatus === 'saving') ? "not-allowed" : "pointer",
+                  letterSpacing: "0.03em",
+                  fontFamily: "inherit",
+                  opacity: (!form.name.trim() || !form.date || !form.time || !form.place.trim()) ? 0.4 : 1,
+                  transition: "all 0.15s ease",
+                }}
+              >
+                {saveStatus === 'saving'
+                  ? (isTa ? 'சேமிக்கிறது...' : 'Saving...')
+                  : saveStatus === 'saved'
+                  ? (isTa ? '✓ சேமிக்கப்பட்டது' : '✓ Saved!')
+                  : (isTa ? 'சுயவிவரத்தைச் சேமி' : 'Save Profile')}
+              </button>
+            )}
+            <button
+              style={{
+                flex: user ? 1.5 : 1,
+                padding: "13px",
+                background: t.btnGradient,
+                color: t.btnText,
+                border: "none",
+                borderRadius: 10,
+                fontSize: 16,
+                fontWeight: 800,
+                cursor: loading ? "not-allowed" : "pointer",
+                letterSpacing: "0.03em",
+                boxShadow: t.btnShadow,
+                opacity: loading ? 0.7 : 1,
+                fontFamily: "inherit",
+                transition: "transform 0.15s ease, box-shadow 0.15s ease",
+              }}
+              onClick={calculate}
+              disabled={loading}
+            >
+              {loading
+                ? geoStatus || (isTa ? "கணிக்கிறது..." : "Calculating...")
+                : isTa
+                ? "ஜாதகம் கணி"
+                : "Calculate Horoscope"}
+            </button>
+          </div>
+        </div>
         </div>
       )}
 
       {/* Chart Output */}
-      {chart && <JadhagamChart chart={chart} onReset={() => { setChart(null); setGeoStatus(""); }} />}
+      {chart && (
+        <JadhagamChart
+          chart={chart}
+          isTa={isTa}
+          t={t}
+          onReset={() => {
+            setChart(null);
+            setGeoStatus("");
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -792,21 +1391,72 @@ function buildNavamsaGrid(planets: Record<string, PlanetInfo>): string[][] {
   return grid;
 }
 
-function SouthIndianGrid({ grid, lagnaCell, label }: { grid: string[][]; lagnaCell: number; label: string }) {
+function SouthIndianGrid({
+  grid,
+  lagnaCell,
+  label,
+  isTa,
+  t,
+}: {
+  grid: string[][];
+  lagnaCell: number;
+  label: string;
+  isTa: boolean;
+  t: any;
+}) {
   return (
-    <div style={styles.chartWrap}>
-      <div style={styles.chartLabel}>{label}</div>
-      <div style={styles.chartGrid}>
+    <div style={{ flex: "1 1 280px", maxWidth: 400, minWidth: 260 }}>
+      <div
+        style={{
+          textAlign: "center",
+          fontWeight: 800,
+          fontSize: 15,
+          color: t.labelColor,
+          marginBottom: 8,
+          letterSpacing: "0.03em",
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateRows: "repeat(4, 1fr)",
+          border: `2px solid ${t.gridBorder}`,
+          borderRadius: 8,
+          overflow: "hidden",
+          aspectRatio: "1",
+          background: t.gridCellBg,
+          boxShadow: "0 4px 14px rgba(0,0,0,0.06)",
+        }}
+      >
         {Array(16).fill(0).map((_, i) => {
           const { row, col } = cellToRowCol(i);
           const isCenter = (row === 1 || row === 2) && (col === 1 || col === 2);
           const isLagna = i === lagnaCell;
           if (isCenter) {
-            // Merge center cells — only render for top-left of center (row1,col1)
             if (row === 1 && col === 1) {
               return (
-                <div key={i} style={{ ...styles.centerLabel, gridColumn: "2/4", gridRow: "2/4" }}>
-                  {label === "ராசி" ? "ராசி" : "அம்சம்"}
+                <div
+                  key={i}
+                  style={{
+                    gridColumn: "2/4",
+                    gridRow: "2/4",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 18,
+                    fontWeight: 800,
+                    color: t.centerLabelText,
+                    background: t.centerLabelBg,
+                    border: `1px solid ${t.centerLabelBorder}`,
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  {label.includes("ராசி") || label.includes("Rasi")
+                    ? isTa ? "ராசி" : "RASI"
+                    : isTa ? "அம்சம்" : "NAVAMSA"}
                 </div>
               );
             }
@@ -814,11 +1464,50 @@ function SouthIndianGrid({ grid, lagnaCell, label }: { grid: string[][]; lagnaCe
           }
           const planets = grid[i] || [];
           return (
-            <div key={i} style={{ ...styles.cell, ...(isLagna ? styles.lagnaCell : {}) }}>
-              {isLagna && <span style={styles.lagnaMarker}>லக்</span>}
-              <div style={styles.cellPlanets}>
+            <div
+              key={i}
+              style={{
+                border: `1px solid ${t.tableBorder}`,
+                padding: "4px 3px",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "flex-start",
+                position: "relative",
+                background: isLagna ? t.gridLagnaBg : t.gridCellBg,
+                overflow: "hidden",
+              }}
+            >
+              {isLagna && (
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: t.gridLagnaMarker,
+                    fontWeight: 800,
+                    position: "absolute",
+                    top: 2,
+                    right: 3,
+                  }}
+                >
+                  {isTa ? "லக்" : "LAG"}
+                </span>
+              )}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginTop: 2 }}>
                 {planets.map(p => (
-                  <span key={p} style={styles.planetTag} className="vj-planet-tag">{PLANET_SHORT_TN[p]}  </span>
+                  <span
+                    key={p}
+                    className="vj-planet-tag"
+                    style={{
+                      fontSize: 15,
+                      color: t.planetTagColor,
+                      fontWeight: 700,
+                      lineHeight: 1.3,
+                      background: isTa ? "transparent" : "rgba(201,162,39,0.08)",
+                      padding: isTa ? "0" : "1px 2px",
+                      borderRadius: 3,
+                    }}
+                  >
+                    {isTa ? PLANET_SHORT_TN[p] : PLANET_SHORT_EN[p]}
+                  </span>
                 ))}
               </div>
             </div>
@@ -829,7 +1518,17 @@ function SouthIndianGrid({ grid, lagnaCell, label }: { grid: string[][]; lagnaCe
   );
 }
 
-function JadhagamChart({ chart, onReset }: { chart: ChartData; onReset: () => void }) {
+function JadhagamChart({
+  chart,
+  isTa,
+  t,
+  onReset,
+}: {
+  chart: ChartData;
+  isTa: boolean;
+  t: any;
+  onReset: () => void;
+}) {
   const { planets, panchagam, dasa, name, date, time, place } = chart;
   const rasiGrid = buildGridData(planets);
   const navGrid = buildNavamsaGrid(planets);
@@ -838,238 +1537,241 @@ function JadhagamChart({ chart, onReset }: { chart: ChartData; onReset: () => vo
   const PLANET_ORDER = ["Lagna","Sun","Moon","Mars","Mercury","Jupiter","Venus","Saturn","Rahu","Ketu"];
 
   return (
-    <div style={styles.chartPage}>
+    <div
+      style={{
+        maxWidth: 880,
+        margin: "20px auto",
+        padding: "0 14px",
+      }}
+    >
       {/* Title block */}
-      <div style={styles.docHeader}>
-        <div style={styles.docTitle}>ஜனன ஜாதக பத்திரிகை</div>
-        <div style={styles.docSub}>வாக்கிய முறைப்படி கணிக்கப்பட்டது</div>
-        <div style={styles.dividerLine}></div>
+      <div style={{ textAlign: "center", padding: "16px 0 10px" }}>
+        <div
+          style={{
+            fontSize: 24,
+            fontWeight: 800,
+            color: t.labelColor,
+            letterSpacing: "0.02em",
+            fontFamily: isTa ? "'Noto Serif Tamil', Georgia, serif" : "inherit",
+          }}
+        >
+          {isTa ? "ஜனன ஜாதக பத்திரிகை" : "Janana Jadhagam (Birth Horoscope)"}
+        </div>
+        <div style={{ fontSize: 13, color: t.gold, marginTop: 4, fontWeight: 600 }}>
+          {isTa
+            ? "சுத்த வாக்கிய பஞ்சாங்க முறைப்படி கணிக்கப்பட்டது"
+            : "Calculated via Classical Suddha Vaakiya System"}
+        </div>
+        <div style={{ height: 2, margin: "14px 0", background: t.divider }} />
       </div>
 
       {/* Identity + Panchagam */}
-      <div style={styles.infoGrid}>
-        <div style={styles.infoBlock}>
-          <InfoRow label="ஜாதகர் பெயர்" value={name} />
-          <InfoRow label="பிறந்த தேதி" value={`${date} @ ${time}`} />
-          <InfoRow label="பிறந்த இடம்" value={place} />
-          <InfoRow label="கணிப்பு முறை" value="சுத்த வாக்கியம்" />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: "10px 24px",
+          background: t.infoBg,
+          border: `1px solid ${t.infoBorder}`,
+          borderRadius: 12,
+          padding: "16px 18px",
+          marginBottom: 16,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <InfoRow isTa={isTa} t={t} label={isTa ? "ஜாதகர் பெயர்" : "Native's Name"} value={name} />
+          <InfoRow isTa={isTa} t={t} label={isTa ? "பிறந்த தேதி" : "Date of Birth"} value={`${date} @ ${time}`} />
+          <InfoRow isTa={isTa} t={t} label={isTa ? "பிறந்த இடம்" : "Birth Place"} value={place} />
+          <InfoRow isTa={isTa} t={t} label={isTa ? "கணிப்பு முறை" : "System"} value={isTa ? "சுத்த வாக்கியம்" : "Suddha Vaakiyam"} />
         </div>
-        <div style={styles.infoBlock}>
-          <InfoRow label="பாலினம்" value="—" />
-          <InfoRow label="நட்சத்திரம்" value={`${panchagam.nakshatra} ${panchagam.pada}-ம் பாதம்`} />
-          <InfoRow label="ராசி" value={panchagam.rasi} />
-          <InfoRow label="லக்னம்" value={panchagam.lagna} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <InfoRow
+            isTa={isTa}
+            t={t}
+            label={isTa ? "நட்சத்திரம்" : "Nakshatra"}
+            value={isTa ? `${panchagam.nakshatra} (${panchagam.pada}-ம் பாதம்)` : `${panchagam.nakshatraEn} (Pada ${panchagam.pada})`}
+          />
+          <InfoRow
+            isTa={isTa}
+            t={t}
+            label={isTa ? "ராசி" : "Rasi (Moon Sign)"}
+            value={isTa ? panchagam.rasi : panchagam.rasiEn}
+          />
+          <InfoRow
+            isTa={isTa}
+            t={t}
+            label={isTa ? "லக்னம்" : "Lagna (Ascendant)"}
+            value={isTa ? panchagam.lagna : panchagam.lagnaEn}
+          />
         </div>
-        <div style={styles.infoBlock}>
-          <InfoRow label="திதி" value={panchagam.tithi} />
-          <InfoRow label="வாரம்" value={panchagam.vaaram} />
-          <InfoRow label="நடப்பு தசை" value={dasa.lord} />
-          <InfoRow label="தசை மீதி" value={`${dasa.remaining} ஆண்டு`} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <InfoRow
+            isTa={isTa}
+            t={t}
+            label={isTa ? "திதி" : "Tithi"}
+            value={isTa ? panchagam.tithi : panchagam.tithiEn}
+          />
+          <InfoRow
+            isTa={isTa}
+            t={t}
+            label={isTa ? "வாரம்" : "Day (Vaaram)"}
+            value={isTa ? panchagam.vaaram : panchagam.vaaramEn}
+          />
+          <InfoRow
+            isTa={isTa}
+            t={t}
+            label={isTa ? "நடப்பு தசை" : "Birth Dasa"}
+            value={isTa ? `${PLANET_NAMES_TN[dasa.lord] || dasa.lord} தசை` : `${dasa.lord} Dasa`}
+          />
+          <InfoRow
+            isTa={isTa}
+            t={t}
+            label={isTa ? "தசை இருப்பு" : "Dasa Balance"}
+            value={isTa ? `${dasa.remaining} ஆண்டு` : `${dasa.remaining} Years`}
+          />
         </div>
       </div>
 
-      <div style={styles.dividerLine}></div>
+      <div style={{ height: 2, margin: "14px 0", background: t.divider }} />
 
       {/* Planet table */}
-      <div className="vj-table-wrap">
-      <table style={styles.table}>
-        <thead>
-          <tr style={styles.tableHead}>
-            <th style={styles.th}>கிரகம்</th>
-            <th style={styles.th}>பாகை</th>
-            <th style={styles.th}>நட்சத்திரம்-பாதம்</th>
-            <th style={styles.th}>ராசி</th>
-          </tr>
-        </thead>
-        <tbody>
-          {PLANET_ORDER.map((p, i) => {
-            const info = planets[p];
-            return (
-              <tr key={p} style={{ background: i % 2 === 0 ? "#fffbf4" : "#ffffff" }}>
-                <td style={{ ...styles.td, fontWeight: 600, color: "#7c3a00" }}>{PLANET_NAMES_TN[p]}</td>
-                <td style={styles.td}>{info.sid.toFixed(2)}°</td>
-                <td style={styles.td}>{info.nakshatraTN} {info.pada}</td>
-                <td style={styles.td}>{info.rasiTN}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <div className="vj-table-wrap" style={{ borderRadius: 10, overflow: "hidden", border: `1px solid ${t.tableBorder}` }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead>
+            <tr style={{ background: t.tableHeadBg }}>
+              <th style={{ padding: "9px 10px", color: t.tableHeadText, fontWeight: 700, textAlign: "left" }}>
+                {isTa ? "கிரகம்" : "Planet"}
+              </th>
+              <th style={{ padding: "9px 10px", color: t.tableHeadText, fontWeight: 700, textAlign: "left" }}>
+                {isTa ? "பாகை" : "Longitude"}
+              </th>
+              <th style={{ padding: "9px 10px", color: t.tableHeadText, fontWeight: 700, textAlign: "left" }}>
+                {isTa ? "நட்சத்திரம்-பாதம்" : "Nakshatra - Pada"}
+              </th>
+              <th style={{ padding: "9px 10px", color: t.tableHeadText, fontWeight: 700, textAlign: "left" }}>
+                {isTa ? "ராசி" : "Rasi"}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {PLANET_ORDER.map((p, i) => {
+              const info = planets[p];
+              return (
+                <tr key={p} style={{ background: i % 2 === 0 ? t.tableRowEven : t.tableRowOdd }}>
+                  <td style={{ padding: "8px 10px", borderTop: `1px solid ${t.tableBorder}`, fontWeight: 700, color: t.labelColor }}>
+                    {isTa ? PLANET_NAMES_TN[p] : PLANET_NAMES_EN[p]}
+                  </td>
+                  <td style={{ padding: "8px 10px", borderTop: `1px solid ${t.tableBorder}`, color: t.textColor }}>
+                    {info.sid.toFixed(2)}°
+                  </td>
+                  <td style={{ padding: "8px 10px", borderTop: `1px solid ${t.tableBorder}`, color: t.textColor }}>
+                    {isTa ? `${info.nakshatraTN} ${info.pada}` : `${info.nakshatraEN} ${info.pada}`}
+                  </td>
+                  <td style={{ padding: "8px 10px", borderTop: `1px solid ${t.tableBorder}`, color: t.textColor }}>
+                    {isTa ? info.rasiTN : info.rasiEN}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
-      <div style={styles.dividerLine}></div>
+      <div style={{ height: 2, margin: "18px 0", background: t.divider }} />
 
       {/* Two charts side by side */}
-      <div style={styles.chartsRow} className="vj-charts-row">
-        <SouthIndianGrid grid={rasiGrid} lagnaCell={lagnaCell} label="ராசி" />
-        <SouthIndianGrid grid={navGrid} lagnaCell={lagnaCell} label="அம்சம்" />
+      <div
+        className="vj-charts-row"
+        style={{
+          display: "flex",
+          gap: 24,
+          justifyContent: "center",
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+        }}
+      >
+        <SouthIndianGrid
+          grid={rasiGrid}
+          lagnaCell={lagnaCell}
+          label={isTa ? "ராசி சக்கரம்" : "Rasi Chart"}
+          isTa={isTa}
+          t={t}
+        />
+        <SouthIndianGrid
+          grid={navGrid}
+          lagnaCell={lagnaCell}
+          label={isTa ? "நவாம்சம் சக்கரம்" : "Navamsa Chart"}
+          isTa={isTa}
+          t={t}
+        />
       </div>
 
       {/* Dasa footer */}
-      <div style={styles.dasaFooter}>
-        <div style={styles.dasaBox} className="vj-dasa-box">
-          <div style={styles.dasaLabel}>ஜனன கால தசா இருப்பு</div>
-          <div style={styles.dasaValue}>{dasa.lord} தசா — மீதி {dasa.remaining} ஆண்டு</div>
+      <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
+        <div
+          className="vj-dasa-box"
+          style={{
+            background: t.dasaBoxBg,
+            border: `1.5px solid ${t.dasaBoxBorder}`,
+            borderRadius: 12,
+            padding: "14px 36px",
+            textAlign: "center",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+          }}
+        >
+          <div style={{ fontSize: 13, color: t.dasaLabelColor, fontWeight: 700 }}>
+            {isTa ? "ஜனன கால தசா இருப்பு" : "Birth Dasa Balance"}
+          </div>
+          <div style={{ fontSize: 17, fontWeight: 800, color: t.dasaValueColor, marginTop: 4 }}>
+            {isTa
+              ? `${PLANET_NAMES_TN[dasa.lord] || dasa.lord} தசா — மீதி ${dasa.remaining} ஆண்டு`
+              : `${dasa.lord} Dasa — Balance ${dasa.remaining} Years`}
+          </div>
         </div>
       </div>
 
-      <button style={styles.resetBtn} onClick={onReset}>← புதிய ஜாதகம்</button>
+      <button
+        style={{
+          display: "block",
+          margin: "24px auto 0",
+          background: "transparent",
+          border: `1.5px solid ${t.resetBtnBorder}`,
+          color: t.resetBtnText,
+          padding: "9px 26px",
+          borderRadius: 8,
+          fontSize: 14,
+          fontWeight: 700,
+          cursor: "pointer",
+          fontFamily: "inherit",
+          transition: "background 0.15s ease",
+        }}
+        onClick={onReset}
+      >
+        {isTa ? "← புதிய ஜாதகம் கணி" : "← New Horoscope"}
+      </button>
     </div>
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: ReactNode }) {
+function InfoRow({
+  label,
+  value,
+  isTa,
+  t,
+}: {
+  label: string;
+  value: ReactNode;
+  isTa: boolean;
+  t: any;
+}) {
   return (
-    <div style={styles.infoRow} className="vj-info-row">
-      <span style={styles.infoLabel} className="vj-info-label">{label}</span>
-      <span style={styles.infoColon}>:</span>
-      <span style={styles.infoValue}>{value}</span>
+    <div className="vj-info-row" style={{ display: "flex", gap: 6, fontSize: 13.5 }}>
+      <span className="vj-info-label" style={{ color: t.labelColor, fontWeight: 700, minWidth: isTa ? 90 : 105, flexShrink: 0 }}>
+        {label}
+      </span>
+      <span style={{ color: t.gold, fontWeight: 700 }}>:</span>
+      <span style={{ color: t.textColor, fontWeight: 500 }}>{value}</span>
     </div>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const GOLD = "#b8860b";
-const DARK = "#3a1a00";
-const ACCENT = "#8b1a00";
-
-const styles: { [key: string]: CSSProperties } = {
-  page: {
-    minHeight: "100vh",
-    background: "linear-gradient(160deg, #fdf6e3 0%, #fef9ee 60%, #fdf3d8 100%)",
-    fontFamily: "'Noto Serif', 'Noto Sans Tamil', Georgia, serif",
-    color: DARK,
-    padding: "0 0 40px",
-  },
-  header: {
-    display: "flex", alignItems: "center", justifyContent: "center", gap: 14,
-    padding: "20px 16px 16px",
-    borderBottom: `2px solid ${GOLD}`,
-    background: "linear-gradient(180deg, #7c1a00 0%, #9b2500 100%)",
-    color: "#fff9ee",
-  },
-  headerDeco: { fontSize: 28, color: GOLD },
-  headerTitle: { fontSize: 28, fontWeight: 700, letterSpacing: 1, textAlign: "center" },
-  headerSub: { fontSize: 13, opacity: 0.8, textAlign: "center", marginTop: 4 },
-
-  formCard: {
-    maxWidth: 620, margin: "24px auto", padding: "24px 16px",
-    background: "#fffdf6", border: `1.5px solid ${GOLD}`,
-    borderRadius: 8, boxShadow: "0 4px 24px rgba(140,80,0,0.10)"
-  },
-  formGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px 20px" },
-  formGroup: { display: "flex", flexDirection: "column", gap: 6 },
-  label: { fontSize: 13, color: ACCENT, fontWeight: 600 },
-  input: {
-    padding: "10px 12px", border: `1.5px solid #d4a35a`, borderRadius: 5,
-    fontSize: 15, background: "#fffbf2", color: DARK, outline: "none",
-    fontFamily: "inherit",
-  },
-  btn: {
-    marginTop: 24, width: "100%", padding: "13px",
-    background: `linear-gradient(135deg, ${ACCENT}, #6b1200)`,
-    color: "#fff9ee", border: "none", borderRadius: 6,
-    fontSize: 17, fontWeight: 700, cursor: "pointer", letterSpacing: 1,
-    fontFamily: "inherit",
-  },
-  btnDisabled: { opacity: 0.6, cursor: "not-allowed" },
-  error: { marginTop: 12, color: "#c0392b", fontSize: 14, textAlign: "center" },
-
-  // Chart page
-  chartPage: {
-    maxWidth: 900, margin: "16px auto", padding: "0 10px",
-  },
-  docHeader: { textAlign: "center", padding: "16px 0 10px" },
-  docTitle: { fontSize: 24, fontWeight: 700, color: ACCENT, letterSpacing: 1 },
-  docSub: { fontSize: 13, color: GOLD, marginTop: 4 },
-  dividerLine: {
-    height: 2, margin: "14px 0",
-    background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`
-  },
-
-  infoGrid: {
-    display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "8px 24px",
-    background: "#fffbf4", border: `1px solid #e8c97a`,
-    borderRadius: 6, padding: "12px 14px", marginBottom: 4,
-  },
-  infoBlock: { display: "flex", flexDirection: "column", gap: 5 },
-  infoRow: { display: "flex", gap: 6, fontSize: 13.5 },
-  infoLabel: { color: ACCENT, fontWeight: 600, minWidth: 90, flexShrink: 0 },
-  infoColon: { color: GOLD },
-  infoValue: { color: DARK },
-
-  table: { width: "100%", borderCollapse: "collapse", fontSize: 12 },
-  tableHead: { background: `linear-gradient(90deg, ${ACCENT}, #6b1200)` },
-  th: { padding: "7px 7px", color: "#fff9ee", fontWeight: 600, textAlign: "left", border: `1px solid ${ACCENT}` },
-  td: { padding: "6px 7px", border: "1px solid #e8d5a0", color: DARK, fontSize: 12 },
-
-  chartsRow: { display: "flex", gap: 24, justifyContent: "center", alignItems: "flex-start", flexWrap: "wrap" },
-  chartWrap: { flex: "1 1 140px", maxWidth: 400, minWidth: 0 },
-  chartLabel: {
-    textAlign: "center", fontWeight: 700, fontSize: 15,
-    color: ACCENT, marginBottom: 6, letterSpacing: 1
-  },
-  chartGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
-    gridTemplateRows: "repeat(4, 1fr)",
-    border: `2px solid ${GOLD}`,
-    borderRadius: 4,
-    overflow: "hidden",
-    aspectRatio: "1",
-    background: "#fffdf5",
-  },
-  cell: {
-    border: `1px solid #d4a35a`,
-    padding: "2px 3px",
-    display: "flex", flexDirection: "column", justifyContent: "flex-start",
-    position: "relative",
-    background: "#fffdf5",
-    overflow: "hidden",
-  },
-  lagnaCell: { background: "#fff3d4" },
-  lagnaMarker: { fontSize: 10, color: GOLD, fontWeight: 700, position: "absolute", top: 3, right: 4 },
-  centerLabel: {
-    gridColumn: "2/4", gridRow: "2/4",
-    display: "flex", alignItems: "center", justifyContent: "center",
-    fontSize: 18, fontWeight: 700, color: GOLD,
-    background: "linear-gradient(135deg, #fff9e8, #fdf3d0)",
-    border: `1px solid #d4a35a`,
-  },
-  cellPlanets: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 2 },
-  planetTag: { fontSize: 11, color: ACCENT, fontWeight: 600, lineHeight: 1.3 },
-
-  dasaFooter: { display: "flex", justifyContent: "center", marginTop: 14 },
-  dasaBox: {
-    background: "#fff8e6", border: `1.5px solid ${GOLD}`,
-    borderRadius: 6, padding: "12px 32px", textAlign: "center"
-  },
-  dasaLabel: { fontSize: 12, color: GOLD, fontWeight: 600 },
-  dasaValue: { fontSize: 16, fontWeight: 700, color: ACCENT, marginTop: 4 },
-
-  manualToggle: { display: "flex", alignItems: "center", gap: 12, marginTop: 14, flexWrap: "wrap" },
-  manualLink: { fontSize: 13, color: ACCENT, cursor: "pointer", userSelect: "none", fontWeight: 600 },
-  manualHint: { fontSize: 12, color: "#999" },
-  hintLink: { color: GOLD },
-  manualGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px 20px", marginTop: 10 },
-
-  placeLoading: { fontSize: 11, color: GOLD, marginTop: 2 },
-  suggestionsPanel: {
-    position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4,
-    background: "#fffdf6", border: `1.5px solid ${GOLD}`, borderRadius: 6,
-    boxShadow: "0 6px 20px rgba(140,80,0,0.18)", zIndex: 50,
-    maxHeight: 220, overflowY: "auto",
-  },
-  suggestionItem: {
-    padding: "9px 12px", fontSize: 13, color: DARK, cursor: "pointer",
-    borderBottom: "1px solid #f0e2bd",
-  },
-
-  resetBtn: {
-    display: "block", margin: "20px auto 0",
-    background: "transparent", border: `1.5px solid ${ACCENT}`,
-    color: ACCENT, padding: "8px 24px", borderRadius: 5,
-    fontSize: 14, cursor: "pointer", fontFamily: "inherit"
-  }
-};
