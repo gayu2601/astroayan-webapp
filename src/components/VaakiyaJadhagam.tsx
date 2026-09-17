@@ -495,6 +495,38 @@ export default function VaakiyaJadhagam({
   const [geoStatus, setGeoStatus] = useState("");
   const [showManual, setShowManual] = useState(false);
 
+  // 12-hour time picker state (UI only; form.time stays as 24h HH:MM internally)
+  const [timeHour, setTimeHour] = useState("12");
+  const [timeMinute, setTimeMinute] = useState("00");
+  const [timeAmPm, setTimeAmPm] = useState<"AM" | "PM">("AM");
+
+  function ampmTo24h(hour: string, minute: string, ampm: "AM" | "PM"): string {
+    let h = parseInt(hour, 10);
+    if (ampm === "AM") { if (h === 12) h = 0; }
+    else { if (h !== 12) h += 12; }
+    return `${String(h).padStart(2, "0")}:${minute.padStart(2, "0")}`;
+  }
+
+  function set24hFromPicker(hour: string, minute: string, ampm: "AM" | "PM") {
+    setForm(f => ({ ...f, time: ampmTo24h(hour, minute, ampm) }));
+  }
+
+  function handleHourChange(e: ChangeEvent<HTMLSelectElement>) {
+    setTimeHour(e.target.value);
+    set24hFromPicker(e.target.value, timeMinute, timeAmPm);
+  }
+
+  function handleMinuteChange(e: ChangeEvent<HTMLSelectElement>) {
+    setTimeMinute(e.target.value);
+    set24hFromPicker(timeHour, e.target.value, timeAmPm);
+  }
+
+  function handleAmPmChange(e: ChangeEvent<HTMLSelectElement>) {
+    const val = e.target.value as "AM" | "PM";
+    setTimeAmPm(val);
+    set24hFromPicker(timeHour, timeMinute, val);
+  }
+
   // Autocomplete
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [loadingLocation, setLoadingLocation] = useState(false);
@@ -593,7 +625,15 @@ export default function VaakiyaJadhagam({
       const d = new Date(profile.dob);
       if (!isNaN(d.getTime())) {
         newForm.date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        newForm.time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        const h24 = d.getHours();
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        newForm.time = `${String(h24).padStart(2, '0')}:${mins}`;
+        // Sync 12h picker
+        const ampm: "AM" | "PM" = h24 < 12 ? "AM" : "PM";
+        const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+        setTimeHour(String(h12));
+        setTimeMinute(mins);
+        setTimeAmPm(ampm);
       }
     }
     if (typeof profile.lat === 'number') newForm.lat = String(profile.lat);
@@ -1102,27 +1142,83 @@ export default function VaakiyaJadhagam({
               />
             </div>
 
-            {/* Time */}
+            {/* Time — 12h AM/PM picker */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label style={{ fontSize: 13, color: t.labelColor, fontWeight: 700 }}>
                 {isTa ? "பிறந்த நேரம் / Time (IST)" : "Birth Time (IST) / நேரம்"}
               </label>
-              <input
-                style={{
-                  padding: "10px 12px",
-                  border: `1.5px solid ${t.inputBorder}`,
-                  borderRadius: 8,
-                  fontSize: 14,
-                  background: t.inputBg,
-                  color: t.textColor,
-                  outline: "none",
-                  fontFamily: "inherit",
-                }}
-                type="time"
-                name="time"
-                value={form.time}
-                onChange={handleChange}
-              />
+              <div style={{ display: "flex", gap: 6 }}>
+                {/* Hour */}
+                <select
+                  value={timeHour}
+                  onChange={handleHourChange}
+                  style={{
+                    flex: 1,
+                    padding: "10px 6px",
+                    border: `1.5px solid ${t.inputBorder}`,
+                    borderRadius: 8,
+                    fontSize: 14,
+                    background: t.inputBg,
+                    color: t.textColor,
+                    outline: "none",
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    appearance: "none",
+                    textAlign: "center",
+                  }}
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
+                    <option key={h} value={String(h)}>{String(h).padStart(2, "0")}</option>
+                  ))}
+                </select>
+                <span style={{ display: "flex", alignItems: "center", color: t.gold, fontWeight: 800, fontSize: 16 }}>:</span>
+                {/* Minute */}
+                <select
+                  value={timeMinute}
+                  onChange={handleMinuteChange}
+                  style={{
+                    flex: 1,
+                    padding: "10px 6px",
+                    border: `1.5px solid ${t.inputBorder}`,
+                    borderRadius: 8,
+                    fontSize: 14,
+                    background: t.inputBg,
+                    color: t.textColor,
+                    outline: "none",
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    appearance: "none",
+                    textAlign: "center",
+                  }}
+                >
+                  {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                {/* AM / PM */}
+                <select
+                  value={timeAmPm}
+                  onChange={handleAmPmChange}
+                  style={{
+                    flex: "0 0 auto",
+                    padding: "10px 8px",
+                    border: `1.5px solid ${t.inputBorder}`,
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    background: t.inputBg,
+                    color: t.gold,
+                    outline: "none",
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    appearance: "none",
+                    textAlign: "center",
+                  }}
+                >
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </div>
             </div>
 
             {/* Birth Place */}
@@ -1581,7 +1677,13 @@ function JadhagamChart({
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <InfoRow isTa={isTa} t={t} label={isTa ? "ஜாதகர் பெயர்" : "Native's Name"} value={name} />
-          <InfoRow isTa={isTa} t={t} label={isTa ? "பிறந்த தேதி" : "Date of Birth"} value={`${date} @ ${time}`} />
+          <InfoRow isTa={isTa} t={t} label={isTa ? "பிறந்த தேதி" : "Date of Birth"} value={(() => {
+              const [hStr, mStr] = time.split(":");
+              const h24 = parseInt(hStr, 10);
+              const ampm = h24 < 12 ? "AM" : "PM";
+              const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+              return `${date} @ ${String(h12).padStart(2, "0")}:${mStr} ${ampm}`;
+            })()} />
           <InfoRow isTa={isTa} t={t} label={isTa ? "பிறந்த இடம்" : "Birth Place"} value={place} />
           <InfoRow isTa={isTa} t={t} label={isTa ? "கணிப்பு முறை" : "System"} value={isTa ? "சுத்த வாக்கியம்" : "Suddha Vaakiyam"} />
         </div>
