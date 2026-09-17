@@ -651,12 +651,25 @@ export default function VaakiyaJadhagam() {
 
   return (
     <div style={styles.page}>
+      <style>{`
+        @media (max-width: 480px) {
+          .vj-header { padding: 16px 12px 14px !important; gap: 10px !important; }
+          .vj-header-title { font-size: 22px !important; }
+          .vj-header-sub { font-size: 11px !important; }
+          .vj-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+          .vj-table-wrap table { min-width: 360px; }
+          .vj-charts-row { gap: 10px !important; }
+          .vj-dasa-box { padding: 10px 16px !important; }
+          .vj-info-row { font-size: 12px !important; }
+          .vj-info-label { min-width: 80px !important; }
+        }
+      `}</style>
       {/* Header */}
-      <div style={styles.header}>
+      <div style={styles.header} className="vj-header">
         <div style={styles.headerDeco}>✦</div>
         <div>
-          <div style={styles.headerTitle}>ஜாதக கணிப்பு</div>
-          <div style={styles.headerSub}>வாக்கிய முறையில் — Vaakiya Jadhagam</div>
+          <div style={styles.headerTitle} className="vj-header-title">ஜாதக கணிப்பு</div>
+          <div style={styles.headerSub} className="vj-header-sub">வாக்கிய முறையில் — Vaakiya Jadhagam</div>
         </div>
         <div style={styles.headerDeco}>✦</div>
       </div>
@@ -858,6 +871,7 @@ function JadhagamChart({ chart, onReset }: { chart: ChartData; onReset: () => vo
       <div style={styles.dividerLine}></div>
 
       {/* Planet table */}
+      <div className="vj-table-wrap">
       <table style={styles.table}>
         <thead>
           <tr style={styles.tableHead}>
@@ -883,18 +897,19 @@ function JadhagamChart({ chart, onReset }: { chart: ChartData; onReset: () => vo
           })}
         </tbody>
       </table>
+      </div>
 
       <div style={styles.dividerLine}></div>
 
       {/* Two charts side by side */}
-      <div style={styles.chartsRow}>
+      <div style={styles.chartsRow} className="vj-charts-row">
         <SouthIndianGrid grid={rasiGrid} lagnaCell={lagnaCell} label="ராசி" />
         <SouthIndianGrid grid={navGrid} lagnaCell={lagnaCell} label="அம்சம்" />
       </div>
 
       {/* Dasa footer */}
       <div style={styles.dasaFooter}>
-        <div style={styles.dasaBox}>
+        <div style={styles.dasaBox} className="vj-dasa-box">
           <div style={styles.dasaLabel}>ஜனன கால தசா இருப்பு</div>
           <div style={styles.dasaValue}>{dasa.lord} தசா — மீதி {dasa.remaining} ஆண்டு</div>
         </div>
@@ -907,8 +922,8 @@ function JadhagamChart({ chart, onReset }: { chart: ChartData; onReset: () => vo
 
 function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div style={styles.infoRow}>
-      <span style={styles.infoLabel}>{label}</span>
+    <div style={styles.infoRow} className="vj-info-row">
+      <span style={styles.infoLabel} className="vj-info-label">{label}</span>
       <span style={styles.infoColon}>:</span>
       <span style={styles.infoValue}>{value}</span>
     </div>
@@ -930,8 +945,8 @@ const styles: { [key: string]: CSSProperties } = {
     padding: "0 0 40px",
   },
   header: {
-    display: "flex", alignItems: "center", justifyContent: "center", gap: 18,
-    padding: "28px 24px 20px",
+    display: "flex", alignItems: "center", justifyContent: "center", gap: 14,
+    padding: "20px 16px 16px",
     borderBottom: `2px solid ${GOLD}`,
     background: "linear-gradient(180deg, #7c1a00 0%, #9b2500 100%)",
     color: "#fff9ee",
@@ -941,11 +956,11 @@ const styles: { [key: string]: CSSProperties } = {
   headerSub: { fontSize: 13, opacity: 0.8, textAlign: "center", marginTop: 4 },
 
   formCard: {
-    maxWidth: 620, margin: "40px auto", padding: "36px 40px",
+    maxWidth: 620, margin: "24px auto", padding: "24px 16px",
     background: "#fffdf6", border: `1.5px solid ${GOLD}`,
     borderRadius: 8, boxShadow: "0 4px 24px rgba(140,80,0,0.10)"
   },
-  formGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px 28px" },
+  formGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px 20px" },
   formGroup: { display: "flex", flexDirection: "column", gap: 6 },
   label: { fontSize: 13, color: ACCENT, fontWeight: 600 },
   input: {
@@ -965,7 +980,7 @@ const styles: { [key: string]: CSSProperties } = {
 
   // Chart page
   chartPage: {
-    maxWidth: 900, margin: "28px auto", padding: "0 16px",
+    maxWidth: 900, margin: "16px auto", padding: "0 10px",
   },
   docHeader: { textAlign: "center", padding: "16px 0 10px" },
   docTitle: { fontSize: 24, fontWeight: 700, color: ACCENT, letterSpacing: 1 },
@@ -976,13 +991,13 @@ const styles: { [key: string]: CSSProperties } = {
   },
 
   infoGrid: {
-    display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "4px 24px",
+    display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "8px 24px",
     background: "#fffbf4", border: `1px solid #e8c97a`,
-    borderRadius: 6, padding: "14px 20px", marginBottom: 4,
+    borderRadius: 6, padding: "12px 14px", marginBottom: 4,
   },
   infoBlock: { display: "flex", flexDirection: "column", gap: 5 },
   infoRow: { display: "flex", gap: 6, fontSize: 13.5 },
-  infoLabel: { color: ACCENT, fontWeight: 600, minWidth: 110, flexShrink: 0 },
+  infoLabel: { color: ACCENT, fontWeight: 600, minWidth: 90, flexShrink: 0 },
   infoColon: { color: GOLD },
   infoValue: { color: DARK },
 
@@ -992,7 +1007,7 @@ const styles: { [key: string]: CSSProperties } = {
   td: { padding: "7px 12px", border: "1px solid #e8d5a0", color: DARK },
 
   chartsRow: { display: "flex", gap: 24, justifyContent: "center", alignItems: "flex-start", flexWrap: "wrap" },
-  chartWrap: { flex: "1 1 340px", maxWidth: 400 },
+  chartWrap: { flex: "1 1 140px", maxWidth: 400, minWidth: 0 },
   chartLabel: {
     textAlign: "center", fontWeight: 700, fontSize: 15,
     color: ACCENT, marginBottom: 6, letterSpacing: 1
@@ -1009,7 +1024,7 @@ const styles: { [key: string]: CSSProperties } = {
   },
   cell: {
     border: `1px solid #d4a35a`,
-    padding: "4px 5px", minHeight: 72,
+    padding: "3px 4px", minHeight: 52,
     display: "flex", flexDirection: "column", justifyContent: "flex-start",
     position: "relative",
     background: "#fffdf5",
@@ -1038,7 +1053,7 @@ const styles: { [key: string]: CSSProperties } = {
   manualLink: { fontSize: 13, color: ACCENT, cursor: "pointer", userSelect: "none", fontWeight: 600 },
   manualHint: { fontSize: 12, color: "#999" },
   hintLink: { color: GOLD },
-  manualGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 28px", marginTop: 10 },
+  manualGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px 20px", marginTop: 10 },
 
   placeLoading: { fontSize: 11, color: GOLD, marginTop: 2 },
   suggestionsPanel: {
