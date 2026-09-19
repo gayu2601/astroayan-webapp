@@ -1568,6 +1568,11 @@ export default function App() {
                 }`}
               >
                 {language === 'ta' ? tab.labelTa : tab.labelEn}
+                {tab.id === 'vaakiyam' && (
+                  <span className={`ml-1.5 align-middle px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider ${isLight ? "bg-amber-600/15 text-[#B45309]" : "bg-amber-500/20 text-amber-300"}`}>
+                    {language === 'ta' ? "விரைவில்" : "Work In Progress"}
+                  </span>
+                )}
               </Link>
             ))}
           </nav>
@@ -1835,7 +1840,13 @@ export default function App() {
                 {/* GROUP: VAAKIYAM */}
                 <div className="gradient-group-tools p-6 rounded-3xl space-y-5 animate-fade-in border">
                   <div className="border-b border-gray-700/10 pb-4">
-                    <h2 className="text-xl font-serif font-black tracking-tight text-amber-500 flex items-center gap-2"><BookOpen className="h-5 w-5" />{language === 'ta' ? "வாக்கியம்" : "Vaakiyam"}</h2>
+                    <h2 className="text-xl font-serif font-black tracking-tight text-amber-500 flex items-center gap-2">
+                      <BookOpen className="h-5 w-5" />
+                      {language === 'ta' ? "வாக்கியம்" : "Vaakiyam"}
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${isLight ? "bg-amber-600/15 text-[#B45309]" : "bg-amber-500/20 text-amber-300"}`}>
+                        {language === 'ta' ? "விரைவில்" : "Work In Progress"}
+                      </span>
+                    </h2>
                     <p className={`text-xs mt-1 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{language === 'ta' ? "வாக்கிய முறையில் ஜாதகம் கணிக்கவும்." : "Generate a horoscope using the traditional Vaakiyam method."}</p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -2127,7 +2138,12 @@ export default function App() {
                 {vaakiyamSubTab === null ? (
                   <div className="space-y-6">
                     <div className="border-b border-gray-700/25 pb-3">
-                      <h2 className="text-xl font-serif font-bold text-amber-500">{language === 'ta' ? "வாக்கியம்" : "Vaakiyam"}</h2>
+                      <h2 className="text-xl font-serif font-bold text-amber-500 flex items-center gap-2">
+                        {language === 'ta' ? "வாக்கியம்" : "Vaakiyam"}
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${isLight ? "bg-amber-600/15 text-[#B45309]" : "bg-amber-500/20 text-amber-300"}`}>
+                          {language === 'ta' ? "விரைவில்" : "Work In Progress"}
+                        </span>
+                      </h2>
                       <p className={`text-xs mt-1 ${isLight ? "text-[#5C4F43]" : "text-gray-400"}`}>{language === 'ta' ? "வாக்கிய முறையில் ஜாதகம் கணிக்கவும்." : "Generate a horoscope using the traditional Vaakiyam method."}</p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
